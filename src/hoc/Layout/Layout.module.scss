@@ -1,0 +1,17 @@
+.content {
+    display: flex;
+}
+
+.aside {
+    width: 252px;
+    @media (max-width: 1000px) {
+        width: 120px;
+    }
+}
+
+.main {
+    overflow: hidden;
+    overflow-x: auto;
+    width: 100%;
+    position: relative;
+}

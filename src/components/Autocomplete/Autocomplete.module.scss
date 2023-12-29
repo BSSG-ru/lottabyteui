@@ -1,0 +1,15 @@
+.autocomplete_wrapper {
+    .async_select {
+        border: 1px solid #B2B2B2;
+        border-radius: 6px;
+
+        > div {
+            border: none;
+            border-radius: 6px;
+        }
+
+        input {
+            opacity: 1 !important;
+        }
+    }
+}

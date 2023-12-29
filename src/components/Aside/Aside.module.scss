@@ -1,0 +1,93 @@
+.aside {
+    padding-top: 70px;
+    height: 100%;
+    min-height: calc(100vh - 120px);
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.25);
+    ul {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        padding-left: 0;
+        margin-bottom: 50px;
+    }
+
+    .settings_link {
+        margin-top: 30px;
+    }
+
+    .link {
+        color: var(--gray-100);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        padding: 6px 17px 6px 20px;
+        background-color: var(--white);
+        border: 2px solid var(--white);
+        svg {
+            fill: black;
+        }
+        .icon {
+            width: 24px;
+            text-align: center;
+        }
+        .count {
+            margin: 3px 0;
+            margin-left: 4px;
+            background-color: var(--gray-10);
+            padding: 5px;
+            @media (max-width: 1000px) {
+                display: none;
+            }
+        }
+        .title {
+            font-size: 15px;
+            width: 141px;
+            @media (max-width: 1000px) {
+                display: none;
+            }
+        }
+        &_active {
+            color: var(--white);
+            border-color: var(--blue-main);
+            background-color: var(--blue-main);
+            span {
+                color: var(--white);
+            }
+            svg {
+                fill: var(--white);
+            }
+            .count {
+                background-color: var(--blue-main);
+            }
+        }
+
+        @media (max-width: 1000px) {
+            padding: 6px;
+            justify-content: center;
+        }
+    }
+
+    a.link:hover {
+        border-color: var(--blue-main);
+    }
+
+    .recent_header {
+        margin-top: 40px;
+
+        @media (max-width: 1000px) {
+            display: none;
+        }
+    }
+
+    .recent {
+        a span.title {
+            font-size: 12px;
+            color: var(--blue-main);
+        }
+
+        @media (max-width: 1000px) {
+            display: none;
+        }
+    }
+}

@@ -1,0 +1,1 @@
+export { SignBackground } from './SignBackground';

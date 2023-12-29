@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lottabyteui-deployment
+  namespace: lotta-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lottabyteui
+  template:
+    metadata:
+      namespace: lotta-test
+      labels:
+        app: lottabyteui
+    spec:
+      containers:
+        - name: lottabyteui
+          image: cr.yandex/crpif5tg4kf4mom5kbmh/lottabyteui:__VERSION__
+          imagePullPolicy: Always
+          env:
+            - name: TZ
+              value: Europe/Moscow
+          ports:
+          - containerPort:  3000
+            name:  lottabyteui
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lottabyteui-service
+  namespace: lotta-test
+spec:
+  selector:
+    app: lottabyteui
+  type: ClusterIP
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000

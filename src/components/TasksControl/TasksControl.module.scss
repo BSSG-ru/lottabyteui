@@ -1,0 +1,104 @@
+.tasks_control {
+    margin-top: 20px;
+    margin-bottom: 20px;
+
+    .buttons {
+        display: flex;
+        gap: 5px;
+
+        .btn {
+            padding: 8px 11px;
+        }
+    }
+
+    .add_task_dlg {
+        display: none;
+        max-width: 750px;
+
+        .buttons {
+            display: flex;
+            gap: 5px;
+            justify-content: flex-end;
+            margin-top: 35px;
+        }
+    }
+
+    .create_task_dlg {
+        display: none;
+        max-width: 750px;
+
+        .buttons {
+            display: flex;
+            gap: 5px;
+            justify-content: flex-end;
+            margin-top: 35px;
+        }
+    }
+
+    .fields {
+        width: 100%;
+
+        th {
+            font-weight: bold;
+            font-size: 15px;
+            width: 290px;
+        }
+
+        th,
+        td {
+            padding: 5px;
+        }
+    }
+
+    .separator {
+        border-top: 1px solid #d9d9d988;
+        margin-top: 20px;
+        padding-top: 20px;
+    }
+
+    .params {
+        width: 100%;
+
+        th {
+            width: 290px;
+        }
+
+        th,
+        td {
+            padding: 5px;
+        }
+    }
+
+    .fields,
+    .params {
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"] {
+            border: 1px solid #B2B2B2;
+            box-shadow: none;
+        }
+    }
+
+    &.show_add_task {
+        .add_task_dlg {
+            display: block;
+        }
+    }
+
+    &.show_create_task {
+        .create_task_dlg {
+            display: block;
+        }
+    }
+}
+
+.tasks_wrapper {
+    display: flex;
+    gap: 5px;
+    margin-top: 10px;
+
+    >span {
+        display: block;
+    }
+}

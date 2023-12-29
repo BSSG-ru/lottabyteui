@@ -1,0 +1,119 @@
+.diagram_div {
+    width: 100%;
+    height: 100%;
+    flex: 1 1;
+    background: whitesmoke;
+}
+
+.artifact_model {
+  width: 100%;
+  height: 100%;
+  flex: 1 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.dg_wrap {
+    width: 100%;
+    height: 100%;
+    flex: 1 1;
+
+}
+
+.dg_filter {
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 10px;
+
+  .btn_filter {
+    background: #fff;
+    border: 1px solid var(--blue-70);
+    color: var(--blue-70);
+    display: none;
+
+    &.shown {
+      display: block;
+    }
+
+    &.active {
+        background: var(--blue-70);
+        color: #fff;
+    }
+  }
+
+  .btn_filter_dir {
+    background: #fff;
+    border: 1px solid var(--orange-primary);
+    color: var(--orange-primary);
+
+    &.active {
+        background: var(--orange-primary);
+        color: #fff;
+    }
+  }
+}
+
+.rightToolBar {
+    position: absolute;
+    top: 80px;
+    right: 20px;
+    width: 40px;
+    background: #fff;
+    padding: 8px;
+    z-index: 19;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  
+    -moz-box-shadow: 4px 2px 5px 0px rgba(34, 60, 80, 0.4);
+    -webkit-box-shadow: 4px 2px 5px 0px rgba(34, 60, 80, 0.4);
+    box-shadow: 4px 2px 5px 0px rgba(34, 60, 80, 0.4);
+  
+    a {
+      display: block;
+      color: #777;
+      margin-bottom: 5px;
+      cursor: pointer;
+      width: 20px;
+      height: 20px;
+      text-align: center;
+  
+      &:hover {
+        color: #000;
+      }
+    }   
+}
+
+.leftToolBar {
+  position: absolute;
+  top: 80px;
+  left: 20px;
+  width: 140px;
+  background: #fff;
+  padding: 8px;
+  z-index: 19;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  -moz-box-shadow: 4px 2px 5px 0px rgba(34, 60, 80, 0.4);
+  -webkit-box-shadow: 4px 2px 5px 0px rgba(34, 60, 80, 0.4);
+  box-shadow: 4px 2px 5px 0px rgba(34, 60, 80, 0.4);
+
+  a {
+    display: block;
+    color: #000;
+    margin-bottom: 5px;
+    cursor: pointer;
+    width: 100%;
+    line-height: 30px;
+    text-align: center;
+
+    &.active, &:hover {
+      background-color: #ccc;
+    }
+
+
+  }   
+}

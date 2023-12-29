@@ -1,0 +1,30 @@
+.tags {
+    min-height: 38px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+    width: 100%;
+    &_wrapper {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+}
+
+.btn {
+    padding: 8px 11px;
+}
+
+.input {
+    width: 205px;
+    input {
+        height: 38px;
+    }
+}
+
+.tag_adder {
+    display: flex;
+    gap: 5px;
+}

@@ -1,0 +1,1 @@
+export { ErrorBackground } from './ErrorBackground';

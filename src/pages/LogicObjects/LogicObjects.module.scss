@@ -1,0 +1,159 @@
+.page {
+    padding: 70px 50px 0px;
+
+    &.entityPage {
+        display: none;
+        align-items: flex-start;
+        flex-grow: 1;
+        max-width: 1600px;
+
+        &.loaded {
+            display: flex;
+        }
+
+        .mainContent {
+            flex-grow: 1;
+            min-width: 300px;
+        }
+
+        .rightBar {
+            flex: 0 0 253px;
+            padding: 0;
+            margin-left: 30px;
+        }
+    }
+}
+
+.error {
+    color: red;
+}
+
+.title {
+    text-transform: uppercase;
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 30px;
+    max-width: 750px;
+}
+
+.input {
+    width: 322px;
+    margin-bottom: 20px;
+}
+
+.long_input {
+    max-width: 750px;
+    margin-bottom: 20px;
+}
+
+.error {
+    background: var(--red10);
+}
+
+.button {
+    margin-bottom: 20px;
+    gap: 10px;
+    padding: 10px 20px;
+}
+
+.table {
+    width: 100%;
+    min-width: 700px;
+    margin-bottom: 70px;
+
+    th {
+        width: 200px;
+    }
+
+    &_wrapper {
+        overflow-x: auto;
+    }
+
+    &_scroll {
+        width: max-content;
+        overflow-x: auto;
+    }
+}
+
+.btn_create {
+    display: inline-block;
+    background: url(../../assets/icons/plus-in-circle-dk.svg);
+    width: 15px;
+    height: 15px;
+    background-size: contain;
+    margin: 0 5px;
+}
+
+.btn_edit {
+    display: inline-block;
+    background: url(../../assets/icons/edit.svg);
+    width: 15px;
+    height: 15px;
+    background-size: contain;
+    margin: 0 5px;
+}
+
+.btn_del {
+    display: inline-block;
+    background: url(../../assets/icons/delete.svg);
+    width: 12px;
+    height: 15px;
+    background-size: contain;
+    margin: 0 5px;
+}
+
+.systems_wrap {
+    border-top: 1px solid #d9d9d9;
+    border-bottom: 1px solid #d9d9d9;
+    max-width: 750px;
+
+    padding: 8px;
+    padding-top: 15px;
+    padding-right: 0;
+    margin-bottom: 10px;
+
+    .long_input {
+        margin-bottom: 10px;
+    }
+}
+
+.systems_head {
+
+
+
+    label {
+        font-weight: bold;
+    }
+
+    svg {
+        cursor: pointer;
+        margin-left: 15px;
+        fill: var(--orange-primary)
+    }
+}
+
+.system_item {
+    display: flex;
+    align-items: center;
+
+    >svg {
+        cursor: pointer;
+        margin-bottom: 10px;
+    }
+
+    >div {
+        flex-grow: 1;
+    }
+}
+
+.btn_scheme {
+    padding: 9px 19px;
+    margin-bottom: 20px;
+    line-height: 23px;
+    
+    line-height: 23px;
+    background-color: var(--white);
+    color: var(--blue-100);
+    border: 1px solid var(--blue-100);
+    border-radius: 4px;
+}

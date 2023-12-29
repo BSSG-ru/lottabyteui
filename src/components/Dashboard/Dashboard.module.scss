@@ -1,0 +1,33 @@
+.dashboard {
+    width: 100%;
+
+    > div {
+        float: left;
+        width: 33%;
+        position: relative;
+
+        .title {
+            position: absolute;
+            top: 0;
+            left: 0;
+            color: #363A40;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 10px;
+        }
+    }
+
+    * {
+        font-size: 12px;
+        cursor: pointer;
+    }
+
+    g[role="region"]:hover {
+        opacity: 0.5;
+    }
+}
+
+.treemap {
+    width: 1000px;
+    height: 800px;
+}

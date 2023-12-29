@@ -1,0 +1,32 @@
+.steward_switch {
+    padding: 0 28px;
+
+    .switch_bg {
+        background: #fff;
+        position: relative;
+        width: 105px;        
+        height: 30px;
+        border-radius: 15px;
+        cursor: pointer;
+
+        .switch_handler {
+            width: 66px;
+            height: 30px;
+            border-radius: 15px;
+            
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: url(/assets/icons/steward.svg) no-repeat center center;
+            background-color: var(--blue-main);
+
+            transition: all 0.3s ease;
+        }
+    }
+
+    &.checked {
+        .switch_handler {
+            left: 39px;
+        }
+    }
+}

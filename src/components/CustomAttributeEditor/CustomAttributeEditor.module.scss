@@ -1,0 +1,74 @@
+.custom_attribute_editor {
+    padding: 8px 0;
+
+    
+
+    .row_value {
+        display: flex;
+        align-items: center;
+    }
+
+    &.enumerated {
+        .row_value {
+            display: block;
+        }
+    }
+
+    .label {
+        font-weight: 700;
+        font-size: 15px;
+        flex: 0 0 30%;
+    }
+
+    .display_value {
+        flex-grow: 1;
+        font-size: 15px;        
+        border: 1px solid rgba(0, 0, 0, 0.2);
+        line-height: 36px;
+        padding: 0 10px;
+        margin: 0 10px;
+        min-height: 38px;
+    }
+
+    .btn_edit {
+        cursor: pointer;
+    }
+
+    .row_edit {
+        margin-top: 15px;
+        display: none;
+        align-items: center;
+
+        
+
+        > div {
+            flex-grow: 1;
+        }
+
+        .autocomplete_comp {
+            flex-grow: 1;
+        }
+
+        &.show {
+            display: flex;
+
+            &.enumerated {
+                display: block;
+            }
+        }
+
+        .input_value {
+            flex-grow: 1;
+        }
+
+        .btn_save {
+            cursor: pointer;
+            margin-left: 15px;
+        }
+
+        .checkbox, .radiobutton {
+            display: block;
+            margin-bottom: 14px;
+        }
+    }
+}

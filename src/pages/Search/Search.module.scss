@@ -1,0 +1,64 @@
+.search_page {
+    padding: 30px;
+
+    .search_filters {
+        margin-bottom: 20px;
+    }
+
+    .btn_filter_at {
+        margin-right: 10px;
+        background: #fff;
+        border: 1px solid var(--blue-70);
+        color: var(--blue-70);
+
+        &.active {
+            background: var(--blue-70);
+            color: #fff;
+        }
+    }
+
+    .total_msg {
+        font-size: 16px;
+        margin-bottom: 20px;
+    }
+
+    .search_header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+
+        .at {
+            margin-left: 10px;
+        }
+    }
+
+    .name {
+        display: block;
+        margin-bottom: 10px;
+    }
+
+    .search_result {
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        border-radius: 4px;
+        padding: 10px 20px;
+        font-size: 15px;
+        margin-bottom: 20px;
+
+        label {
+            font-weight: 700;
+        }
+
+        .location {
+            margin-bottom: 10px;
+            display: flex;
+
+            .location_value {
+                margin-left: 10px;
+            }
+        }
+
+        .name {
+            margin-bottom: 10px;
+        }
+    }
+}

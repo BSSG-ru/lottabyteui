@@ -1,0 +1,354 @@
+.page {
+    padding: 70px 50px 0px;
+
+    &.indicatorPage {
+        display: none;
+        align-items: flex-start;
+        flex-grow: 1;
+        max-width: 1600px;
+
+        &.loaded {
+            display: flex;
+        }
+
+        .mainContent {
+            flex-grow: 1;
+            min-width: 300px;
+        }
+
+        .rightBar {
+            flex: 0 0 253px;
+            padding: 0;
+            margin-left: 30px;
+        }
+    }
+}
+
+.error {
+    color: red;
+}
+
+.general_data {
+    max-width: 750px;
+    border: 1px solid #d9d9d9;
+    padding: 0 8px;
+
+    .data_row {
+        padding: 16px 8px;
+        display: flex;
+        align-items: center;
+
+        &:not(:last-child) {
+            border-bottom: 1px solid #d9d9d988;
+        }
+
+
+        .label {
+            font-weight: bold;
+            font-size: 15px;
+            flex: 0 0 30%;
+        }
+
+        .editor {
+            flex-grow: 1;
+            padding: 0;
+
+
+        }
+    }
+}
+
+.general_data_create {
+    max-width: 750px;
+    border: 1px solid #d9d9d9;
+    padding: 0 8px;
+
+    .data_row {
+        padding: 16px 8px;
+        padding-left: 0;
+        display: flex;
+        align-items: flex-start;
+
+        &:not(:last-child) {
+            border-bottom: 1px solid #d9d9d988;
+        }
+
+        &,
+        &_desc {
+            .label {
+                font-weight: bold;
+                font-size: 15px;
+                flex: 0 0 30%;
+                margin-top: 12px;
+            }
+
+            .value {
+                flex-grow: 1;
+                flex: 0 0 30%;
+
+                &_dq {
+                    flex-grow: 1;
+                    flex: 0 0 30%;
+                    display: flex;
+                }
+            }
+
+            .desc {
+                flex-grow: 1;
+                font-size: 12px;
+                margin-left: 10px;
+                min-height: 44px;
+            }
+
+            .editor {
+                flex-grow: 1;
+                padding: 0;
+
+                * {
+                    font-weight: 400 !important;
+                }
+            }
+
+            input,
+            textarea {
+                border-color: #b2b2b2;
+            }
+
+            .inputs {
+                input {
+                    margin-bottom: 10px;
+                }
+            }
+
+            .actions {
+                .btn_add {
+                    cursor: pointer;
+                    margin-left: 15px;
+                    border: 1px solid #C85003;
+                    border-radius: 4px;
+                    width: 44px;
+                    height: 44px;
+                    flex: 0 0 44px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+
+                    svg {
+                        fill: #C85003;
+                    }
+                }
+            }
+        }
+
+        &_desc {
+            display: block;
+            padding: 16px 8px;
+
+            .label {
+                margin-bottom: 10px;
+            }
+
+            textarea {
+                min-height: 300px;
+                width: 60%;
+            }
+        }
+    }
+
+
+}
+
+.btns {
+    padding: 0;
+    width: 750px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 16px;
+
+    .btn {
+        margin-left: 10px;
+        padding: 13px 16px;
+    }
+}
+
+.title {
+    text-transform: uppercase;
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 30px;
+    max-width: 750px;
+}
+
+.description {
+    max-width: 750px;
+}
+
+.input {
+    width: 322px;
+    margin-bottom: 20px;
+}
+
+.long_input {
+    margin-bottom: 20px;
+}
+
+.button {
+    margin-bottom: 20px;
+    gap: 10px;
+    padding: 10px 20px;
+}
+
+.table {
+    width: 100%;
+    min-width: 700px;
+    margin-bottom: 70px;
+
+    th {
+        width: 200px;
+    }
+
+    &_wrapper {
+        overflow-x: auto;
+    }
+
+    &_scroll {
+        width: max-content;
+        overflow-x: auto;
+    }
+}
+
+.btn_create {
+    display: inline-block;
+    background: url(../../assets/icons/plus-in-circle-dk.svg);
+    width: 15px;
+    height: 15px;
+    background-size: contain;
+    margin: 0 5px;
+}
+
+.btn_edit {
+    display: inline-block;
+    background: url(../../assets/icons/edit.svg);
+    width: 15px;
+    height: 15px;
+    background-size: contain;
+    margin: 0 5px;
+}
+
+.btn_del {
+    display: inline-block;
+    background: url(../../assets/icons/delete.svg);
+    width: 12px;
+    height: 15px;
+    background-size: contain;
+    margin: 0 5px;
+}
+
+.dqrule_wrap {
+    border-top: 1px solid #d9d9d9;
+    border-bottom: 1px solid #d9d9d9;
+    max-width: 750px;
+
+    padding: 8px;
+    padding-top: 15px;
+    padding-right: 0;
+    margin-bottom: 100px;
+
+    .long_input {
+        margin-bottom: 10px;
+    }
+}
+
+.dqrule_head {
+
+
+
+    label {
+        font-weight: bold;
+    }
+
+    svg {
+        cursor: pointer;
+        margin-left: 15px;
+        fill: var(--orange-primary)
+    }
+}
+
+.dqrule_item {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    >svg {
+        cursor: pointer;
+        margin-bottom: 10px;
+    }
+
+    >div {
+        flex-grow: 1;
+    }
+}
+
+.dqrule_close {
+    flex-basis: 10px;
+}
+.tabs_wrap {
+    margin-top: 30px;
+}
+
+.btn_scheme {
+    padding: 9px 19px;
+    margin-bottom: 20px;
+    line-height: 23px;
+    
+    line-height: 23px;
+    background-color: var(--white);
+    color: var(--blue-100);
+    border: 1px solid var(--blue-100);
+    border-radius: 4px;
+}
+
+.synonyms_row {
+    border-top: 1px solid #d9d9d9;
+    border-bottom: 1px solid #d9d9d9;
+    
+    padding: 8px;
+    padding-top: 15px;
+    padding-right: 0;
+    margin-bottom: 10px;
+    margin-top: 10px;
+
+    .long_input {
+        margin-bottom: 10px;
+    }
+}
+
+.synonyms_head {
+    
+    
+
+    label {
+        font-weight: bold;
+    }
+
+    svg {
+        cursor: pointer;
+        margin-left: 15px;
+        fill: var(--orange-primary)
+    }
+}
+
+.synonym_item {
+    display: flex;
+    align-items: center;
+
+    > svg {
+        cursor: pointer;
+        margin-bottom: 10px;
+    }
+
+    > div {
+        flex-grow: 1;
+    }
+}

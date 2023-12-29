@@ -1,0 +1,29 @@
+.tabcontrol {
+    
+    padding: 0;
+    .tabContent {
+        padding: 0;
+        padding-top: 30px;
+        overflow: auto;
+    }
+}
+
+.tabsList {
+    display: flex;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--gray-100);
+
+    .tab {
+
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 400;
+        
+        cursor: pointer;
+
+        &.active {
+            font-weight: 700;
+            color: var(--blue-100);
+        }
+    }
+}

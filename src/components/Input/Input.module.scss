@@ -1,0 +1,42 @@
+.input {
+    width: 100%;
+    border-radius: 6px;
+    padding: 12px 15px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.05);
+    transition: border .3s linear;
+    font-size: 15px;
+    line-height: 18px;
+    &:focus {
+        outline: none;
+    }
+    &:hover {
+        border: 1px solid rgba(151, 165, 235, 0.7);
+    }
+    &_wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        &_findbtn {
+            position: relative;
+            .input {
+                padding-right: 35px;
+            }
+        }
+    }
+}
+
+.btn {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    &:hover {
+        cursor: pointer;
+    }
+}
+
+.filter {
+    position: absolute;
+    transform: translateY(50%);
+}

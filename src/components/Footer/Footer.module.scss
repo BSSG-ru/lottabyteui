@@ -1,0 +1,16 @@
+.footer {
+    position: relative;
+    bottom: 0;
+    width: 100%;
+    background-color: var(--gray-70);
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 26px 100px 26px 0;
+}
+
+.lotta {
+    color: var(--white);
+    line-height: 21px;
+}

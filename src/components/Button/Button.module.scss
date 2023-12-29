@@ -1,0 +1,128 @@
+.button {
+    border: none;
+    font-weight: 500;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+
+    transition: all .2s linear;
+    svg {
+        transition: all .2s linear;
+    }
+    
+    &_standart {
+        padding: 16px 20px;
+        &.button_icon {
+            padding: 14px 20px;
+        }
+    }
+    &_big {
+        padding: 22px 30px;
+        text-transform: uppercase;
+    }
+
+    &_none {
+        background: none;
+    }
+
+    &_orange {
+        background-color: var(--orange-primary);
+        color: var(--white);
+        svg {
+            fill: var(--white);
+        }
+        &:hover {
+            background-color: var(--orange-hover);
+        }
+        &:active {
+            background-color: var(--orange-pressed);
+        }
+        &[disabled] {
+            background-color: var(--disabled);
+        }
+    }
+    &_outlined-blue {
+        background-color: var(--white);
+        color: var(--blue-100);
+        border: 1px solid var(--blue-100);
+        &[disabled] {
+            color: var(--disabled);
+            border: 1px solid var(--disabled);
+        }
+    }
+    &_outlined-orange {
+        background-color: var(--white);
+        svg {
+            fill: var(--orange-pressed)
+        }
+        color: var(--orange-pressed);
+        border: 1px solid var(--orange-pressed);
+        &:hover {
+            color: var(--orange-second-primary);
+            border-color: var(--orange-second-primary);
+            svg {
+                fill: var(--orange-second-primary);
+            }
+        }
+        &:active {
+            color: var(--white);
+            background-color: var(--orange-pressed);
+            border-color: var(--orange-pressed);
+            svg {
+                fill: var(--white);
+            }
+        }
+    }
+    &_blue {
+        color: var(--white);
+        background-color: var(--blue-main);
+        &:active {
+            background-color: var(--blue-70);
+        }
+        &:hover {
+            background-color: var(--blue-100);
+        }
+        &[disabled] {
+            background-color: var(--disabled);
+        }
+    }
+    &_pagination, &_pagination-arrow {
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 7px;
+        background-color: var(--white);
+        border: 1px solid var(--white);
+        svg {
+            fill: var(--gray-100)
+        }
+        &:hover:not(:disabled) {
+            border-color: rgba(151, 165, 235, 0.7);
+        }
+        &:active:not(:disabled) {
+            background-color: rgba(178, 178, 178, 0.3);
+            border-color: rgba(178, 178, 178, 0.3);
+        }
+    }
+    &_pagination-arrow {
+        border-radius: 0;
+        background-color: inherit;
+        &:active:not(:disabled) {
+            background-color: inherit;
+            border-color: var(--white);
+            svg {
+                fill: var(--blue-100);
+            }
+        }
+        &:disabled {
+            svg {
+                fill: rgba(178, 178, 178, 0.3);
+            }
+        }
+    }
+    
+}

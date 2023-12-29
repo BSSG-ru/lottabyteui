@@ -1,0 +1,250 @@
+.page {
+    padding: 70px 50px 0px;
+
+    &.taskPage {
+        display: flex;
+        align-items: flex-start;
+
+        .mainContent {
+            flex-grow: 1;
+            min-width: 300px;
+        }
+
+        .rightBar {
+            flex: 0 0 253px;
+            padding: 0;
+            margin-left: 30px;
+        }
+    }
+}
+
+.title {
+    text-transform: uppercase;
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 30px;
+    max-width: 750px;
+}
+
+.input {
+    width: 322px;
+    margin-bottom: 20px;
+}
+.long_input {
+    max-width: 750px;
+    margin-bottom: 20px;
+}
+
+.button {
+    margin-bottom: 20px;
+    gap: 10px;
+    padding: 10px 20px;
+}
+
+.table {
+    width: 100%;
+    min-width: 700px;
+    margin-bottom: 70px;
+    th {
+        width: 300px;
+    }
+    &_wrapper {
+        overflow-x: auto;
+    }
+    &_scroll {
+        width: max-content;
+        overflow-x: auto;
+    }
+}
+
+.btn_create {
+    display: inline-block;
+    background: url(../../assets/icons/plus-in-circle-dk.svg);
+    width: 15px;
+    height: 15px;
+    background-size: contain;
+    margin: 0 5px;
+}
+
+.btn_edit {
+    display: inline-block;
+    background: url(../../assets/icons/edit.svg);
+    width: 15px;
+    height: 15px;
+    background-size: contain;
+    margin: 0 5px;
+}
+
+.btn_del {
+    display: inline-block;
+    background: url(../../assets/icons/delete.svg);
+    width: 12px;
+    height: 15px;
+    background-size: contain;
+    margin: 0 5px;
+}
+
+.buttons {
+    display: flex;
+    gap: 5px;
+
+    .btn {
+        padding: 8px 11px;
+    }
+
+    .spacer {
+        flex-grow: 1;
+    }
+
+    .btn_check {
+        font-size: 15px;
+        font-weight: 700;
+        color: #8598F4;
+
+        &:before {
+            display: inline-block;
+            content: ' ';
+            background: url(../../assets/icons/btn_check.svg) no-repeat center center;
+            width: 14px;
+            height: 16px;
+            background-size: contain;
+            fill: #8598F4;
+            margin-right: 10px;
+        }
+    }
+}
+
+.add_task_dlg {
+    max-width: 750px;
+
+    .buttons {
+        display: flex;
+        gap: 5px;
+        justify-content: flex-end;
+        margin-top: 35px;
+    }
+}
+
+.create_task_dlg {
+    max-width: 750px;
+    margin-bottom: 70px;
+
+    .buttons {
+        display: flex;
+        gap: 5px;
+        justify-content: flex-end;
+        margin-top: 35px;
+    }
+}
+
+.fields {
+    width: 100%;
+
+    th {
+        font-weight: 400;
+        font-size: 15px;
+        text-transform: uppercase;
+        width: 290px;
+    }
+    th, td {
+        padding: 5px;
+    }
+}
+
+.separator {
+    border-top: 1px solid #d9d9d988;
+    margin-top: 20px;
+    padding-top: 20px;
+}
+
+.params {
+    width: 100%;
+
+    th {
+        width: 290px;
+    }
+    th, td {
+        padding: 5px;
+    }
+}
+
+.fields, .params {
+    input[type="text"], input[type="number"] {
+        border: 1px solid #B2B2B2;
+        box-shadow: none;
+    }
+}
+
+.show_add_task {
+    .add_task_dlg {
+        display: block;
+    }
+}
+
+.show_create_task {
+    .create_task_dlg {
+        display: block;
+    }
+}
+
+.tasks_wrapper {
+    display: flex;
+    gap: 5px;
+    margin-top: 10px;
+    > span {
+        display: block;
+    }
+}
+
+.general_data {
+    max-width: 750px;
+    border: 1px solid #d9d9d9;
+    padding: 0 8px;
+    margin-bottom: 20px;
+
+    .data_row {
+        padding: 16px 8px;
+        
+        &:not(:last-child) {
+            border-bottom: 1px solid #d9d9d988;
+        }
+    }
+}
+
+.task_params {
+
+    width: 100%;
+
+    th {
+        width: 290px;
+    }
+
+    th, td {
+        padding-bottom: 15px;
+    }
+}
+
+.run_result {
+    text-align: center;
+
+    .loader {
+        margin: 20px;
+    }
+
+    textarea {
+        min-height: 150px;
+        margin-top: 10px;
+    }
+}
+
+.btn_scheme {
+    padding: 9px 19px;
+    margin-bottom: 20px;
+    line-height: 23px;
+    
+    line-height: 23px;
+    background-color: var(--white);
+    color: var(--blue-100);
+    border: 1px solid var(--blue-100);
+    border-radius: 4px;
+}

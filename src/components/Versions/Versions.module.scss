@@ -1,0 +1,130 @@
+.rate_block {
+    width: 253px;
+    background-color: var(--gray-10);
+    padding: 18px 22px 22px;
+    border-radius: 4px;
+    box-shadow: 0px 4px 7px rgba(0, 0, 0, 0.15);
+}
+
+.rate_header {
+    display: flex;
+    gap: 31px;
+}
+
+.header_title {
+    font-size: 12px;
+}
+
+.header_value {
+    font-size: 23px;
+    font-weight: 700;
+    line-height: 20px;
+    margin-left: 5px;
+    &_marked {
+        color: var(--orange-pressed);
+    }
+}
+
+.stars {
+    margin-top: 15px;
+    display: flex;
+}
+
+.star {
+    svg {
+        fill: var(--gray-70);
+    }
+    &_hover, &:hover {
+        cursor: pointer;
+        svg {
+            fill: var(--orange-primary);
+        }
+    }
+    &_active, &:active {
+        svg {
+            fill: var(--orange-pressed);
+        }
+    }
+    &:not(:first-child) {
+        padding-left: 2px;
+    }
+}
+
+.versions {
+    width: 266px;
+    margin-top: 50px;
+    &_title {
+        margin-left: 3px;
+        font-size: 15px;
+        line-height: 18px;
+        margin-bottom: 13px;
+        &_index {
+            margin-left: 4px;
+            span {
+                font-weight: 700;
+            }
+        }
+    }
+    &_wrapper {
+        display: flex;
+        flex-direction: column;
+        max-height: 560px;
+        padding-left: 5px;
+        padding-bottom: 12px;
+        overflow-y: auto;
+        gap: 12px;
+        &::-webkit-scrollbar {
+            width: 13px;
+        }
+        &::-webkit-scrollbar-track {
+            background: #E8E8E8;
+        }
+        &::-webkit-scrollbar-thumb {
+            background-color: var(--gray-70);
+            border-radius: 20px;
+            border: 4px solid #E8E8E8;
+        }
+    }
+}
+
+.version {
+    display: block;
+    text-decoration: none;
+    width: 234px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    padding: 10px 12px 15px;
+    
+    &_title {
+        font-weight: 700;
+        font-size: 12px;
+        line-height: 15px;
+        margin-bottom: 3px;
+    }
+    &_create {
+        font-weight: 300;
+        font-size: 12px;
+        line-height: 15px;
+        margin-bottom: 10px;
+    }
+    &_description {
+        display: flex;
+        flex-direction: row;
+        font-size: 12px;
+        line-height: 15px;
+        &_text {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-left: 5px;
+        }
+    }
+
+    &.active {
+        background-color: var(--orange-primary);
+
+        .version_title, .version_create, .version_description span {
+            color: #fff;
+        }
+    }
+}

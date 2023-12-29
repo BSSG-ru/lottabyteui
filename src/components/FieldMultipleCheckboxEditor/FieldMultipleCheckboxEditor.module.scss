@@ -1,0 +1,76 @@
+.field_autocomplete_editor {
+    
+    padding: 8px;
+    border-radius: 4px;
+
+    &.error {
+        background: var(--red10);
+    }
+
+    .data_scroll {
+        height: 150px;
+        overflow-y: scroll;
+    }
+
+    .row_value {
+        display: flex;
+        align-items: center;
+    }
+
+    .label {
+        font-weight: 700;
+        font-size: 15px;
+        flex: 0 0 30%;
+    }
+
+    .close_label {
+        font-weight: 700;
+        font-size: 15px;
+    }
+
+    .display_value {
+        flex-grow: 1;
+        font-size: 15px;        
+    }
+
+    .btn_edit {
+        cursor: pointer;
+    }
+
+    .checkboxes {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        overflow: auto;
+        max-height: 200px;
+    }
+
+    .row {
+        display: flex;
+        flex-direction: row;
+        margin-bottom: 20px;
+    }
+
+    .row_edit {
+        margin-top: 15px;
+        display: none;
+        align-items: center;
+
+        .autocomplete_comp {
+            flex-grow: 1;
+        }
+
+        &.show {
+            display: flex;
+        }
+
+        .input_value {
+            flex-grow: 1;
+        }
+
+        .btn_save {
+            cursor: pointer;
+            margin-left: 15px;
+        }
+    }
+}

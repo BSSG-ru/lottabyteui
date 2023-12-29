@@ -1,0 +1,52 @@
+.background {
+    width: 100%;
+    height: 100vh;
+    background-color: var(--blue-100);
+    position: relative;
+}
+
+.logo {
+    position: absolute;
+    top: 59px;
+    left: 64px;
+}
+
+.top_line {
+    position: absolute;
+    width: 100%;
+    left: 0px;
+    top: 97px;
+    background-color: var(--white);
+    height: 1px;    
+    opacity: 0.1;
+}
+
+.right_line {
+    position: absolute;
+    width: 1px;
+    right: 159px;
+    top: 0;
+    background-color: rgba(232, 118, 45, 0.38);
+    height: 100%;    
+}
+
+.bottom_line {
+    position: absolute;
+    width: 100%;
+    left: 0px;
+    bottom: 239px;
+    background-color: rgba(232, 118, 45, 0.37);;
+    height: 1px;    
+}
+
+.diagrams_left {
+    position: absolute;
+    left: 17.3%;
+    top: 29%;
+}
+
+.diagrams_right {
+    position: absolute;
+    right: 16.25%;
+    top: 42.5%;
+}

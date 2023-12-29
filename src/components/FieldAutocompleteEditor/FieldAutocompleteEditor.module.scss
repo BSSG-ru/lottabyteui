@@ -1,0 +1,62 @@
+.field_autocomplete_editor {
+    
+    padding: 8px;
+    border-radius: 4px;
+
+    &.error {
+        background: var(--red10);
+    }
+
+    .row_value {
+        display: flex;
+        align-items: center;
+    }
+
+    .label {
+        font-weight: 700;
+        font-size: 15px;
+        flex: 0 0 30%;
+    }
+
+    .close_label {
+        font-weight: 700;
+        font-size: 15px;
+    }
+
+    .display_value {
+        flex-grow: 1;
+        font-size: 15px;        
+    }
+
+    .btn_edit {
+        cursor: pointer;
+    }
+
+    .btn_clear {
+        margin-left: 10px;
+        cursor: pointer;
+    }
+
+    .row_edit {
+        margin-top: 15px;
+        display: none;
+        align-items: center;
+
+        .autocomplete_comp {
+            flex-grow: 1;
+        }
+
+        &.show {
+            display: flex;
+        }
+
+        .input_value {
+            flex-grow: 1;
+        }
+
+        .btn_save {
+            cursor: pointer;
+            margin-left: 15px;
+        }
+    }
+}

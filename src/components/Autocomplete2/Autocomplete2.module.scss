@@ -1,0 +1,80 @@
+.autocomplete2_wrapper {
+    .async_select {
+        border: 1px solid #B2B2B2;
+        border-radius: 6px;
+
+        >div {
+            border: none;
+            border-radius: 6px;
+        }
+
+        input {
+            opacity: 1 !important;
+        }
+    }
+}
+
+.select_wrap {
+    position: relative;
+}
+
+.input_search {
+    width: 100%;
+    border-radius: 6px;
+    padding: 12px 15px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.05);
+    transition: border 0.3s linear;
+    font-size: 15px;
+    line-height: 18px;
+    outline: none !important;
+
+    &:hover {
+        border: 1px solid rgba(151, 165, 235, 0.7);
+    }
+}
+
+.dropdown {
+    position: absolute;
+    z-index: 9999;
+    background: #fff;
+    display: none;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.05);
+    padding: 6px 0;
+    width: 100%;
+    margin-top: 10px;
+    max-height: 200px;
+    overflow: auto;
+
+    &.opened {
+        display: block;
+    }
+
+
+}
+
+.btn_open {
+    position: absolute;
+    cursor: pointer;
+    display: block;
+    top: 50%;
+    margin-top: -10px;
+    right: 10px;
+    z-index: 100;
+    background: url(/assets/icons/dropdown.svg) no-repeat center center;
+    background-size: 12px 8px;
+    width: 20px;
+    height: 20px;
+}
+
+.item {
+    display: block;
+    cursor: pointer;
+    padding: 5px 10px;
+
+    &:hover {
+        background: rgba(151, 165, 235, 0.15);
+    }
+}

@@ -1,0 +1,86 @@
+.background {
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--blue-100);
+    position: relative;
+}
+
+.logo {
+    position: absolute;
+    top: 59px;
+    left: 64px;
+}
+
+.top_line {
+    position: absolute;
+    width: 100%;
+    left: 0px;
+    top: 97px;
+    background-color: var(--white);
+    height: 1px;    
+    opacity: 0.1;
+}
+
+.middle_line {
+    position: absolute;
+    width: 100%;
+    left: 0px;
+    top: 301px;
+    background-color: #E8762D;
+    height: 1px;
+}
+
+.left_line {
+    position: absolute;
+    height: 100%;
+    left: 400px;
+    top: 0;
+    background-color: rgba(241, 193, 162, 0.79);
+    width: 1px;
+}
+
+.right_line {
+    position: absolute;
+    width: 1px;
+    right: 159px;
+    top: 0;
+    background-color: rgba(232, 118, 45, 0.38);
+    height: 100%;
+}
+
+.bottom_line {
+    position: absolute;
+    width: 100%;
+    left: 0px;
+    top: 791px;
+    background-color: rgba(232, 118, 45, 0.37);;
+    height: 1px;    
+}
+
+.error_vertical {
+    position: absolute;
+    left: 300px;
+    top: 17%;
+}
+
+.error_img {
+    position: absolute;
+    left: 460px;
+    top: 280px;
+}
+
+.page_not_found {
+    position: absolute;
+    margin-left: 415px;
+    top: 250px;
+}
+
+.btn_main_page {
+    position: absolute;
+    left: 560px;
+    top: 560px;
+    width: 253px;
+    height: 60px;
+    font-weight: 500;
+    font-size: 14px;
+}

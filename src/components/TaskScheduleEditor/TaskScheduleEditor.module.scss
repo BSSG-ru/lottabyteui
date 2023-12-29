@@ -1,0 +1,23 @@
+.tr_date, .tr_time, .tr_wday, .tr_cron {
+    th {
+        text-align: right;
+
+        label {
+            text-transform: none !important;
+        }
+    }
+
+    td {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+
+        label {
+            margin: 0 10px;
+        }
+    }
+
+    .input_num {
+        flex: 0 0 100px;
+    }
+}

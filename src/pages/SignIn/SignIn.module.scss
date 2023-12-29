@@ -1,0 +1,19 @@
+.form {
+    [data-name="input-wrapper"] {
+        gap: 15px
+    }
+    &_wrapper {
+        position: absolute;
+        top: 180px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+}
+.checkbox {
+    margin-top: 7px;
+    margin-bottom: 12px;
+    font-size: 12px;
+}
+.error {
+    color: red;
+}

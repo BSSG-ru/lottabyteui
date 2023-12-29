@@ -1,0 +1,31 @@
+.dashboard_switch {
+    padding: 0 28px;
+
+    .switch_bg {
+        background: var(--gray-70);
+        position: relative;
+        width: 75px;        
+        height: 30px;
+        border-radius: 15px;
+        cursor: pointer;
+
+        .switch_handler {
+            width: 40px;
+            height: 30px;
+            border-radius: 15px;
+            
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: var(--blue-main);
+
+            transition: all 0.3s ease;
+        }
+    }
+
+    &.checked {
+        .switch_handler {
+            left: 35px;
+        }
+    }
+}

@@ -1,0 +1,17 @@
+.params {
+    width: 100%;
+    
+    th {
+        width: 290px;
+    }
+    th, td {
+        padding: 5px;
+    }
+}
+
+.fields, .params {
+    input[type="text"], input[type="number"], input[type="date"], input[type="password"] {
+        border: 1px solid #B2B2B2;
+        box-shadow: none;
+    }
+}

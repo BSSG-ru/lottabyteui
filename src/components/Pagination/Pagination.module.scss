@@ -1,0 +1,38 @@
+.wrapper {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+
+    button {
+        font-size: 16px;
+        line-height: 19px;
+        font-weight: 400;
+    }
+
+    select {
+        border-radius: 6px;
+        padding: 8px 12px;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        transition: border 0.3s linear;
+        font-size: 15px;
+        line-height: 18px;
+        margin-left: 8px;
+
+        &:hover {
+            border: 1px solid rgba(151, 165, 235, 0.7);
+        }
+    }
+}
+
+.label {
+    margin-right: 16px;
+}
+
+.sep {
+    flex-grow: 1;
+}
+
+.btn_active {
+    background-color: rgba(178, 178, 178, 0.3);
+}
