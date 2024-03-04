@@ -97,6 +97,7 @@ export function Domains() {
           <div className={styles.title}>{`${i18n('ДОМЕНЫ')}`}</div>
           {data ? (
             <Table
+              cookieKey='domains'
               className={styles.table}
               columns={columns}
               paginate

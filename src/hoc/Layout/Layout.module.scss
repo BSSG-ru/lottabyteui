@@ -1,5 +1,9 @@
 .content {
     display: flex;
+    position: relative;
+    max-height: 100vh;
+    flex: 1 1;
+    overflow: auto;
 }
 
 .aside {
@@ -10,8 +14,8 @@
 }
 
 .main {
-    overflow: hidden;
-    overflow-x: auto;
-    width: 100%;
-    position: relative;
+    //overflow: hidden;
+    //overflow-x: auto;
+    //width: 100%;
+    //position: relative;
 }

@@ -91,6 +91,7 @@ export function Indicator() {
       title: i18n('ПРОДУКТЫ'),
       content: (
         <Table
+          cookieKey='indicator-prods'
           key={id + (version_id ?? '')}
           className={styles.table}
           columns={productsTableColumns}
@@ -133,6 +134,7 @@ export function Indicator() {
       title: i18n('ЛОГИЧЕСКИЕ ОБЪЕКТЫ'),
       content: (
         <Table
+          cookieKey='indicator-ents'
           key={`entityTable${data.metadata.id}${version_id ?? ''}`}
           className={styles.table}
           columns={entitiesTableColumns}
@@ -268,7 +270,7 @@ export function Indicator() {
 
     data.entity.data_asset_ids.forEach((id, index) => {
       getAsset(id).then((json) => {
-        setSelectedDataAssetNames((prev) => ([...prev.slice(0, index), `<a href="${getArtifactUrl(json.metadata.id, 'data_asset')}">${json.entity.name}</a>`, ...prev.slice(index + 1)]));
+        setSelectedDataAssetNames((prev) => ([...prev.slice(0, index), `<div><a href="${getArtifactUrl(json.metadata.id, 'data_asset')}">${json.entity.name}</a></div>`, ...prev.slice(index + 1)]));
       }).catch(handleHttpError);
     });
   }, [data.entity.data_asset_ids]);
@@ -448,8 +450,8 @@ export function Indicator() {
           <Tags
             tags={tags}
             isReadOnly={isReadOnly}
-            onTagAdded={(tagName: string) => tagAddedHandler(tagName, indicatorId, 'indicator', data.metadata.state ?? '', tags, setLoading, setTags, '/indicators/edit/')}
-            onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, indicatorId, 'indicator', data.metadata.state ?? '', setLoading, setTags, '/indicators/edit/')}
+            onTagAdded={(tagName: string) => tagAddedHandler(tagName, indicatorId, 'indicator', data.metadata.state ?? '', tags, setLoading, setTags, '/indicators/edit/', navigate)}
+            onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, indicatorId, 'indicator', data.metadata.state ?? '', setLoading, setTags, '/indicators/edit/', navigate)}
           />
         )}
 

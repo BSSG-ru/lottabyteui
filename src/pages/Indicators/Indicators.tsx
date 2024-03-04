@@ -97,6 +97,7 @@ export function Indicators() {
           <div className={styles.title}>{`${i18n('ПОКАЗАТЕЛИ')}`}</div>
           {data ? (
             <Table
+              cookieKey='indicators'
               className={styles.table}
               columns={columns}
               paginate

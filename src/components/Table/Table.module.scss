@@ -56,6 +56,10 @@
     .flex {
         display: flex;
         justify-content: flex-start;
+        //max-height: 500px;
+        //overflow: auto;
+        //position: relative;
+        //padding-right: 30px;
     }
 
     .btn_create {
@@ -68,10 +72,27 @@
         border: none;
         margin-top: 12px;
         margin-left: 10px;
+
+        position: sticky;
+        top: 12px;
     }
 }
 
 .table {
+    position: relative;
+
+    th {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 9;
+        
+        > div {
+            border-bottom: 3px solid rgba(0, 0, 0, 0.05);
+            padding: 0 10px;
+            min-height: 42px;
+        }
+    }
 
     div,
     span {
@@ -89,10 +110,6 @@
         border-bottom: 3px solid rgba(0, 0, 0, 0.05);
     }
 
-    thead tr {
-        border-bottom: 3px solid rgba(0, 0, 0, 0.05);
-    }
-
     thead tr.tr_subtitle {
         border-bottom: none;
 
@@ -107,7 +124,7 @@
 
     thead th {
         vertical-align: top;
-        padding: 0 10px;
+        padding: 0;
     }
 
     tbody tr {

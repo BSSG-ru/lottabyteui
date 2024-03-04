@@ -77,6 +77,7 @@ export function Drafts() {
           <div className={styles.title}>{`${i18n('ЧЕРНОВИКИ')}`}</div>
           {data ? (
             <Table
+              cookieKey='drafts'
               className={styles.table}
               columns={columns}
               paginate

@@ -254,8 +254,8 @@ export function DQRule() {
           <Tags
             tags={tags}
             isReadOnly={isReadOnly}
-            onTagAdded={(tagName: string) => tagAddedHandler(tagName, dqRuleId, 'dq_rule', data.metadata.state ?? '', tags, setLoading, setTags, '/dq_rule/edit/')}
-            onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, dqRuleId, 'dq_rule', data.metadata.state ?? '', setLoading, setTags, '/dq_rule/edit/')}
+            onTagAdded={(tagName: string) => tagAddedHandler(tagName, dqRuleId, 'dq_rule', data.metadata.state ?? '', tags, setLoading, setTags, '/dq_rule/edit/', navigate)}
+            onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, dqRuleId, 'dq_rule', data.metadata.state ?? '', setLoading, setTags, '/dq_rule/edit/', navigate)}
           />
         )}
 

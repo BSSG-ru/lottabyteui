@@ -64,6 +64,7 @@ export const SettingsStewards = () => {
           <div className={styles.title}>{`${i18n('Стюарды')}`}</div>
           {data ? (
             <Table
+              cookieKey='stewards'
               className={styles.table}
               columns={columns}
               paginate

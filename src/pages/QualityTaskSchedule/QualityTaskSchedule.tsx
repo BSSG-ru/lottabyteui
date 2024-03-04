@@ -101,7 +101,15 @@ export function QualityTaskSchedule() {
       header: i18n('Сэмпл'),
       render: (row: any) => renderLink(row, 'entity_sample_name', 'entity_sample_id', '/samples/edit'),
     },
-
+    {
+      property: 'status',
+      header: i18n('Статус')
+    },
+    {
+      property: 'rule_type_name',
+      header: i18n('Тип'),
+      //
+    }
   ];
 
   const columnsDetail = [
@@ -186,6 +194,7 @@ export function QualityTaskSchedule() {
           </Button>
           {data !== undefined ? (
             <Table
+              cookieKey='qtschedule'
               className={styles.table}
               columns={columns}
               paginate

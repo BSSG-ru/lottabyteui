@@ -1,5 +1,5 @@
 .page {
-    padding: 70px 50px 0px;
+    padding: 70px 50px 200px;
 
     &.productPage {
         display: none;
@@ -287,6 +287,19 @@
 
     .long_input {
         margin-bottom: 10px;
+    }
+}
+
+.synonyms_row {
+    svg {
+        cursor: pointer;
+        margin-left: 15px;
+        fill: var(--orange-primary)
+    }
+
+    label {
+        font-weight: bold;
+        padding: 8px;
     }
 }
 

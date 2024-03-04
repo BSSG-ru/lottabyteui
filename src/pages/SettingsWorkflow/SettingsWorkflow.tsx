@@ -76,6 +76,7 @@ export function SettingsWorkflow() {
           <div className={styles.title}>{`${i18n('Workflows')}`}</div>
           {data ? (
             <Table
+              cookieKey='workflows'
               className={styles.table}
               columns={columns}
               paginate

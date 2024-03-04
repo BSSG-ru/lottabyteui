@@ -5,7 +5,7 @@ import { changeTokenAction, changeValidateAction } from '../../redux/reducers/au
 import { authToken } from '../../redux/selectors';
 import { userInfoRequest } from '../../services/auth';
 import { ChangeTokenAction, ChangeValidateAction } from '../../types/redux/auth';
-import { deleteCookie, getCookie } from '../../utils';
+import { deleteCookie, getCookie, setCookie } from '../../utils';
 
 export function Loading() {
   const token = useSelector(authToken) || getCookie('token');
@@ -15,7 +15,11 @@ export function Loading() {
     if (token) {
       userInfoRequest().then((response) => {
         if (response.status === 200) {
-          dispatch(changeValidateAction(true) as ChangeValidateAction);          
+          dispatch(changeValidateAction(true) as ChangeValidateAction);
+          response.json().then(json => {
+            setCookie('userp', json.permissions.join(','), { path: '/' });
+          });
+          
         } else {
           deleteCookie('token');
           deleteCookie('login');

@@ -1,0 +1,365 @@
+$accent-color: #603BB7;
+$text-color: #23272e;
+$text-color-dark: #ECEDED;
+$bg-light: #f5f5f5;
+$error-color: #B42E25;
+
+.pageСontent {
+  flex: 1;
+  width: 100%;
+
+}
+
+
+a {
+  text-decoration: none;
+}
+
+main {
+  //flex: 1;
+  //position: relative;
+  //display: flex;
+  //flex-direction: row;
+  //overflow: auto;
+}
+
+
+
+body.layout-main {
+  min-height: 100vh;
+  padding-bottom: 117px;
+
+  main {
+    display: block;
+  }
+}
+
+.mainPageBody {
+
+  max-width: 1200px;
+  padding: 0;
+
+  .header36 {
+    font-weight: 700;
+    font-size: 36px;
+    margin-top: 120px;
+    margin-bottom: 90px;
+    text-align: center;
+    font-style: normal;
+    line-height: 44px;
+
+    color: #374049;
+  }
+
+  .imgAbout {
+    width: 649.51px;
+    height: 362px;
+  }
+
+  .textAbout {
+    font-weight: 400;
+    font-size: 24px;
+    color: #23272E;
+    margin-left: 40px;
+  }
+
+  .pros {
+    width: 33%;
+  }
+
+  .prosImg {
+    width: 42px;
+    height: 42px;
+    margin-right: 23px;
+    margin-left: 20px;
+  }
+
+  .prosText {
+    font-weight: 400;
+    font-size: 18px;
+    line-height: 25px;
+  }
+
+  .rates {
+    width: 33%;
+  }
+
+  .ratesBox {
+    width: 350px;
+    height: 421px;
+    background: #FFFFFF;
+    border-radius: 6px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-top: 41px;
+    padding-bottom: 41px;
+    position: relative;
+  }
+
+  .ratesBoxHead {
+    font-weight: 600;
+    font-size: 24px;
+    line-height: 29px;
+    text-align: center;
+    color: #000000;
+    margin-bottom: 45px;
+
+  }
+
+  .boxBottom {
+    display: flex;
+    justify-content: flex-end;
+    flex-direction: column;
+    position: absolute;
+    bottom: 41px;
+    margin-left: 35px;
+  }
+
+  .ratesBoxText {
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 25px;
+    text-align: center;
+    color: #000000;
+  }
+
+  .ratesBoxPrice {
+    font-weight: 500;
+    font-size: 24px;
+    line-height: 29px;
+    text-align: center;
+    color: #000000;
+    margin-bottom: 35px;
+  }
+
+  .ratesBoxBtn {
+    width: 280px;
+    height: 70px;
+    background: #603BB7;
+    border-radius: 8px;
+    color: #ECEDED;
+    font-weight: 400;
+    font-size: 23px;
+    line-height: 27px;
+    border: none;
+  }
+
+  .contactsPhone {
+    font-weight: 400;
+    font-size: 32px;
+    line-height: 27px;
+    margin-bottom: 25px;
+  }
+
+  .contactsAddress {
+    font-weight: 400;
+    font-size: 24px;
+    line-height: 27px;
+  }
+
+  .contactsLinks {
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 27px;
+    color: #375DBE;
+    align-self: center;
+  }
+
+  .imgPdf {
+    width: 48px;
+    height: 48px;
+    margin-right: 10px;
+  }
+}
+
+.mainForm {
+  width: 100%;
+}
+
+.mainBack {
+  background-image: url(../../assets/images/main_pros/main_back.svg);
+  background-repeat: no-repeat;
+  background-size: cover;
+  height: 711px;
+  display: flex;
+  opacity: 0.9;
+
+  .backTwoThirds {
+    width: 60%;
+    margin-top: 132px;
+    margin-left: 20%;
+  }
+
+  .backThird {
+    width: 40%;
+    margin-top: 270px;
+  }
+
+  .headerPurple {
+    color: #8759F2;
+    font-weight: 700;
+    font-size: 64px;
+  }
+
+  .headerWhite {
+    color: #FFFFFF;
+    font-weight: 700;
+    font-size: 64px;
+    margin-top: -20px;
+  }
+
+  .textOnBack {
+    color: #FFFFFF;
+    font-weight: 600;
+    font-size: 36px;
+    line-height: 45px;
+  }
+
+  .btnPrimary {
+    color: #ECEDED;
+    background: #8759F2;
+    width: 349px;
+    height: 70px;
+    font-weight: 500;
+    font-size: 20px;
+    line-height: 24px;
+    border: none;
+    border-radius: 8px;
+  }
+}
+
+footer {
+  padding: 36px 0;
+  background: #374049;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+}
+
+footer .logo {
+  display: block;
+  background: url(../../assets/icons/logo.svg) no-repeat center center;
+  background-size: contain;
+  width: 106px;
+  height: 45px;
+}
+
+.footerText {
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 27px;
+  color: #FFFFFF;
+}
+
+.footerTextLinks {
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 22px;
+  color: #FFFFFF;
+}
+
+.footerPhone {
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 27px;
+  color: #FFFFFF;
+  margin-bottom: 24px;
+}
+
+
+.submitAppForm {
+  width: 590px;
+  height: 590px;
+  background: #FFFFFF;
+  border-radius: 8px;
+  border: none;
+  padding: 0;
+
+  box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
+
+  input[type="text"] {
+    font-size: 16px;
+
+    &,
+    &:focus {
+      box-shadow: none;
+      --moz-box-shadow: none;
+      --webkit-box-shadow: none;
+    }
+  }
+
+  input[type="checkbox"] {
+    box-shadow: none;
+    width: 25px;
+    height: 25px;
+    border: 1px solid #B2B2B2;
+    border-radius: 4px;
+    margin-top: 6px;
+  }
+
+  .modalHeader {
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 27px;
+    color: #000000;
+    border: none;
+    padding: 0;
+    margin-left: 0;
+    margin-bottom: 45px;
+    padding-left: 45px;
+
+    .modalTitle {
+      margin-top: 24px;
+    }
+  }
+
+  .modalBody {
+    margin-right: 0;
+    margin-left: 0;
+    padding-left: 45px;
+
+    .inputError {
+      margin-top: -10px;
+    }
+
+    .confPolicy {
+      font-weight: 400;
+      font-size: 14px;
+      line-height: 20px;
+    }
+  }
+
+  label {
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 19px;
+  }
+
+  .colMd7 {
+    width: 500px;
+  }
+
+  .modalFooter {
+    padding-bottom: 55px;
+    justify-content: center;
+
+    .btnPrimary {
+      width: 250px;
+      height: 48px;
+      background: #603BB7;
+      box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    .colFormLabel {
+      font-weight: 400;
+      font-size: 14px;
+      line-height: 20px;
+      margin-right: 40px;
+    }
+  }
+}
+
+.formGroup {
+  margin-bottom: 30px;
+}

@@ -75,6 +75,7 @@ export function SettingsGroups() {
           <div className={styles.title}>{`${i18n('ГРУППЫ')}`}</div>
           {data ? (
             <Table
+              cookieKey='groups'
               className={styles.table}
               columns={columns}
               paginate

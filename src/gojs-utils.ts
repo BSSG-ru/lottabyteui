@@ -45,6 +45,8 @@ export function initEntitiesDiagram() {
         if (lnktool.archetypeLinkData)
             lnktool.archetypeLinkData.zorder = zOrder + 1;
 
+        fromnode.part?.diagram?.model.setDataProperty(fromnode.data, 'isFk', true);
+
         return go.LinkingTool.prototype.insertLink.call(lnktool, fromnode, fromport, tonode, toport)
     };
 
@@ -81,7 +83,7 @@ export function initEntitiesDiagram() {
             parameter1: 10, fill: "white", stroke: '#aa97d5', strokeWidth: 1, strokeDashArray: [2, 2] },
             new go.Binding("parameter2", "isSelected", function (v) { return v ? 0 : 10; }).ofObject()),
         gjs(go.Panel, "Vertical",  // position header above the subgraph
-            { portId: '', fromLinkable: true, toLinkable: true,
+            { //portId: '', fromLinkable: true, toLinkable: true,
                 defaultAlignment: go.Spot.Left, padding: 0, margin: 0, minSize: new go.Size(170, 30) },
 
             gjs(go.Shape, "RoundedTopRectangle", {
@@ -91,7 +93,7 @@ export function initEntitiesDiagram() {
                     height: 10,
                     stretch: go.GraphObject.Fill,
                     cursor: 'pointer',
-                    click: function(e:any, obj:any) { if (obj.part.data) window.open(getArtifactUrl(obj.part.data.id, obj.part.data.artifactType), '_blank'); }
+                    //click: function(e:any, obj:any) { if (obj.part.data) window.open(getArtifactUrl(obj.part.data.id, obj.part.data.artifactType), '_blank'); }
                 },
                 new go.Binding('stroke', 'color'),
                 new go.Binding('fill', 'color')),
@@ -161,7 +163,7 @@ export function initEntitiesDiagram() {
                     
                 },
 
-                gjs("Button",
+                /*gjs("Button",
                     {
                         click: function (e, obj: any) {
                             var diagram = e.diagram;
@@ -178,15 +180,19 @@ export function initEntitiesDiagram() {
                     },
                     new go.Binding("visible", "", function (data) { return typeof(data.properties) !== 'undefined' && typeof data.properties.hasChildren !== 'undefined' && data.properties.hasChildren == 'true'; }),
                     gjs(go.Shape, "ExpandedLine", { width: 6, height: 6 })
-                ),
-                gjs(go.Shape, "Rectangle", { width: 10, height: 10, stroke: null, fill: null },
+                ),*/
+                /*gjs(go.Shape, "Rectangle", { width: 10, height: 10, stroke: null, fill: null },
                     new go.Binding("visible", "", function (data) { return typeof data.properties === 'undefined' || typeof data.properties.hasChildren === 'undefined' || data.properties.hasChildren != 'true'; })
-                ),
-                gjs(go.Picture, { source: '/img/datatypes/pk.svg', width: 16, height: 16, margin: 4,  },
-                    new go.Binding("visible", "isKey")),
-                gjs(go.Picture, { width: 16, height: 6, margin: 4,  },
+                ),*/
+                gjs(go.Picture, { source: '/pk.png', width: 16, height: 16, margin: 4,  },
+                    new go.Binding("visible", "isPk")),
+                gjs(go.Picture, { source: '/fk.png', width: 16, height: 16, margin: 4,  },
+                    new go.Binding("visible", "isFk")),
+                gjs(go.Shape, "Rectangle", { width: 16, height: 16, margin: 4, stroke: null, fill: null },
+                    new go.Binding("visible", "", function(data) { return !data.isPk && !data.isFk; })),
+                /*gjs(go.Picture, { width: 16, height: 6, margin: 4,  },
                     new go.Binding("visible", "isKey", function (v) { return !v; }),
-                    new go.Binding("source", "datatype", function (v) { return '/img/datatypes/' + v + '.svg' })),
+                    new go.Binding("source", "datatype", function (v) { return '/img/datatypes/' + v + '.svg' })),*/
                 gjs(go.TextBlock, 
                     { font: '9pt Verdana, sans-serif' },
                     new go.Binding("text", "text", function (t) { return t; })
@@ -624,17 +630,14 @@ export class SaveRequestData {
         this.updateNodes.push(node);
     };
 
-    deleteNode = (node:any) => {
-        if (typeof node.data != 'undefined' && node.data)
-        node = node.data;
+    deleteNode = (node_id:string) => {
 
         for (let i = 0; i < this.deleteNodes.length; i++) {
-            if (this.deleteNodes[i].id === node.id) {
-                this.deleteNodes[i] = node;
+            if (this.deleteNodes[i] === node_id) {
                 return;
             }
         }
-        this.deleteNodes.push(node);
+        this.deleteNodes.push(node_id);
     };
 
     addLink = (link:any) => {
@@ -682,4 +685,42 @@ export class SaveRequestData {
         }
     };
     
+}
+
+export function exportDiagram(dg: go.Diagram, mimeType:string, basefilename:string, scale:string) {
+
+
+    let blobCallback = function (blob:any) {
+        let url = window.URL.createObjectURL(blob);
+        let filename = basefilename + '-' + (new Date()).toISOString().slice(0, 19).replace(/[TZ:]/g, '-') + "." + mimeType.replace('image/', '');
+
+        let a = document.createElement("a");
+        a.style.display = "none";
+        a.href = url;
+        a.download = filename;
+
+        // IE 11
+        if ((window.navigator as any).msSaveBlob !== undefined) {
+            (window.navigator as any).msSaveBlob(blob, filename);
+            return;
+        }
+
+        document.body.appendChild(a);
+        requestAnimationFrame(() => {
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        });
+    };
+
+    if (mimeType === 'image/svg') {
+        let svg = dg.makeSvg({ scale: parseFloat(scale), background: "white" });
+        if (svg) {
+            let svgstr = new XMLSerializer().serializeToString(svg);
+            let blob = new Blob([svgstr], { type: "image/svg+xml" });
+            blobCallback(blob);
+        }
+    } else {
+        dg.makeImageData({ scale: parseFloat(scale), maxSize: new go.Size(30000, 30000), background: '#ffffff', type: mimeType, returnType: 'blob', callback: blobCallback });
+    }
 }

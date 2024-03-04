@@ -14,6 +14,7 @@ import { getTablePageSize, i18n, setTablePageSize, uuid } from '../../utils';
 type PaginationProps = {
   className?: string;
   page: number;
+  pageSize: number;
   inTotal: number;
   setPage: (num: number) => void;
   setPageSize: (num: number) => void;
@@ -52,13 +53,14 @@ function pagination(current: number, last: number) {
 export const Pagination: FC<PaginationProps> = ({
   className = '',
   page,
+  pageSize,
   inTotal,
   setPage,
   setPageSize,
   label = '',
 }) => {
   const pages = pagination(page, inTotal);
-  const [paginationPageSize, setPaginationPageSize] = useState<number>(getTablePageSize());
+  const [paginationPageSize, setPaginationPageSize] = useState<number>(pageSize);
 
   const clickHandler = (value: number) => {
     setPage(value);

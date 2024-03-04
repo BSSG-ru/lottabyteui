@@ -64,6 +64,7 @@ export function SettingsConnections() {
           <div className={styles.title}>{`${i18n('ПОДКЛЮЧЕНИЯ')}`}</div>
           {data ? (
             <Table
+              cookieKey='connections'
               className={styles.table}
               columns={columns}
               paginate

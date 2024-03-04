@@ -102,6 +102,7 @@ export function Products() {
           <div className={styles.title}>{`${i18n('ПРОДУКТЫ')}`}</div>
           {data ? (
             <Table
+              cookieKey='products'
               className={styles.table}
               columns={columns}
               paginate

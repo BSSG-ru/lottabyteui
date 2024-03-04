@@ -89,6 +89,7 @@ export function Systems() {
           <div className={styles.title}>{`${i18n('СИСТЕМЫ')}`}</div>
           {data ? (
             <Table
+              cookieKey='systems'
               className={styles.table}
               columns={columns}
               paginate

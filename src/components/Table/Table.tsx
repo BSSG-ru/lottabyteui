@@ -19,6 +19,7 @@ import {
   optionsGet, optionsPost, URL, usermgmtURL,
 } from '../../services/requst_templates';
 import { TableFilters } from '../../types/redux/states';
+import Cookies from 'js-cookie';
 
 type TableFilterRequest = {
   column: string;
@@ -77,6 +78,7 @@ type TableProps = {
   tableButtons?: TableButton[];
   rowClassName?: (row: any) => string;
   rowStyle?: (row: any) => CSSProperties;
+  cookieKey?: string;
 };
 
 export type Column = {
@@ -123,13 +125,17 @@ export const Table: FC<TableProps> = ({
   tableButtons,
   rowClassName,
   rowStyle,
+  cookieKey
 }) => {
   const [searchMode, setSearchMode] = useState(false);
+
+  const ck = Cookies.get('table-state-' + cookieKey);
+  const [tableState, setTableState] = useState<any>(ck ? JSON.parse(ck) : {});
 
   const [columnsList, setColumnsList] = useState<Column[]>(columns);
   const [total, setTotal] = useState<number>(0);
   const [rows, setRows] = useState<any[]>([]);
-  const [fetchRequest, setFetchRequest] = useState<TableDataRequest>(initialFetchRequest ? { ...initialFetchRequest, limit_steward: limitSteward, state: supportsWorkflow ? 'PUBLISHED' : undefined } : {});
+  const [fetchRequest, setFetchRequest] = useState<TableDataRequest>(initialFetchRequest ? { ...initialFetchRequest, limit_steward: limitSteward, state: supportsWorkflow ? 'PUBLISHED' : undefined, global_query: tableState.global_query ? tableState.global_query.toLowerCase().trim() : initialFetchRequest.global_query, sort: tableState.sort ? tableState.sort : initialFetchRequest.sort, filters: tableState.filters ? tableState.filters : initialFetchRequest.filters } : {});
   const [wfStatus, setWfStatus] = useState('PUBLISHED');
 
   const getData = async (request: any | null = null) => {
@@ -195,6 +201,10 @@ export const Table: FC<TableProps> = ({
     }
   }, [initialData, initialData?.length, fetchRequest.filters]);
 
+  useEffect(() => {
+    Cookies.set('table-state-' + cookieKey, JSON.stringify(tableState), { expires: 500 });
+  }, [ tableState ]);
+
   return (
     <div key={uuid()} className={classNames(styles.table_wrapper, { [className]: className })}>
       {supportsWorkflow && (
@@ -209,8 +219,9 @@ export const Table: FC<TableProps> = ({
           placeholder={i18n('Search')}
           findBtn
           className={styles.input_global}
-          defaultValue={fetchRequest.global_query}
+          defaultValue={tableState.global_query ? tableState.global_query : fetchRequest.global_query}
           onBlur={(e) => {
+            setTableState((prev:any) => ({...prev, global_query: e.target.value}));
             setFetchRequest((prev) => ({
               sort: prev.sort,
               global_query: e.target.value.toLowerCase().trim(),
@@ -290,6 +301,7 @@ export const Table: FC<TableProps> = ({
                         });
                         setRows(d);
                       } else {
+                        setTableState((prev:any) => ({...prev, sort: sort}));
                         setFetchRequest((prev) => ({
                           sort,
                           global_query: prev.global_query,
@@ -318,6 +330,7 @@ export const Table: FC<TableProps> = ({
                         }));
                         setFetchRequest((prev) => ({ ...prev, filters }));
                       } else {
+                        setTableState((prev:any) => ({...prev, filters: filters}));
                         setFetchRequest((prev) => ({
                           sort: prev.sort,
                           global_query: prev.global_query,
@@ -371,6 +384,7 @@ export const Table: FC<TableProps> = ({
               : (fetchRequest.offset ?? 0) + (fetchRequest.limit ?? 10)
               } ${i18n('категории из')} ${total}`}
             page={(fetchRequest.offset ?? 0) / (fetchRequest.limit ?? 10) + 1}
+            pageSize={fetchRequest.limit ?? 5}
             inTotal={Math.ceil(total / (fetchRequest.limit ?? 10))}
             setPage={(payload: number) => {
               setFetchRequest((prev) => ({

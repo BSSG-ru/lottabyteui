@@ -60,6 +60,12 @@ export const attributesTableColumns = [
     render: (row: any) => renderAttr(row, 'attribute_type'),
   },
   {
+    property: 'is_pk',
+    header: i18n('ПК'),
+    filterDisabled: true,
+    render: (row: any) => (row.is_pk ? i18n('Да') : '')
+  },
+  {
     property: 'modified',
     header: i18n('Дата создания'),
     render: (row: any) => renderDate(row, 'modified'),

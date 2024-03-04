@@ -97,6 +97,7 @@ export function Queries() {
           <div className={styles.title}>{`${i18n('ЗАПРОСЫ')}`}</div>
           {data ? (
             <Table
+              cookieKey='queries'
               className={styles.table}
               columns={columns}
               paginate

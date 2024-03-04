@@ -10,8 +10,6 @@ import { Button } from '../Button';
 import { setCookie, deleteCookie, getCookie, i18n, handleHttpError, doNavigate, uuid } from '../../utils';
 import { changeTokenAction, changeValidateAction } from '../../redux/reducers/auth';
 import { Crumbs } from '../Crumbs';
-import { getUser, getUserByLogin } from '../../services/pages/users';
-import { getRole } from '../../services/pages/roles';
 import { LimitStewardSwitch } from '../LimitStewardSwitch/LimitStewardSwitch';
 import { DashboardSwitch } from '../DashboardSwitch/DashboardSwitch';
 

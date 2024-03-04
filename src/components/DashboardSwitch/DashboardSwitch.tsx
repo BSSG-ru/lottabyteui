@@ -1,7 +1,5 @@
 import React, { FC, KeyboardEvent, useEffect, useState } from 'react';
 import { Tooltip } from 'react-tooltip';
-import { getRole } from '../../services/pages/roles';
-import { getUserByLogin } from '../../services/pages/users';
 import { getCookie, handleHttpError, i18n, setCookie } from '../../utils';
 import styles from './DashboardSwitch.module.scss';
 

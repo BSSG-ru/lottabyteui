@@ -315,6 +315,7 @@ export function QualityTasks() {
           ) : (<> </>)}
           {data !== undefined ? (
             <Table
+              cookieKey='qtasks'
               className={styles.table}
               columns={columns}
               paginate

@@ -97,6 +97,7 @@ export function LogicObjects() {
           <div className={styles.title}>{`${i18n('ЛОГИЧЕСКИЕ ОБЪЕКТЫ')}`}</div>
           {data ? (
             <Table
+              cookieKey='ents'
               className={styles.table}
               columns={columns}
               paginate

@@ -1,11 +1,10 @@
-import { FC, useEffect, useState } from "react";
+import { FC, useEffect, useState } from 'react';
 
-import ReactDOM from "react-dom";
 import styles from './Dashboard.module.scss';
 import React from 'react';
 import { IItemClickEventArgs, TreeMapComponent } from '@syncfusion/ej2-react-treemap';
 import { getDashboard } from "../../services/pages/artifacts";
-import { doNavigate } from "../../utils";
+import { doNavigate, handleHttpError } from "../../utils";
 import { useNavigate } from "react-router";
 
 
@@ -45,7 +44,7 @@ export const Dashboard: FC<DashboardProps> = ({}) => {
             let domains = json.filter((x:DashboardEntity) => x.artifactType == 'domain');
             domains.push({ id: '', name: 'показать все...', weight: 100, artifactType: 'domain' });
             setDomainData(domains);
-        })
+        }).catch(handleHttpError);
         
     }, []);
 

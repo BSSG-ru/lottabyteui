@@ -103,7 +103,7 @@ export function handleHttpResponse(resp: Response, asText?: boolean) {
 
       if (asText !== undefined) { return resp.text(); }
       return resp.json();
-    case 400: case 404: case 500:
+    case 400: case 404: case 500: case 409:
       resp.clone().json().then((json) => {
         if (json.errors !== undefined && json.errors.length > 0) {
           json.errors.forEach((element: any) => {
@@ -351,8 +351,9 @@ export const loadEditPageData = (id: string, versionId: string, setData: (data: 
   const handleData = (json: any) => {
     setData(json);
     setDataModified(false);
-    if (document.getElementById(`crumb_${id}`) !== null) {
-      document.getElementById(`crumb_${id}`).innerText = json.entity.name;
+    const elem = document.getElementById(`crumb_${id}`);
+    if (elem !== null) {
+      elem.innerText = json.entity.name;
     }
     setTags(
       json.metadata.tags ? json.metadata.tags.map((x: any) => ({ value: x.name })) : [],
@@ -398,8 +399,7 @@ export const loadEditPageData = (id: string, versionId: string, setData: (data: 
 };
 
 export const tagAddedHandler = (tagName: string, artifactId: string, artifactType: string, artifactState: string, tags: any[], setLoading: (v:boolean) => void,  
-  setTags: (tags: any) => void, editUrl: string) => {
-  const navigate = useNavigate();
+  setTags: (tags: any) => void, editUrl: string, navigateFunc: (url: string) => void) => {//yhh
 
   if (artifactId) {
     if (!tags.some((item) => item.value === tagName)) {
@@ -410,7 +410,7 @@ export const tagAddedHandler = (tagName: string, artifactId: string, artifactTyp
           if (json.metadata.id) {
             addTag(json.metadata.id, artifactType, tagName).then(() => {
               setLoading(false);
-              navigate(`${editUrl}${encodeURIComponent(json.metadata.id)}`);
+              navigateFunc(`${editUrl}${encodeURIComponent(json.metadata.id)}`);
             }).catch(handleHttpError);
           }
         }).catch(handleHttpError);
@@ -427,10 +427,9 @@ export const tagAddedHandler = (tagName: string, artifactId: string, artifactTyp
 };
 
 export const tagDeletedHandler = (tagName: string, artifactId: string, artifactType: string, artifactState: string, setLoading: (v:boolean) => void,
-  setTags: (tags: any) => void, editUrl: string) => {
-  const navigate = useNavigate();
+  setTags: (tags: any) => void, editUrl: string, navigateFunc: (url: string) => void) => {
 
-  if (artifactId) {
+    if (artifactId) {
     setLoading(true);
 
     if (artifactState === 'PUBLISHED') {
@@ -438,7 +437,7 @@ export const tagDeletedHandler = (tagName: string, artifactId: string, artifactT
         if (json.metadata.id) {
           deleteTag(json.metadata.id, artifactType, tagName).then(() => {
             setLoading(false);
-            navigate(`${editUrl}${encodeURIComponent(json.metadata.id)}`);
+            navigateFunc(`${editUrl}${encodeURIComponent(json.metadata.id)}`);
           }).catch(handleHttpError);
         }
       }).catch(handleHttpError);

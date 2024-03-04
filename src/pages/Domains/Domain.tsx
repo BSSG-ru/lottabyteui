@@ -74,6 +74,7 @@ export function Domain() {
       title: i18n('ПОКАЗАТЕЛИ'),
       content: (
         <Table
+          cookieKey='domain-indicators'
           key={`indicatorsTable${domainId}${domainVersionId || ''}${data ? data.entity.system_ids.length : ''}`}
           className={styles.table}
           columns={indicatorsTableColumns}
@@ -104,6 +105,7 @@ export function Domain() {
       title: i18n('БИЗНЕС-СУЩНОСТИ'),
       content: (
         <Table
+          cookieKey='domain-bes'
           key={`beTable${domainId}${domainVersionId || ''}${data ? data.entity.system_ids.length : ''}`}
           className={styles.table}
           columns={beTableColumns}
@@ -134,6 +136,7 @@ export function Domain() {
       title: i18n('ПРОДУКТЫ'),
       content: (
         <Table
+          cookieKey='domain-prods'
           key={`prodTable${domainId}${domainVersionId || ''}${data ? data.entity.system_ids.length : ''}`}
           className={styles.table}
           columns={prodTableColumns}
@@ -165,6 +168,7 @@ export function Domain() {
       title: i18n('СИСТЕМЫ'),
       content: (
         <Table
+          cookieKey='domain-systems'
           key={`systemsTable${domainId}${domainVersionId || ''}${data ? data.entity.system_ids.length : ''}`}
           className={styles.table}
           columns={systemsTableColumns}
@@ -213,6 +217,7 @@ export function Domain() {
       title: i18n('ЛОГИЧЕСКИЕ ОБЪЕКТЫ'),
       content: (
         <Table
+          cookieKey='domain-ents'
           key={`logObjTable${domainId}${domainVersionId || ''}`}
           className={styles.table}
           columns={entitiesTableColumns}
@@ -246,6 +251,7 @@ export function Domain() {
       title: i18n('ЗАПРОСЫ'),
       content: (
         <Table
+          cookieKey='domain-queries'
           key={`reqTable${domainId}${domainVersionId || ''}`}
           className={styles.table}
           columns={queriesTableColumns}
@@ -279,6 +285,7 @@ export function Domain() {
       title: i18n('СЭМПЛЫ'),
       content: (
         <Table
+          cookieKey='domain-samples'
           key={`samplesTable${domainId}${domainVersionId || ''}`}
           className={styles.table}
           columns={samplesTableColumns}
@@ -312,6 +319,7 @@ export function Domain() {
       title: i18n('АКТИВЫ'),
       content: (
         <Table
+          cookieKey='domain-assets'
           key={`activesTable${domainId}${domainVersionId || ''}`}
           className={styles.table}
           columns={assetsTableColumns}
@@ -500,8 +508,8 @@ export function Domain() {
           <Tags
             isReadOnly={isReadOnly}
             tags={tags}
-            onTagAdded={(tagName: string) => tagAddedHandler(tagName, domainId, 'domain', data.metadata.state ?? '', tags, setLoading, setTags, '/domains/edit/')}
-            onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, domainId, 'domain', data.metadata.state ?? '', setLoading, setTags, '/domains/edit/')}
+            onTagAdded={(tagName: string) => tagAddedHandler(tagName, domainId, 'domain', data.metadata.state ?? '', tags, setLoading, setTags, '/domains/edit/', navigate)}
+            onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, domainId, 'domain', data.metadata.state ?? '', setLoading, setTags, '/domains/edit/', navigate)}
           />
         )}
         {!isCreateMode && <Tabs tabs={tabs} tabNumber={state.t} onTabChange={(tab: number) => { setState(() => ({ t: tab })); }} />}

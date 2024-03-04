@@ -263,8 +263,8 @@ export function Query() {
             tags={tags}
             isReadOnly={isReadOnly}
             
-            onTagAdded={(tagName: string) => tagAddedHandler(tagName, queryId, 'entity_query', data.metadata.state ?? '', tags, setLoading, setTags, '/queries/edit/')}
-            onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, queryId, 'entity_query', data.metadata.state ?? '', setLoading, setTags, '/queries/edit/')}
+            onTagAdded={(tagName: string) => tagAddedHandler(tagName, queryId, 'entity_query', data.metadata.state ?? '', tags, setLoading, setTags, '/queries/edit/', navigate)}
+            onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, queryId, 'entity_query', data.metadata.state ?? '', setLoading, setTags, '/queries/edit/', navigate)}
           />
         )}
 

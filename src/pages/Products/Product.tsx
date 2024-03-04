@@ -24,13 +24,14 @@ import { ReactComponent as PlusIcon } from '../../assets/icons/plus.svg';
 import { ReactComponent as CrossIcon } from '../../assets/icons/cross.svg';
 import { ReactComponent as Close } from '../../assets/icons/close.svg';
 import { Table } from '../../components/Table';
-import { getEntity, getEntityAttribute, searchEntities } from '../../services/pages/dataEntities';
+import { getEntity, getEntityAttribute, getEntityAttributes, searchEntities } from '../../services/pages/dataEntities';
 import { Autocomplete2 } from '../../components/Autocomplete2';
 import { FieldAutocompleteEditor } from '../../components/FieldAutocompleteEditor';
 import { getAsset, searchAssets } from '../../services/pages/dataAssets';
 import { FieldCheckboxEditor } from '../../components/FieldCheckboxEditor/FieldCheckboxEditor';
 import { getBusinessEntities } from '../../services/pages/businessEntities';
 import { userInfoRequest } from '../../services/auth';
+import { Prev } from 'react-bootstrap/esm/PageItem';
 
 export type AttribData = {
   id: string;
@@ -127,10 +128,11 @@ export function Product() {
   }, [data]);
 
   useEffect(() => {
-    setSelectedIndicatorNames([]);
+    setSelectedIndicatorNames(data.entity.indicator_ids.map(x => ''));
     data.entity.indicator_ids.forEach((id) => {
       getIndicator(id).then((json) => {
-        setSelectedIndicatorNames((prev) => ([...prev, `<a href="${getArtifactUrl(json.metadata.id, 'indicator')}">${json.entity.name}</a>`]));
+        let index = data.entity.indicator_ids.indexOf(json.metadata.id);
+        setSelectedIndicatorNames((prev) => (prev.map( (el, i) => { if (i == index) return `<div><a href="${getArtifactUrl(json.metadata.id, 'indicator')}">${json.entity.name}</a></div>`; else return el; } )));
       }).catch(handleHttpError);
     });
   }, [data.entity.indicator_ids]);
@@ -144,7 +146,7 @@ export function Product() {
 
     data.entity.data_asset_ids.forEach((id, index) => {
       getAsset(id).then((json) => {
-        setSelectedDataAssetNames((prev) => ([...prev.slice(0, index), `<a href="${getArtifactUrl(json.metadata.id, 'data_asset')}">${json.entity.name}</a>`, ...prev.slice(index + 1)]));
+        setSelectedDataAssetNames((prev) => ([...prev.slice(0, index), `<div><a href="${getArtifactUrl(json.metadata.id, 'data_asset')}">${json.entity.name}</a></div>`, ...prev.slice(index + 1)]));
         setAllowedEntityIds((prev) => ([...prev, json.entity.entity_id]));
       }).catch(handleHttpError);
     });
@@ -157,7 +159,7 @@ export function Product() {
 
     data.entity.product_type_ids.forEach((id, index) => {
       getProductType(id).then((json) => {
-        setSelectedProductTypeNames((prev) => ([...prev.slice(0, index), json.entity.name, ...prev.slice(index + 1)]));
+        setSelectedProductTypeNames((prev) => ([...prev.slice(0, index), '<div>' + json.entity.name + '</div>', ...prev.slice(index + 1)]));
       }).catch(handleHttpError);
     });
   }, [data.entity.product_type_ids]);
@@ -169,7 +171,7 @@ export function Product() {
 
     data.entity.product_supply_variant_ids.forEach((id, index) => {
       getProductSupplyVariant(id).then((json) => {
-        setSelectedProductSupplyVariantNames((prev) => ([...prev.slice(0, index), json.entity.name, ...prev.slice(index + 1)]));
+        setSelectedProductSupplyVariantNames((prev) => ([...prev.slice(0, index), '<div>' + json.entity.name + '</div>', ...prev.slice(index + 1)]));
       }).catch(handleHttpError);
     });
   }, [data.entity.product_supply_variant_ids]);
@@ -229,6 +231,36 @@ export function Product() {
         }).catch(handleHttpError);
       }
     }).catch(handleHttpError);
+  };
+
+  const addAllLinkedAttribs = async (entity_id: string) => {
+
+    const newItems = linkedAttribs.items;
+    getEntityAttributes(entity_id).then(json => {
+      console.log('attribs', json);
+      if (entitiesCache[entity_id]) {
+        json.resources.forEach((attr:any) => {
+          if (linkedAttribs.items.filter((a:AttribData) => a.id == attr.metadata.id).length == 0) {
+            newItems.push({ ...attr.entity, id: attr.metadata.id, entity_name: entitiesCache[entity_id].entity.name });
+          }
+        });
+        setLinkedAttribs((prev: any) => ({ ...prev, items: newItems }));
+        setDataModified(true);
+      } else {
+        getEntity(entity_id).then(jsone => {
+          setEntityCache((prev: any) => ({ ...prev, [entity_id]: jsone }));
+
+          json.resources.forEach((attr:any) => {
+            if (linkedAttribs.items.filter((a:AttribData) => a.id == attr.metadata.id).length == 0) {
+              newItems.push({ ...attr.entity, id: attr.metadata.id, entity_name: jsone.entity.name });
+            }
+          });
+          setLinkedAttribs((prev: any) => ({ ...prev, items: newItems }));
+          setDataModified(true);
+        }).catch(handleHttpError);
+      }
+    }).catch(handleHttpError);
+
   };
 
   const getIndicatorOptions = async (search: string) => searchIndicators({ filters: [], filters_for_join: [], global_query: search, limit: 15, offset: 0, sort: 'name+', state: 'PUBLISHED' }).then((json) => json.items.map((item: any) => ({ value: item.id, label: item.name, name: item.name })));
@@ -405,8 +437,8 @@ export function Product() {
           <Tags
             isReadOnly={isReadOnly}
             tags={tags}
-            onTagAdded={(tagName: string) => tagAddedHandler(tagName, productId, 'product', data.metadata.state ?? '', tags, setLoading, setTags, '/products/edit/')}
-            onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, productId, 'product', data.metadata.state ?? '', setLoading, setTags, '/products/edit/')}
+            onTagAdded={(tagName: string) => tagAddedHandler(tagName, productId, 'product', data.metadata.state ?? '', tags, setLoading, setTags, '/products/edit/', navigate)}
+            onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, productId, 'product', data.metadata.state ?? '', setLoading, setTags, '/products/edit/', navigate)}
           />
         )}
         <div className={styles.domain}>
@@ -689,6 +721,7 @@ export function Product() {
 
                   <div className={styles.tbl}>
                     <Table
+                      cookieKey='prod-attrs-linked'
                       key={`tbl-la-${productId}`}
                       columns={[
                         { property: 'name', header: i18n('Название') },
@@ -703,6 +736,15 @@ export function Product() {
                       fullWidthLayout
                       columnSearch
                       subtitle={isAttribsEditMode ? (i18n('Привязанные атрибуты') + (linkedAttribs.items.length == 0 ? ` (${i18n('нет')})` : '')) : ''}
+                      tableButtons={isAttribsEditMode ? [
+                        {
+                          text: 'Отвязать все атрибуты',
+                          onClick: () => {
+                            setLinkedAttribs((prev:any) => ({...prev, items: []}));
+                            setDataModified(true);
+                          }
+                        }
+                      ] : []}
                     />
                   </div>
                   {!isReadOnly && isAttribsEditMode && (<a className={styles.btn_save} onClick={saveAttribsClicked}><OrangePencilIcon /></a>)}
@@ -710,6 +752,7 @@ export function Product() {
                 {!isReadOnly && isAttribsEditMode && attribsEntity && (
                   <div className={styles.row_entity_attribs}>
                     <Table
+                      cookieKey='prods-attrs-unlinked'
                       key={uuid()}
                       columns={[
                         { property: 'name', header: i18n('Название') },
@@ -725,6 +768,11 @@ export function Product() {
                       columnSearch
                       onPageChange={(page) => { setTable2Page(page); }}
                       subtitle={i18n('Не привязанные атрибуты')}
+                      tableButtons={[
+                        { text: 'Привязать все', onClick: () => {
+                          addAllLinkedAttribs(attribsEntity.value);
+                        }}
+                      ]}
                     />
                   </div>
                 )}

@@ -90,6 +90,7 @@ export function Tasks() {
           <div className={styles.title}>{`${i18n('ЗАДАЧИ')}`}</div>
           {data !== undefined ? (
             <Table
+              cookieKey='tasks'
               className={styles.table}
               columns={columns}
               paginate

@@ -41,6 +41,7 @@ import { ReactComponent as PlusInCircle } from '../../assets/icons/plus-in-circl
 import { ReactComponent as Close } from '../../assets/icons/close.svg';
 import { WFItemControl } from '../../components/WFItemControl/WFItemControl';
 import { createDraft } from '../../services/pages/tags';
+import { Checkbox } from '../../components/Checkbox';
 
 export function LogicObject() {
   const navigate = useNavigate();
@@ -137,7 +138,8 @@ export function LogicObject() {
     description: '',
     attribute_type: '',
     tags: [],
-    attribute_id: ''
+    attribute_id: '',
+    is_pk: false
   });
 
   const updateAttrDlgSubmit = () => {
@@ -282,6 +284,7 @@ export function LogicObject() {
       title: i18n('АТРИБУТЫ'),
       content: (
         <Table
+          cookieKey='ent-attrs'
           key={logicObjectId + tblAttrsKey + (logicObjectVersionId ?? '')}
           className={styles.table}
           columns={attributesTableColumns}
@@ -332,7 +335,8 @@ export function LogicObject() {
                     description: row.description,
                     attribute_type: row.attribute_type,
                     tags: row.tags,
-                    attribute_id: row.attribute_id
+                    attribute_id: row.attribute_id,
+                    is_pk: row.is_pk
                   });
                   setShowUpdateAttrDlg(true);
                   e.preventDefault();
@@ -360,6 +364,7 @@ export function LogicObject() {
       title: i18n('СЭМПЛЫ'),
       content: (
         <Table
+          cookieKey='ent-samples'
           key={`samplesTable${logicObjectId}${logicObjectVersionId ?? ''}`}
           className={styles.table}
           columns={samplesTableColumns}
@@ -393,6 +398,7 @@ export function LogicObject() {
       title: i18n('АКТИВЫ'),
       content: (
         <Table
+          cookieKey='ent-assets'
           key={`${logicObjectId + tblAttrsKey + (logicObjectVersionId ?? '')}-assets`}
           className={styles.table}
           columns={assetsTableColumns}
@@ -646,8 +652,8 @@ export function LogicObject() {
           <Tags
             tags={tags}
             isReadOnly={isReadOnly}
-            onTagAdded={(tagName: string) => tagAddedHandler(tagName, logicObjectId, 'entity', data.metadata.state ?? '', tags, setLoading, setTags, '/logic-objects/edit/')}
-            onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, logicObjectId, 'entity', data.metadata.state ?? '', setLoading, setTags, '/logic-objects/edit/')}
+            onTagAdded={(tagName: string) => tagAddedHandler(tagName, logicObjectId, 'entity', data.metadata.state ?? '', tags, setLoading, setTags, '/logic-objects/edit/', navigate)}
+            onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, logicObjectId, 'entity', data.metadata.state ?? '', setLoading, setTags, '/logic-objects/edit/', navigate)}
           />
         )}
         {!isCreateMode && <Tabs tabs={tabs} tabNumber={state.t} onTabChange={(tab: number) => { setState(() => ({ t: tab })); }} />}
@@ -704,6 +710,7 @@ export function LogicObject() {
               }));
             }}
           />
+          <Checkbox id='create_attr_pk' label='Первичный ключ' checked={false} value='1' onChange={(e) => { setNewAttrData((prev:any) => ({ ...prev, is_pk: e.target.checked })) }} />
           {errorTypeText ? <div className={styles.error}>{errorTypeText}</div> : ''}
         </Modal.Body>
         <Modal.Footer>
@@ -759,6 +766,7 @@ export function LogicObject() {
             }}
             placeholder={renderAttribute(updateAttrData.attribute_type)}
           />
+          <Checkbox id='edit_attr_pk' label='Первичный ключ' checked={updateAttrData.is_pk} value='1' onChange={(e) => { setUpdateAttrData((prev:any) => ({ ...prev, is_pk: e.target.checked })) }} />
         </Modal.Body>
         <Modal.Footer>
           <Button

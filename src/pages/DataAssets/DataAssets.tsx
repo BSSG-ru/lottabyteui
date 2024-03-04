@@ -102,6 +102,7 @@ export function DataAssets() {
           <div className={styles.title}>{`${i18n('АКТИВЫ')}`}</div>
           {data ? (
             <Table
+              cookieKey='assets'
               className={styles.table}
               columns={columns}
               paginate

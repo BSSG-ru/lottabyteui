@@ -88,6 +88,7 @@ export function System() {
       title: i18n('ЛОГИЧЕСКИЕ ОБЪЕКТЫ'),
       content: (
         <Table
+          cookieKey='sys-ents'
           key={"logObjTable" + systemId + (systemVersionId ? systemVersionId : '')}
           className={styles.table}
           columns={entitiesTableColumns}
@@ -128,6 +129,7 @@ export function System() {
       title: i18n('ЗАПРОСЫ'),
       content: (
         <Table
+          cookieKey='sys-queries'
           key={"reqTable" + systemId + (systemVersionId ? systemVersionId : '')}
           className={styles.table}
           columns={queriesTableColumns}
@@ -159,6 +161,7 @@ export function System() {
       title: i18n('СЭМПЛЫ'),
       content: (
         <Table
+          cookieKey='sys-samples'
           key={"samplesTable" + systemId + (systemVersionId ? systemVersionId : '')}
           className={styles.table}
           columns={samplesTableColumns}
@@ -190,6 +193,7 @@ export function System() {
       title: i18n('АКТИВЫ'),
       content: (
         <Table
+          cookieKey='sys-assets'
           key={"activesTable" + systemId + (systemVersionId ? systemVersionId : '')}
           className={styles.table}
           columns={assetsTableColumns}
@@ -422,8 +426,8 @@ export function System() {
           <Tags
             tags={tags}
             isReadOnly={isReadOnly}
-            onTagAdded={(tagName: string) => tagAddedHandler(tagName, systemId, 'system', data.metadata.state ?? '', tags, setLoading, setTags, '/systems/edit/')}
-            onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, systemId, 'system', data.metadata.state ?? '', setLoading, setTags, '/systems/edit/')}
+            onTagAdded={(tagName: string) => tagAddedHandler(tagName, systemId, 'system', data.metadata.state ?? '', tags, setLoading, setTags, '/systems/edit/', navigate)}
+            onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, systemId, 'system', data.metadata.state ?? '', setLoading, setTags, '/systems/edit/', navigate)}
           />
         )}
         {!isCreateMode && <Tabs tabs={tabs} tabNumber={state.t} onTabChange={(tab: number) => { setState(() => ({ t: tab })); }} />}

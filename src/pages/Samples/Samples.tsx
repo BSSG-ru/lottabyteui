@@ -114,6 +114,7 @@ export function Samples() {
           <div className={styles.title}>{`${i18n('СЭМПЛЫ')}`}</div>
           {data ? (
             <Table
+              cookieKey='samples'
               className={styles.table}
               columns={columns}
               paginate

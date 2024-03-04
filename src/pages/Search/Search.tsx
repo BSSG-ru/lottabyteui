@@ -23,6 +23,7 @@ import { Button } from '../../components/Button';
 import classNames from 'classnames';
 import { getUserRequest, userInfoRequest } from '../../services/auth';
 import { ReactComponent as DQRules } from '../../assets/icons/dq-rule.svg';
+import Cookies from 'js-cookie';
 
 
 export function Search() {
@@ -33,7 +34,8 @@ export function Search() {
   const [searchParams] = useSearchParams();
   const [searchRequest, setSearchRequest] = useState<any>(null);
 
-  const [filterArtifactTypes, setFilterArtifactTypes] = useState<any>({
+  const ck_fat = Cookies.get('search-filters');
+  const [filterArtifactTypes, setFilterArtifactTypes] = useState<any>(ck_fat ? JSON.parse(ck_fat) : {
     domain: true,
     system: true,
     task: true,
@@ -47,6 +49,10 @@ export function Search() {
     dq_rule: true
     
   });
+
+  useEffect(() => {
+    Cookies.set('search-filters', JSON.stringify(filterArtifactTypes), { expires: 500 });
+  }, [ filterArtifactTypes ]);
 
   const buildSearchRequest = (q: string, filterArtifactTypes: any, userDomains: any, from: number, size: number) => {
 
@@ -86,6 +92,13 @@ export function Search() {
     Object.keys(filterArtifactTypes).filter(x => filterArtifactTypes[x]).forEach(at => {
       filter_by_at.push({ match: { artifact_type: at }});
     });
+    if (filter_by_at.length == 0) {
+      Object.keys(filterArtifactTypes).forEach(at => {
+        filter_by_at.push({ match: { artifact_type: true }});
+      });
+    }
+
+    console.log('filterArtifactTypes', filterArtifactTypes);
 
     var must = [
       inner_q,
@@ -242,6 +255,7 @@ export function Search() {
           } 
             ${i18n(' из ')} ${totalHits}`}
           page={searchRequest.from / searchRequest.size + 1}
+          pageSize={searchRequest.size}
           inTotal={Math.ceil(totalHits / searchRequest.size)}
           setPage={(payload: number) => {
             setSearchRequest((prev: any) => ({

@@ -1,8 +1,108 @@
+main {
+  flex-direction: column;
+  flex: 1 1;
+}
+
 .diagram_div {
     width: 100%;
     height: 100%;
     flex: 1 1;
     background: whitesmoke;
+}
+
+.filter_domains {
+  flex: 0 0 40px;
+  width: 100%;
+  min-height: 40px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+
+  label {
+    padding-left: 15px;
+    font-weight: bold;
+    flex: 0 0 100px;
+  }
+
+  .btn_filter_domain {
+    padding: 5px 10px;
+    margin-left: 5px;
+    background: #fff;
+    border: 1px solid var(--blue-70);
+    color: var(--blue-70);
+
+    &.active {
+      background: var(--blue-70);
+      color: #fff;
+  }
+  }
+}
+
+.filter_tags {
+  flex: 0 0 40px;
+  width: 100%;
+  min-height: 40px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+
+  label {
+    padding-left: 15px;
+    font-weight: bold;
+    flex: 0 0 100px;
+  }
+
+  .btn_filter_tag {
+    padding: 5px 10px;
+    margin-left: 5px;
+    background: #fff;
+    border: 1px solid var(--blue-70);
+    color: var(--blue-70);
+
+    &.active {
+      background: var(--blue-70);
+      color: #fff;
+  }
+  }
+}
+
+.domains_list {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.dg_outer_wrap {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+}
+
+.right_sidebar {
+  flex: 0 0 300px;
+  background: #fff;
+  border-left: 2px solid #666;
+  display: flex;
+  flex-direction: column;
+
+  .search {
+    padding: 5px;
+  }
+
+  .entities_list {
+    width: 100%;
+    flex-grow: 1;
+    overflow: auto;
+
+    .entity_item {
+      display: block;
+      padding: 3px 6px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: all-scroll;
+      margin: 5px;
+    }
+  }
 }
 
 .dg_wrap {
@@ -12,10 +112,45 @@
 
 }
 
+.leftToolBar {
+  position: absolute;
+  top: 100px;
+  left: 280px;
+  width: 40px;
+  background: #fff;
+  padding: 8px;
+  z-index: 19;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  -moz-box-shadow: 4px 2px 5px 0px rgba(34, 60, 80, 0.4);
+  -webkit-box-shadow: 4px 2px 5px 0px rgba(34, 60, 80, 0.4);
+  box-shadow: 4px 2px 5px 0px rgba(34, 60, 80, 0.4);
+
+  a.btn {
+    display: block;
+    width: 30px;
+    text-align: center;
+    padding: 7px 0;
+    cursor: pointer;
+    border-radius: 4px;
+
+    &.active {
+      background-color: var(--blue-70);
+      //img { filter: invert(100%); }
+    }
+
+    &:not(:first-child) {
+      margin-top: 10px;
+    }
+  }
+}
+
 .rightToolBar {
     position: absolute;
-    top: 20px;
-    right: 20px;
+    top: 100px;
+    right: 320px;
     width: 40px;
     background: #fff;
     padding: 8px;

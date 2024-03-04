@@ -100,6 +100,7 @@ export function DQRules() {
           </Button>
           {data ? (
             <Table
+              cookieKey='dqrules'
               className={styles.table}
               columns={columns}
               paginate

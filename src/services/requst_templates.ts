@@ -16,13 +16,32 @@ export type CustomRequest = {
   body?: string;
   signal?: AbortSignal | null;
 };
+
+const replacePort = (url: string) => {
+
+  const p = window.location.port;
+  if (p) {
+    let url1 = url.replace(/:\d+/, '');
+    const i1 = url1.indexOf('//');
+    let i2 = url1.indexOf('/', i1 + 2);
+    if (i2 == -1)
+      return url1 + ':' + p;
+    return url1.substring(0, i2) + ':' + p + url1.substring(i2);
+  }
+  return url;
+};
+
 const {
   REACT_APP_BASE_API_URL = 'https://lottatest.bssg.ru',
   REACT_APP_USER_MGT_API_URL = 'https://lottatest.bssg.ru/usermgmt',
 } = process.env;
-export const URL = REACT_APP_BASE_API_URL;
 
-export const usermgmtURL = REACT_APP_USER_MGT_API_URL;
+export const URL = REACT_APP_BASE_API_URL; //replacePort(REACT_APP_BASE_API_URL);
+
+export const usermgmtURL = REACT_APP_USER_MGT_API_URL; //replacePort(REACT_APP_USER_MGT_API_URL);
+
+console.log(URL);
+console.log(usermgmtURL);
 
 export const optionsGet = (signal?: AbortSignal | null): CustomRequest => ({
   method: 'GET',

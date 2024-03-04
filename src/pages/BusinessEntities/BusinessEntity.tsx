@@ -82,6 +82,7 @@ export function BusinessEntity() {
       title: i18n('ЛОГ. ОБЪЕКТЫ'),
       content: (
         <Table
+          cookieKey='be-lo'
           key={`tbl-ent-${businessEntityId}${businessEntityVersionId ?? ''}`}
           className={styles.table}
           columns={entityTableColumns}
@@ -117,6 +118,7 @@ export function BusinessEntity() {
       title: i18n('АКТИВЫ'),
       content: (
         <Table
+          cookieKey='be-assets'
           key={`tbl-assets-${businessEntityId}${businessEntityVersionId ?? ''}`}
           className={styles.table}
           columns={assetsTableColumns}
@@ -369,8 +371,8 @@ export function BusinessEntity() {
             <Tags
               tags={tags}
               isReadOnly={isReadOnly}
-              onTagAdded={(tagName: string) => tagAddedHandler(tagName, businessEntityId, 'business_entity', data.metadata.state ?? '', tags, setLoading, setTags, '/business-entities/edit/')}
-              onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, businessEntityId, 'business_entity', data.metadata.state ?? '', setLoading, setTags, '/business-entities/edit/')}
+              onTagAdded={(tagName: string) => tagAddedHandler(tagName, businessEntityId, 'business_entity', data.metadata.state ?? '', tags, setLoading, setTags, '/business-entities/edit/', navigate)}
+              onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, businessEntityId, 'business_entity', data.metadata.state ?? '', setLoading, setTags, '/business-entities/edit/', navigate)}
             />
         )}
         {!isCreateMode && (

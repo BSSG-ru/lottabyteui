@@ -23,6 +23,7 @@
     "classnames": "2.3.2",
     "d3": "7.8.5",
     "draft-js": "0.11.7",
+    "gojs": "^2.3.14",
     "gojs-react": "1.1.2",
     "grommet": "2.27.0",
     "grommet-icons": "4.8.0",
@@ -61,12 +62,6 @@
     "prettier": "prettier --write src/**/*.tsx src/**/*.ts",
     "prepare": "husky install"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
   "browserslist": {
     "production": [
       ">0.2%",
@@ -79,6 +74,12 @@
       "last 1 safari version"
     ]
   },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
   "devDependencies": {
     "@types/bootstrap": "5.2.6",
     "@types/draft-js": "0.11.10",
@@ -87,12 +88,10 @@
     "@types/react-syntax-highlighter": "15.5.6",
     "@typescript-eslint/eslint-plugin": "5.48.2",
     "@typescript-eslint/parser": "5.48.2",
-    "clsx": "2.0.0",
-    "dotenv": "16.0.3",
-    "dotenv-webpack": "8.0.1",
-    "eslint": "8.32.0",
+
+    "eslint": "8.56.0",
     "eslint-config-airbnb": "19.0.4",
-    "eslint-config-airbnb-typescript": "7.0.0",
+    
     "eslint-config-standard-with-typescript": "31.0.0",
     "eslint-config-typescript": "3.0.0",
     "eslint-plugin-import": "2.27.5",
@@ -101,6 +100,10 @@
     "eslint-plugin-promise": "6.1.1",
     "eslint-plugin-react": "7.32.1",
     "eslint-plugin-react-hooks": "4.6.0",
+
+    "clsx": "2.0.0",
+    "dotenv": "16.0.3",
+    "dotenv-webpack": "8.0.1",
     "husky": "8.0.2",
     "prettier": "2.7.1",
     "typescript": "4.9.4"

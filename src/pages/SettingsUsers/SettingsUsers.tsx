@@ -66,6 +66,7 @@ export function SettingsUsers() {
           <div className={styles.title}>{`${i18n('ПОЛЬЗОВАТЕЛИ КОМПАНИИ')}`}</div>
           {data ? (
             <Table
+              cookieKey='users'
               className={styles.table}
               columns={columns}
               paginate

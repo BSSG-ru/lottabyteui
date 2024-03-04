@@ -6,20 +6,25 @@ import React, { useEffect, useState } from 'react';
 import useUrlState from '@ahooksjs/use-url-state';
 import { useNavigate } from 'react-router-dom';
 import styles from './BusinessEntity.module.scss';
-import { doNavigate, getTablePageSize, handleHttpError, i18n, updateArtifactsCount } from '../../utils';
+import { doNavigate, getTablePageSize, handleHttpError, i18n, updateArtifactsCount, uuid } from '../../utils';
 import { renderDate, Table, TableDataRequest } from '../../components/Table';
 import { Loader } from '../../components/Loader';
 import { deleteBusinessEntity, getBETree, getBusinessEntities } from '../../services/pages/businessEntities';
 import { DeleteObjectModal } from '../../components/DeleteObjectModal';
-import { TreeTable } from 'primereact/treetable';
+import { TreeTable, TreeTableSortEvent } from 'primereact/treetable';
 import { TreeNode } from 'primereact/treenode';
 import { Column, ColumnBodyOptions } from 'primereact/column';
 import { Button } from '../../components/Button';
 import classNames from 'classnames';
 import { enableES5 } from 'immer';
+import Cookies from 'js-cookie';
 
 export function BusinessEntities() {
   const navigate = useNavigate();
+
+  const ck_sort = Cookies.get('bes-sort');
+  const [sortData, setSortData] = useState<any>(ck_sort ? JSON.parse(ck_sort) : {});
+
   const [state, setState] = useUrlState({ p: '1', q: undefined }, { navigateMode: 'replace' });
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<TreeNode[]>([]);
@@ -109,10 +114,14 @@ export function BusinessEntities() {
   }, []);
 
   useEffect(() => {
-    getBETree({ filters: [], filters_for_join: [], global_search: '', sort: 'name+', state: wfStatus }).then(json => {
+    getBETree({ filters: [], filters_for_join: [], global_search: '', sort: sortData.field ? (sortData.field + (sortData.order == -1 ? '-' : '+')) : 'name+', state: wfStatus }).then(json => {
       setData(json);
     });
-  }, [ wfStatus ])
+  }, [ wfStatus, sortData ]);
+
+  useEffect(() => {
+    Cookies.set('bes-sort', JSON.stringify(sortData), { expires: 500 });
+  }, [ sortData ]);
 
   const actionTemplate = (node:any) => {
     
@@ -176,6 +185,9 @@ export function BusinessEntities() {
       </div></div>;
   };
 
+
+  
+
   return (
     <div className={styles.page}>
       {loading ? (
@@ -189,11 +201,11 @@ export function BusinessEntities() {
           </div>
           <button className={styles.btn_create2} onClick={() => { navigate("/business-entities/edit/"); }}></button>
           {data ? (
-            <TreeTable value={data} className={styles.tree} tableStyle={{ minWidth: '50rem', marginTop: '30px' }} onRowClick={(e) => { if (e.node && e.node.data) doNavigate('/business-entities/edit/' + e.node.key, navigate); }}>
+            <TreeTable key={uuid()} value={data} sortField={sortData.field ? sortData.field : ''} sortOrder={sortData.order ? sortData.order : ''} onSort={(e:TreeTableSortEvent) => { setSortData({ field: e.sortField, order: e.sortOrder }) }} className={styles.tree} tableStyle={{ minWidth: '50rem', marginTop: '30px' }} onRowClick={(e) => { if (e.node && e.node.data) doNavigate('/business-entities/edit/' + e.node.key, navigate); }}>
               <Column field="name" header={i18n('Название')} expander sortable body={columnBodyWithActions}></Column>
-              <Column field="techName" header={i18n('Техническое название')} sortable body={columnBodyWithActions}></Column>
-              <Column field="domainName" header={i18n('Домен')} sortable body={columnBodyWithActions}></Column>
-              <Column field="altNames" header={i18n('Альтернативные наименования')} sortable body={columnBodyWithActions}></Column>
+              <Column field="tech_name" header={i18n('Техническое название')} sortable body={columnBodyWithActions}></Column>
+              <Column field="domain_name" header={i18n('Домен')} sortable body={columnBodyWithActions}></Column>
+              <Column field="alt_names" header={i18n('Альтернативные наименования')} sortable body={columnBodyWithActions}></Column>
               <Column field="synonyms" header={i18n('Синонимы')} sortable body={columnBodyWithActions}></Column>
               <Column field="modified" header={i18n('Дата изменения')} sortable dataType='date' body={columnBodyWithActions}></Column>              
               <Column field="tags" header={i18n('Теги')} sortable body={columnBodyWithActions}></Column>

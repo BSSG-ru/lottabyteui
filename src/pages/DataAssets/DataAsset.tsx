@@ -80,6 +80,7 @@ export function DataAsset() {
       title: i18n('АТРИБУТЫ'),
       content: (
         <Table
+          cookieKey='asset-attrs'
           key={id + (version_id ?? '')}
           className={styles.table}
           columns={attributesTableColumns}
@@ -110,6 +111,7 @@ export function DataAsset() {
       title: i18n('СЭМПЛЫ'),
       content: (
         <Table
+          cookieKey='asset-samples'
           key={`samplesTable${data.entity.entity_id}${version_id ?? ''}`}
           className={styles.table}
           columns={samplesTableColumns}
@@ -465,8 +467,8 @@ export function DataAsset() {
           <Tags
             tags={tags}
             isReadOnly={isReadOnly}
-            onTagAdded={(tagName: string) => tagAddedHandler(tagName, assetId, 'data_asset', data.metadata.state ?? '', tags, setLoading, setTags, '/data_assets/edit/')}
-            onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, assetId, 'data_asset', data.metadata.state ?? '', setLoading, setTags, '/data_assets/edit/')}
+            onTagAdded={(tagName: string) => tagAddedHandler(tagName, assetId, 'data_asset', data.metadata.state ?? '', tags, setLoading, setTags, '/data_assets/edit/', navigate)}
+            onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, assetId, 'data_asset', data.metadata.state ?? '', setLoading, setTags, '/data_assets/edit/', navigate)}
           />
         )}
 

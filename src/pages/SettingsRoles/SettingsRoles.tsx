@@ -51,6 +51,7 @@ export const SettingsRoles = () => {
           <div className={styles.title}>{`${i18n('Роли')}`}</div>
           {data ? (
             <Table
+              cookieKey='roles'
               className={styles.table}
               columns={columns}
               paginate

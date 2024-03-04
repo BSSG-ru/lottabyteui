@@ -99,7 +99,7 @@ import { Tags } from '../Tags';
           {layout === 'separated' ? (
             <>
               <div className={styles.label}>{labelPrefix}</div>
-              <div className={styles.display_value} dangerouslySetInnerHTML={{ __html: storedValue.join(', ') }}></div>
+              <div className={styles.display_value} dangerouslySetInnerHTML={{ __html: storedValue.join(' ') }}></div>
               {isReadOnly ? (
                 ''
               ) : (
@@ -115,7 +115,7 @@ import { Tags } from '../Tags';
             <>
               <div className={styles.value}>
                 {labelPrefix + ' '}
-                <span dangerouslySetInnerHTML={{ __html: storedValue.join(', ') }}></span>
+                <span dangerouslySetInnerHTML={{ __html: storedValue.join(' ') }}></span>
               </div>
               {isReadOnly ? (
                 ''
