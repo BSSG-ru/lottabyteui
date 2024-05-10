@@ -34,6 +34,7 @@ import { getSystemsUnlikedToDomain } from '../../services/pages/systems';
 import { setRecentView } from '../../services/pages/recentviews';
 import { WFItemControl } from '../../components/WFItemControl/WFItemControl';
 import { Checkbox } from '../../components/Checkbox';
+import { RelatedObjectsControl } from '../../components/RelatedObjectsControl';
 
 export function Domain() {
   const [state, setState] = useUrlState({
@@ -444,7 +445,7 @@ export function Domain() {
       <div className={styles.mainContent}>
         {!domainVersionId && (
           <WFItemControl
-            key={`wfc-${uuid()}`}
+            key={`wfc-domain-` + data?.metadata?.workflow_task_id}
             itemMetadata={data.metadata}
             itemIsReadOnly={isReadOnly}
             onEditClicked={() => { setReadOnly(false); }}
@@ -512,7 +513,9 @@ export function Domain() {
             onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, domainId, 'domain', data.metadata.state ?? '', setLoading, setTags, '/domains/edit/', navigate)}
           />
         )}
-        {!isCreateMode && <Tabs tabs={tabs} tabNumber={state.t} onTabChange={(tab: number) => { setState(() => ({ t: tab })); }} />}
+        
+        <RelatedObjectsControl artifactId={domainId} artifactType='domain'></RelatedObjectsControl>
+        
       </div>
       {!isCreateMode && (
         <div className={styles.rightBar}>

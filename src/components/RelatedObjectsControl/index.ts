@@ -1,0 +1,1 @@
+export { RelatedObjectsControl } from './RelatedObjectsControl';

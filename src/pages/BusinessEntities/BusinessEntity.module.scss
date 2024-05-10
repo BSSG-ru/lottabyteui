@@ -329,6 +329,17 @@
         padding: 19px 0;
         border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         position: relative;
+
+        &:first-child {
+            button {
+                float: left;
+            }
+
+            > div {
+                display: block;
+                padding-left: 20px;
+            }
+        }
     }
 
     tbody tr {

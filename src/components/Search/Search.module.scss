@@ -1,6 +1,7 @@
 .search {
     display: flex;
     box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.05);
+    position: relative;
 }
 .search_input input {
     width: 450px;
@@ -28,5 +29,27 @@ button.search_button {
     }
     &_active {
         background-color: var(--blue-70);
+    }
+}
+.tags_popup {
+    position: absolute;
+    left: 0;
+    top: 100%;
+    background: #fff;
+    padding: 5px;
+    border: 1px solid var(--blue-main);
+    border-radius: 4px;
+    margin-top: 5px;
+    z-index: 99;
+
+    .list {
+        .item {
+            cursor: pointer;
+            
+            &.active {
+                background: var(--blue-main);
+                color: #fff;
+            }
+        }
     }
 }

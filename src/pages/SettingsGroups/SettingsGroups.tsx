@@ -45,18 +45,14 @@ export function SettingsGroups() {
       header: i18n('Название группы'),
     },
     {
-      property: 'user_roles',
-      filter_property: 'user_roles.name',
+      property: 'user_role_names',
+      filter_property: 'user_role_names',
       header: i18n('Роли'),
-      render: (item: any) => (
-        <span className={styles.value}>
-          { item.user_roles.join(', ') }
-        </span>
-      ),
+      
     },
     {
-      property: 'permissions',
-      filter_property: 'permissions.name',
+      property: 'permission_names',
+      filter_property: 'permission_names',
       header: i18n('Разрешения'),
       render: (item: any) => (
         <span className={styles.value}>

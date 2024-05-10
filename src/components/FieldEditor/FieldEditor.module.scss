@@ -65,3 +65,29 @@
     font-size: 15px;
     line-height: 18px;
 }
+
+.m_mention {
+    background: var(--blue-30);
+    padding: 1px 3px;
+}
+
+.m_suggestions {
+    background: #fff;
+    max-height: 200px;
+    overflow: auto;
+    padding: 5px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+}
+
+.m_suggestions_entry {
+    padding: 5px;
+    cursor: pointer;
+}
+
+.m_suggestions_entry_focused {
+    background: var(--blue-main);
+    padding: 5px;
+    cursor: pointer;
+}

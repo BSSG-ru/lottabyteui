@@ -6,7 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import styles from './Search.module.scss';
 import { searchPost } from '../../services/pages/search';
-import { doNavigate, getArtifactTypeDisplayName, getArtifactUrl, getTablePageSize, handleHttpError, i18n } from '../../utils';
+import { doNavigate, getArtifactTypeDisplayName, getArtifactUrl, getTablePageSize, handleHttpError, i18n, setCookie } from '../../utils';
 import { Pagination } from '../../components/Pagination';
 import { ReactComponent as Domains } from '../../assets/icons/domains-icon.svg';
 import { ReactComponent as Systems } from '../../assets/icons/systems-icon.svg';
@@ -134,6 +134,8 @@ export function Search() {
     if (q) {
       userInfoRequest().then(resp => {
         resp.json().then(data => {
+          //console.log('set userp', data.permissions);
+          setCookie('userp', data.permissions.join(','), { path: '/' });
           setSearchRequest(buildSearchRequest(q, filterArtifactTypes, data.user_domains, 0, getTablePageSize()));
         });
       });

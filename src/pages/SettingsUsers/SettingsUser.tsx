@@ -10,6 +10,7 @@ import {
 import { FieldCheckboxListEditor } from '../../components/FieldCheckboxListEditor';
 import { FieldArrayEditor } from '../../components/FieldArrayEditor/FieldArrayEditor';
 import { getDomains } from '../../services/pages/domains';
+import { getSteward, updateSteward } from '../../services/pages/stewards';
 
 export function SettingsUser() {
   const [, setLoading] = useState(true);
@@ -21,6 +22,8 @@ export function SettingsUser() {
     user_domains: [],
     email: ''
   });
+//  const [stewardData, setStewardData] = useState({});
+//  const [stewardId, setStewardId] = useState<string>('');
 
   const [isCreateMode, setCreateMode] = useState(false);
   const [showValidation, setShowValidation] = useState(true);
@@ -38,6 +41,7 @@ export function SettingsUser() {
       getUser(userId)
         .then((json: any) => {
           setData(json);
+  //        setStewardId(json.steward_id);
           const el = document.getElementById(`crumb_${userId}`);
           if (el) el.innerText = json.username;
           setLoading(false);
@@ -45,6 +49,14 @@ export function SettingsUser() {
         .catch(handleHttpError);
     }
   }, [userId]);
+
+  /*useEffect(() => {
+    if (stewardId) {
+      getSteward(stewardId).then((json: any) => {
+        setStewardData(json);
+      }).catch(handleHttpError);
+    }
+  }, [stewardId]);*/
 
   useEffect(() => {
     if (isCreateMode) {
@@ -74,6 +86,9 @@ export function SettingsUser() {
       updateUser(userId, d)
         .then(() => {})
         .catch(handleHttpError);
+      /*if (stewardId && field == 'user_domains') {
+        updateSteward(stewardId, { domains: value }).catch(handleHttpError);
+      }*/
     } else {
       setShowValidation(true);
       if (field === 'user_roles') {

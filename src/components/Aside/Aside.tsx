@@ -1,7 +1,7 @@
 /* eslint-disable react/function-component-definition */
 import classNames from 'classnames';
 import React, { FC, useState, useEffect } from 'react';
-import { NavLink, useLocation, useRoutes, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useRoutes, useNavigate, redirect } from 'react-router-dom';
 import { Tooltip } from 'react-tooltip';
 import { ReactComponent as Users } from '../../assets/icons/users-icon.svg';
 import { ReactComponent as Roles } from '../../assets/icons/roles-icon.svg';
@@ -27,9 +27,10 @@ import { ReactComponent as DQRules } from '../../assets/icons/dq-rule.svg';
 
 import styles from './Aside.module.scss';
 import { urls } from '../../mocks/urls';
-import { doNavigate, getArtifactUrl, handleHttpError, i18n } from '../../utils';
+import { doNavigate, getArtifactUrl, handleHttpError, hasPermission, i18n } from '../../utils';
 import { getArtifactsCount } from '../../services/pages/artifacts';
 import { getRecentViews, setRecentView } from '../../services/pages/recentviews';
+import { userInfoRequest } from '../../services/auth';
 
 export const Aside: FC = () => {
   const navigate = useNavigate();
@@ -60,7 +61,9 @@ export const Aside: FC = () => {
     });
   };
 
+  const [showDrafts, setShowDrafts] = useState(false);
   const [currPath, setCurrPath] = useState('/');
+  const [links, setLinks] = useState<any[]>([]);
   useEffect(() => {
     document.addEventListener('countUpdateNeeded', listener, false);
     window.addEventListener('limitStewardChanged', (e) => {
@@ -75,6 +78,91 @@ export const Aside: FC = () => {
 
     listener();
   }, [nav.pathname]);
+
+  useEffect(() => {
+    userInfoRequest().then(resp => {
+      resp.json().then(data => {
+        var arr = [
+          {
+            icon: <Domains />,
+            title: urls[1].domains,
+            href: 'domains',
+            count: count.domain,
+          },
+          {
+            icon: <Systems />,
+            title: urls[1].systems,
+            href: 'systems',
+            count: count.system,
+          },
+          {
+            icon: <Tasks />,
+            title: urls[1].tasks,
+            href: 'tasks',
+            count: count.task,
+          },
+          {
+            icon: <LogicObjects />,
+            title: urls[1]['logic-objects'],
+            href: 'logic-objects',
+            count: count.entity,
+          },
+          {
+            icon: <Queries />,
+            title: urls[1].queries,
+            href: 'queries',
+            count: count.entity_query,
+          },
+          {
+            icon: <Samples />,
+            title: urls[1].samples,
+            href: 'samples',
+            count: count.entity_sample,
+          },
+          {
+            icon: <Assets />,
+            title: urls[1].assets,
+            href: 'data_assets',
+            count: count.data_asset,
+          },
+          {
+            icon: <Indicators />,
+            title: urls[1].indicators,
+            href: 'indicators',
+            count: count.indicator,
+          },
+          {
+            icon: <BusinessEntities />,
+            title: urls[1]['business-entities'],
+            href: 'business-entities',
+            count: count.business_entity,
+          },
+          {
+            icon: <Products />,
+            title: urls[1].products,
+            href: 'products',
+            count: count.product,
+          },
+          {
+            icon: <DQRules />,
+            title: urls[1].dq_rule,
+            href: 'dq_rule',
+            count: count.dq_rule,
+          }
+        ];
+      
+        if (data.permissions.filter((x:String) => x == 'task_r').length > 0)
+          arr.push({
+            icon: <Domains />,
+            title: urls[1].draft,
+            href: 'drafts',
+            count: count.draft
+          });
+
+        setLinks(arr);
+      });
+    })
+  }, [ count ]);
 
   const linksSettings = [
     {
@@ -115,80 +203,7 @@ export const Aside: FC = () => {
     }
   ];
 
-  const links = [
-    {
-      icon: <Domains />,
-      title: urls[1].domains,
-      href: 'domains',
-      count: count.domain,
-    },
-    {
-      icon: <Systems />,
-      title: urls[1].systems,
-      href: 'systems',
-      count: count.system,
-    },
-    {
-      icon: <Tasks />,
-      title: urls[1].tasks,
-      href: 'tasks',
-      count: count.task,
-    },
-    {
-      icon: <LogicObjects />,
-      title: urls[1]['logic-objects'],
-      href: 'logic-objects',
-      count: count.entity,
-    },
-    {
-      icon: <Queries />,
-      title: urls[1].queries,
-      href: 'queries',
-      count: count.entity_query,
-    },
-    {
-      icon: <Samples />,
-      title: urls[1].samples,
-      href: 'samples',
-      count: count.entity_sample,
-    },
-    {
-      icon: <Assets />,
-      title: urls[1].assets,
-      href: 'data_assets',
-      count: count.data_asset,
-    },
-    {
-      icon: <Indicators />,
-      title: urls[1].indicators,
-      href: 'indicators',
-      count: count.indicator,
-    },
-    {
-      icon: <BusinessEntities />,
-      title: urls[1]['business-entities'],
-      href: 'business-entities',
-      count: count.business_entity,
-    },
-    {
-      icon: <Products />,
-      title: urls[1].products,
-      href: 'products',
-      count: count.product,
-    },
-    {
-      icon: <DQRules />,
-      title: urls[1].dq_rule,
-      href: 'dq_rule',
-      count: count.dq_rule,
-    },
-    {
-      icon: <Domains />,
-      title: urls[1].draft,
-      href: 'drafts',
-      count: count.draft
-    }
-  ];
+  
 
   const menu = useRoutes([
     {

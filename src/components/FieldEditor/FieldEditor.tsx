@@ -112,7 +112,9 @@ export const FieldEditor: FC<FieldEditorProps> = ({
   
 
   const { MentionSuggestions, plugins } = useMemo(() => {
-    const mentionPlugin = createMentionPlugin();
+    const mentionPlugin = createMentionPlugin({ theme: { mention: styles.m_mention, mentionSuggestions: styles.m_suggestions, mentionSuggestionsPopup: styles.m_suggestions_popup,
+      mentionSuggestionsEntry: styles.m_suggestions_entry, mentionSuggestionsEntryFocused: styles.m_suggestions_entry_focused, mentionSuggestionsEntryText: styles.m_suggestions_entry_text },
+      supportWhitespace: true });
     // eslint-disable-next-line no-shadow
     const { MentionSuggestions } = mentionPlugin;
     // eslint-disable-next-line no-shadow

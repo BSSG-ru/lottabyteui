@@ -7,7 +7,7 @@ import Button from 'react-bootstrap/Button';
 import useUrlState from '@ahooksjs/use-url-state';
 import classNames from 'classnames';
 import styles from './BusinessEntity.module.scss';
-import { getBusinessEntityDisplayValue, getDataTypeAutocompleteObjects, getDataTypeDisplayValue, getDomainAutocompleteObjects, getDomainDisplayValue, handleHttpError, i18n, loadEditPageData, rateClickedHandler, setDataModified, tagAddedHandler, tagDeletedHandler, updateArtifactsCount, updateEditPageReadOnly, uuid } from '../../utils';
+import { getBusinessEntityDisplayValue, getDataTypeAutocompleteObjects, getDataTypeDisplayValue, getDomainAutocompleteObjects, getDomainDisplayValue, handleHttpError, i18n, loadEditPageData, rateClickedHandler, setCookie, setDataModified, tagAddedHandler, tagDeletedHandler, updateArtifactsCount, updateEditPageReadOnly, uuid } from '../../utils';
 import { Versions, VersionData } from '../../components/Versions';
 
 import { FieldEditor } from '../../components/FieldEditor';
@@ -35,6 +35,7 @@ import { Table } from '../../components/Table';
 import { assetsTableColumns, entityTableColumns } from '../../mocks/logic_objects';
 import { Tabs } from '../../components/Tabs';
 import { userInfoRequest } from '../../services/auth';
+import { RelatedObjectsControl } from '../../components/RelatedObjectsControl';
 
 export function BusinessEntity() {
   const navigate = useNavigate();
@@ -45,7 +46,7 @@ export function BusinessEntity() {
   const [, setLoading] = useState(true);
 
   const [data, setData] = useState({
-    metadata: { id: '', artifact_type: 'business_entity', version_id: '', tags: [], state: 'PUBLISHED', published_id: '', ancestor_draft_id: '' },
+    metadata: { id: '', artifact_type: 'business_entity', version_id: '', tags: [], state: 'PUBLISHED', published_id: '', ancestor_draft_id: '', workflow_task_id: '' },
     entity: {
       name: '', description: '', tech_name: '', definition: '', regulation: '', alt_names: [], synonym_ids: [], be_link_ids: [], domain_id: null, parent_id: null,
       formula: '', examples: '', link: '', datatype_id: null, limits: '', roles: ''
@@ -201,6 +202,8 @@ export function BusinessEntity() {
 
       userInfoRequest().then(resp => {
         resp.json().then(data => {
+          //console.log('set userp', data.permissions);
+          setCookie('userp', data.permissions.join(','), { path: '/' });
           setData((prev) => ({ ...prev, metadata: { ...prev.metadata, state: 'DRAFT' }, entity: { ...prev.entity, domain_id: data.user_domains ? data.user_domains[0] : null} }));
           setDataModified(false);
           setReadOnly(false);
@@ -325,7 +328,8 @@ export function BusinessEntity() {
       <div className={styles.mainContent}>
         {!businessEntityVersionId && (
           <WFItemControl
-            key={`wfc-${uuid()}`}
+            //key={`wfc-${uuid()}`}
+            key={`wfc-be`}
             itemMetadata={data.metadata}
             itemIsReadOnly={isReadOnly}
             onEditClicked={() => { setReadOnly(false); }}
@@ -350,7 +354,7 @@ export function BusinessEntity() {
             }}
           />
         )}
-        <div className={styles.title}>
+        <div className={styles.title} data-uitest="be_name">
           <FieldEditor
             isReadOnly={isReadOnly}
             labelPrefix={`${i18n('БИЗНЕС-СУЩНОСТЬ')}: `}
@@ -460,7 +464,7 @@ export function BusinessEntity() {
             </div>
         )}
 
-            <div className={styles.data_row}>
+            <div className={styles.data_row} data-uitest="be_definition">
               <FieldTextareaEditor
                 isReadOnly={isReadOnly}
                 labelPrefix={`${i18n('Определение')}`}
@@ -475,7 +479,7 @@ export function BusinessEntity() {
               />
             </div>
           {!isCreateMode && (
-            <div className={styles.data_row}>
+            <div className={styles.data_row} data-uitest="be_parent">
               <FieldAutocompleteEditor
                 className={styles.editor}
                 label={i18n('Родитель')}
@@ -491,7 +495,7 @@ export function BusinessEntity() {
             </div>
             )}
         
-            <div className={styles.data_row}>
+            <div className={styles.data_row} data-uitest="be_domain">
               <FieldAutocompleteEditor
                 className={styles.editor}
                 label={i18n('Домен')}
@@ -602,7 +606,7 @@ export function BusinessEntity() {
 
         )}
 
-        {!isCreateMode && <Tabs tabs={tabs} tabNumber={state.t} onTabChange={(tab: number) => { setState(() => ({ t: tab })); }} />}
+        <RelatedObjectsControl artifactId={businessEntityId} artifactType='business_entity'></RelatedObjectsControl>
       </div>
       {!isCreateMode && (
         <div className={styles.rightBar}>

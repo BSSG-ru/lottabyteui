@@ -216,6 +216,7 @@ export function Query() {
       <div className={styles.mainContent}>
         {!queryVersionId && (
           <WFItemControl
+            key={`wfc-query-` + data?.metadata?.workflow_task_id}
             itemMetadata={data.metadata}
             itemIsReadOnly={isReadOnly}
             onEditClicked={() => { setReadOnly(false); }}

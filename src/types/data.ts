@@ -22,8 +22,10 @@ export type ProductEntityData = {
     name: string;
     description: string;
     indicator_ids: string[];
+    product_ids: string[];
     entity_attribute_ids: string[];
     domain_id: string | null;
+    entity_query_id: string | null;
     problem: string | null;
     consumer: string | null;
     value: string | null;

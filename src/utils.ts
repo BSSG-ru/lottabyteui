@@ -279,6 +279,15 @@ export const getDomainAutocompleteObjects = async (search: string) => getDomains
   filters_for_join: [],
 }).then((json) => json.items);
 
+export const getEntityQueryAutocompleteObjects = async (search: string) => getEntityQueries({
+  sort: 'name+',
+  global_query: search,
+  limit: 10,
+  offset: 0,
+  filters: [],
+  filters_for_join: [],
+}).then((json) => json.items);
+
 export const getDataTypeAutocompleteObjects = async (search: string) => getDataTypes({
   sort: 'name+',
   global_query: search,
@@ -343,11 +352,11 @@ export const setTablePageSize = (v: number) => {
 };
 
 export const loadEditPageData = (id: string, versionId: string, setData: (data: any) => void, setTags: (tags: any) => void,
-  setLoading: (v: boolean) => void, setLoaded: (v:boolean) => void,
+  setLoading: (v: boolean) => void, setLoaded: (v: boolean) => void,
   getVersion: (id: string, versionId: string) => Promise<any>, loadData: (id: string) => Promise<any>,
-  setRatingData: (v:any) => void, setOwnRating: (v:any) => void, getVersions: (id: string) => Promise<any>,
-  setVersions: (v:any) => void, setReadOnly: (v:boolean) => void, complete: () => void = () => {}
-  ) => {
+  setRatingData: (v: any) => void, setOwnRating: (v: any) => void, getVersions: (id: string) => Promise<any>,
+  setVersions: (v: any) => void, setReadOnly: (v: boolean) => void, complete: () => void = () => { }
+) => {
   const handleData = (json: any) => {
     setData(json);
     setDataModified(false);
@@ -363,10 +372,10 @@ export const loadEditPageData = (id: string, versionId: string, setData: (data: 
 
   };
 
-  if (versionId) { 
-    getVersion(id, versionId).then(handleData).catch(handleHttpError); 
-  } else { 
-    loadData(id).then(handleData).catch(handleHttpError); 
+  if (versionId) {
+    getVersion(id, versionId).then(handleData).catch(handleHttpError);
+  } else {
+    loadData(id).then(handleData).catch(handleHttpError);
   }
 
   getRatingData(id)
@@ -394,11 +403,11 @@ export const loadEditPageData = (id: string, versionId: string, setData: (data: 
     })
     .catch(handleHttpError);
 
-    if (complete)
-      complete();
+  if (complete)
+    complete();
 };
 
-export const tagAddedHandler = (tagName: string, artifactId: string, artifactType: string, artifactState: string, tags: any[], setLoading: (v:boolean) => void,  
+export const tagAddedHandler = (tagName: string, artifactId: string, artifactType: string, artifactState: string, tags: any[], setLoading: (v: boolean) => void,
   setTags: (tags: any) => void, editUrl: string, navigateFunc: (url: string) => void) => {//yhh
 
   if (artifactId) {
@@ -418,7 +427,7 @@ export const tagAddedHandler = (tagName: string, artifactId: string, artifactTyp
         addTag(artifactId, artifactType, tagName)
           .then(() => {
             setLoading(false);
-            setTags((prevTags:any) => [...prevTags, { value: tagName }]);
+            setTags((prevTags: any) => [...prevTags, { value: tagName }]);
           })
           .catch(handleHttpError);
       }
@@ -426,10 +435,10 @@ export const tagAddedHandler = (tagName: string, artifactId: string, artifactTyp
   }
 };
 
-export const tagDeletedHandler = (tagName: string, artifactId: string, artifactType: string, artifactState: string, setLoading: (v:boolean) => void,
+export const tagDeletedHandler = (tagName: string, artifactId: string, artifactType: string, artifactState: string, setLoading: (v: boolean) => void,
   setTags: (tags: any) => void, editUrl: string, navigateFunc: (url: string) => void) => {
 
-    if (artifactId) {
+  if (artifactId) {
     setLoading(true);
 
     if (artifactState === 'PUBLISHED') {
@@ -445,14 +454,14 @@ export const tagDeletedHandler = (tagName: string, artifactId: string, artifactT
       deleteTag(artifactId, artifactType, tagName)
         .then(() => {
           setLoading(false);
-          setTags((prevTags:any) => prevTags.filter((x:any) => x.value !== tagName));
+          setTags((prevTags: any) => prevTags.filter((x: any) => x.value !== tagName));
         })
         .catch(handleHttpError);
     }
   }
 };
 
-export const rateClickedHandler = (rating: number, artifactId: string, artifactType: string, setOwnRating: (v:any) => void, setRatingData: (v:any) => void) => {
+export const rateClickedHandler = (rating: number, artifactId: string, artifactType: string, setOwnRating: (v: any) => void, setRatingData: (v: any) => void) => {
   if (artifactId) {
     setRating(artifactId, artifactType, rating)
       .then(() => {
@@ -471,9 +480,9 @@ export const rateClickedHandler = (rating: number, artifactId: string, artifactT
   }
 };
 
-export const updateEditPageReadOnly = (json: any, setReadOnly: (v:boolean) => void, done: () => void) => {
+export const updateEditPageReadOnly = (json: any, setReadOnly: (v: boolean) => void, done: () => void) => {
   if (json.metadata.workflow_task_id) {
-    getWorkflowTask(json.metadata.workflow_task_id).then((task:any) => {
+    getWorkflowTask(json.metadata.workflow_task_id).then((task: any) => {
       if (task) {
         const obj = JSON.parse(task);
         setReadOnly(obj.entity.workflow_state && obj.entity.workflow_state != 'Send artifact to Review');
@@ -491,4 +500,9 @@ export const setBreadcrumbEntityName = (id: string, name: string) => {
   if (el !== null) {
     el.innerText = name;
   }
+};
+
+export const hasPermission = (permission: string) => {
+  var userp = getCookie('userp');
+  return userp ? userp.split(',').indexOf(permission) !== -1 : false;
 };

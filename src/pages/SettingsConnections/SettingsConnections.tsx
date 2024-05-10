@@ -42,16 +42,12 @@ export function SettingsConnections() {
       header: i18n('Название'),
     },
     {
-      property: 'connector_id',
-      filter_property: 'connector.name',
+      property: 'connector_name',
       header: i18n('Тип подключения'),
-      render: (item: any) => <span>{item.connector_name}</span>,
     },
     {
-      property: 'system_id',
-      filter_property: 'system.name',
-      header: i18n('Система'),
-      render: (item: any) => <span>{item.system_name}</span>,
+      property: 'system_name',
+      header: i18n('Система')
     },
   ];
 

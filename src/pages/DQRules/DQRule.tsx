@@ -209,6 +209,7 @@ export function DQRule() {
       <div className={styles.mainContent}>
         {!dqRuleVersionId && (
           <WFItemControl
+            key={`wfc-rule-` + data?.metadata?.workflow_task_id}
             itemMetadata={data.metadata}
             itemIsReadOnly={isReadOnly}
             onEditClicked={() => { setReadOnly(false); }}

@@ -15,6 +15,7 @@ export const getProductVersion = async (productId: string, versionId: string) =>
 export const updateProduct = async (productId: string, data: any) => fetchWithRefresh(`${URL}/v1/product/${encodeURIComponent(productId)}`, optionsPatch(data)).then(
   handleHttpResponse,
 );
+export const searchProducts = async (request: any) => fetchWithRefresh(`${URL}/v1/product/search`, optionsPost(request)).then(handleHttpResponse);
 
 export const getProductVersions = async (productId: string) => fetchWithRefresh(
   `${URL}/v1/product/${encodeURIComponent(productId)}/versions?limit=1000`,

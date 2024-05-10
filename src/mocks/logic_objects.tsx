@@ -54,10 +54,10 @@ export const attributesTableColumns = [
     header: i18n('Описание'),
   },
   {
-    property: 'attribute_type',
+    property: 'attribute_type_name',
     header: i18n('Тип'),
-    filter_property: 'attribute_type_name',
-    render: (row: any) => renderAttr(row, 'attribute_type'),
+    filter_property: 'eat.name',
+    //render: (row: any) => renderAttr(row, 'attribute_type'),
   },
   {
     property: 'is_pk',
@@ -66,16 +66,9 @@ export const attributesTableColumns = [
     render: (row: any) => (row.is_pk ? i18n('Да') : '')
   },
   {
-    property: 'modified',
+    property: 'created',
     header: i18n('Дата создания'),
-    render: (row: any) => renderDate(row, 'modified'),
-  },
-  {
-    property: 'tags',
-    header: i18n('Теги'),
-    filterDisabled: false,
-    sortDisabled: true,
-    render: (row: any) => row.tags.join(', '),
+    render: (row: any) => renderDate(row, 'created'),
   }
 ];
 

@@ -24,7 +24,7 @@ export const Crumbs: FC = () => {
     if (item?.[pathnameElem]) {
       crumbs.push({
         title: item[pathnameElem],
-        href: pathnameElem,
+        href: ((index > 1 && urls[1][pathnameElems[index - 1]]) ? ('/' + pathnameElems[index - 1]) : '') + '/' + pathnameElem,
         id: index.toString(),
       });
     } else if (regexExp.test(pathnameElem)) {
@@ -46,7 +46,7 @@ export const Crumbs: FC = () => {
             [styles.link_active]: index === crumbs.length - 1,
           })}
           href={crumb.href}
-          onClick={(e) => { e.preventDefault(); doNavigate('/' + crumb.href, navigate); }}
+          onClick={(e) => { e.preventDefault(); doNavigate(crumb.href, navigate); }}
         >
           {i18n(crumb.title)}
         </a>

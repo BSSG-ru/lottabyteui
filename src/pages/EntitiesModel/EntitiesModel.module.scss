@@ -109,13 +109,44 @@ main {
     width: 100%;
     height: 100%;
     flex: 1 1;
+    position: relative;
+}
 
+.comments_panel {
+  flex: 0 0 300px;
+  background: #fff;
+
+  label {
+    display: block;
+    text-align: center;
+  }
+
+  .comment_add {
+    text-align: right;
+    padding: 3px;
+
+    button {
+      padding: 4px;
+      margin-top: 3px;
+    }
+  }
+
+  .comment {
+    margin: 5px;
+    border: 1px solid var(--blue-70);
+    border-radius: 4px;
+    padding: 4px;
+
+    .title {
+      font-weight: bold;
+    }
+  }
 }
 
 .leftToolBar {
   position: absolute;
   top: 100px;
-  left: 280px;
+  left: 20px;
   width: 40px;
   background: #fff;
   padding: 8px;
@@ -150,7 +181,7 @@ main {
 .rightToolBar {
     position: absolute;
     top: 100px;
-    right: 320px;
+    right: 40px;
     width: 40px;
     background: #fff;
     padding: 8px;

@@ -5,7 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import classNames from 'classnames';
 import useUrlState from '@ahooksjs/use-url-state';
 import styles from './DataAssets.module.scss';
-import { doNavigate, getDomainAutocompleteObjects, getDomainDisplayValue, getDQRuleAutocompleteObjects, getDQRuleDisplayValue, getDQRuleSettings, getEntityDisplayValue, getSystemAutocompleteObjects, getSystemDisplayValue, getTablePageSize, handleHttpError, i18n, loadEditPageData, rateClickedHandler, setBreadcrumbEntityName, setDataModified, tagAddedHandler, tagDeletedHandler, updateArtifactsCount, updateEditPageReadOnly, uuid } from '../../utils';
+import { doNavigate, getDomainAutocompleteObjects, getDomainDisplayValue, getDQRuleAutocompleteObjects, getDQRuleDisplayValue, getDQRuleSettings, getEntityDisplayValue, getSystemAutocompleteObjects, getSystemDisplayValue, getTablePageSize, handleHttpError, i18n, loadEditPageData, rateClickedHandler, setBreadcrumbEntityName, setCookie, setDataModified, tagAddedHandler, tagDeletedHandler, updateArtifactsCount, updateEditPageReadOnly, uuid } from '../../utils';
 import {
   createDataAsset,
   getAsset,
@@ -36,6 +36,7 @@ import { AssetData, TData, TDQRule } from '../../types/data';
 import { v4 } from 'uuid';
 import { FieldCheckboxEditor } from '../../components/FieldCheckboxEditor';
 import { userInfoRequest } from '../../services/auth';
+import { RelatedObjectsControl } from '../../components/RelatedObjectsControl';
 
 export function DataAsset() {
   const navigate = useNavigate();
@@ -218,6 +219,8 @@ export function DataAsset() {
 
       userInfoRequest().then(resp => {
         resp.json().then(data => {
+          //console.log('set userp', data.permissions);
+          setCookie('userp', data.permissions.join(','), { path: '/' });
           setData((prev) => ({ ...prev, metadata: { ...prev.metadata, state: 'DRAFT' }, entity: { ...prev.entity, domain_id: data.user_domains ? data.user_domains[0] : null} }));
           setDataModified(false);
           setReadOnly(false);
@@ -424,7 +427,7 @@ export function DataAsset() {
       <div className={styles.mainContent}>
         {!assetVersionId && (
           <WFItemControl
-            key={`wfc-${uuid()}`}
+            key={`wfc-asset-` + data?.metadata?.workflow_task_id}
             itemMetadata={data.metadata}
             itemIsReadOnly={isReadOnly}
             onEditClicked={() => { setReadOnly(false); }}
@@ -492,7 +495,7 @@ export function DataAsset() {
           
           <div className={styles.data_row}>
             <FieldAutocompleteEditor
-              className=""
+              className="domain_test_ui"
               isReadOnly={isReadOnly}
               label={i18n('Домен')}
               defaultValue={data.entity.domain_id}
@@ -509,7 +512,7 @@ export function DataAsset() {
           </div>
           <div className={styles.data_row}>
             <FieldAutocompleteEditor
-              className=""
+              className="system_test_ui"
               isReadOnly={isReadOnly}
               label={i18n('Система')}
               defaultValue={data.entity.system_id}
@@ -525,7 +528,7 @@ export function DataAsset() {
           </div>
           <div className={styles.data_row}>
             <FieldAutocompleteEditor
-              className=""
+              className="entity_test_ui"
               isReadOnly={isReadOnly}
               label={i18n('Логический объект')}
               defaultValue={data.entity.entity_id}
@@ -658,7 +661,7 @@ export function DataAsset() {
           </div>
         )}
 
-        {!isCreateMode && <Tabs tabs={tabs} tabNumber={state.t} onTabChange={(tab: number) => { setState(() => ({ t: tab })); }} />}
+        <RelatedObjectsControl artifactId={assetId} artifactType='data_asset'></RelatedObjectsControl>
       </div>
       <div className={styles.rightBar}>
         {!isCreateMode && data.metadata.state == 'PUBLISHED' && (

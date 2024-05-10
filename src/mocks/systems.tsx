@@ -218,7 +218,7 @@ export const beTableColumns = [
     header: i18n('Альтернативные наименования'),
     render: (row: any) => <span>{row.alt_names ? row.alt_names.join(', ') : ''}</span>
   },
-  {
+  /*{
     property: 'synonym',
     filter_property: 'synonyms',
     sortDisabled: true,
@@ -226,12 +226,11 @@ export const beTableColumns = [
     render: (row: any) => {
       return row.synonyms.map((s:any) => { return s.name; }).join(', ');
     },
-  },
+  },*/
   {
-    property: 'indicator_type_id',
-    filter_property: 'indicator_type.name',
-    header: i18n('Тип'),
-    render: (item: any) => <span>{item.indicator_type_name}</span>,
+    property: 'datatype_name',
+    filter_property: 'datatype.name',
+    header: i18n('Тип')
   },
   {
     property: 'modified',
@@ -259,7 +258,7 @@ export const prodTableColumns = [
     property: 'name',
     header: i18n('Название'),
   },
-  {
+  /*{
     property: 'product_type',
     filter_property: 'product_types',
     sortDisabled: true,
@@ -267,7 +266,7 @@ export const prodTableColumns = [
     render: (row: any) => {
       return row.product_types.map((s:any) => { return s.name; }).join(', ');
     },
-  },
+  },*/
   {
     property: 'modified',
     header: i18n('Дата создания'),

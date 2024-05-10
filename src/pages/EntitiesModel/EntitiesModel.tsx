@@ -15,11 +15,15 @@ import MinusIcon from '../../assets/icons/minus.png';
 import FitIcon from '../../assets/icons/fit.png';
 import PointerToolIcon from '../../assets/icons/pointer-white.svg';
 import AreaSelectToolIcon from '../../assets/icons/area-select-white.svg';
+import CommentsToolIcon from '../../assets/icons/comments-btn.svg';
 import ExportToolIcon from '../../assets/icons/export.svg';
+import CreateToolIcon from '../../assets/icons/create-obj-white.svg';
 import { Button } from '../../components/Button';
 import classNames from 'classnames';
 import { Table } from '../../components/Table';
 import { Input } from '../../components/Input';
+import { Textarea } from '../../components/Textarea';
+import { createComment, getComments } from '../../services/pages/comments';
 
 
 export type EntitiesModelProps = {
@@ -39,6 +43,10 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
     const [entitiesSearch, setEntitiesSearch] = useState<string>('');
     const [entitiesList, setEntitiesList] = useState<any[]>([]);
     const [toolBarMode, setToolBarMode] = useState<string>('pointer');
+    const [showComments, setShowComments] = useState<boolean>(false);
+    const [comments, setComments] = useState<any[]>([]);
+    const [newCommentText, setNewCommentText] = useState<string>('');
+    const [showRightSidebar, setShowRightSidebar] = useState<boolean>(true);
 
     const diagramRef = useCallback((ref: ReactDiagram | null) => {
         if (ref != null) {
@@ -61,6 +69,16 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
             setEntitiesList(json.items);
           }).catch(handleHttpError);
     }, [ entitiesSearch ]);
+
+
+    const loadComments = () => {
+        getComments('00000000-0000-0000-0000-000000000000').then(json => {
+            console.log('ccc', json);
+            setComments(json);
+        })
+    };
+
+    useEffect(() => { loadComments(); }, []);
 
     const getNewNodeDataFromRepo = (nodeData: any, point: any) => {
         nodeData.type = 'defaultNodeType';
@@ -100,6 +118,7 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
             });
 
             setDomainNames(domains_arr);
+            setFilterDomainNames(domains_arr);
             setTagNames(tags_arr);
 
             document.querySelector('.diagram-div')?.addEventListener('drop', function(e) { 
@@ -364,9 +383,40 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
     document.addEventListener('dragover', function (e) { e.preventDefault(); });
     document.addEventListener('dragend', function (e) {  });
 
+    const performUndo = () => {
+        if (diagram) {
+            diagram.clearSelection();
+            diagram.undoManager.undo();
+        }
+    };
+
+    const performRedo = () => {
+        if (diagram) {
+            diagram.clearSelection();
+            diagram.undoManager.redo();
+        }
+    };
+
+    const addComment = () => {
+        createComment({ artifact_id: '00000000-0000-0000-0000-000000000000', artifact_type: 'entity', comment_text: newCommentText }).then(json => {
+            setNewCommentText('');
+            loadComments();
+        });
+    };
+
     return (
         <div className={styles.dg_outer_wrap}>
-            
+            {showComments && (<div className={styles.comments_panel}>
+                <div className={styles.comment_add}>
+                    <Textarea placeholder='Введите комментарий' value={newCommentText} onChange={(e) => setNewCommentText(e.target.value)} />
+                    <Button onClick={addComment}>Добавить</Button>
+                </div>
+                <label>{i18n('Комментарии')}</label>
+                {comments.map(c => (<div key={'comment' + c.id} className={styles.comment}>
+                    <div className={styles.title}>{c.modifier_name} {new Date(c.modified).toLocaleString()}</div>
+                    <div className={styles.text}>{c.comment_text}</div>
+                </div>))}
+            </div>)}
             <div className={styles.dg_wrap}>
                 <div className={styles.filter_domains}>
                     <label>Домены</label>
@@ -392,9 +442,11 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
                     <a className={classNames(styles.btn, { [styles.active]: toolBarMode == 'select-area'})} onClick={() => { setToolBarMode('select-area'); }}><img src={AreaSelectToolIcon} /></a>
                     <div className={styles.sep}></div>
                     <a className={styles.btn} onClick={() => { if (diagram) exportDiagram(diagram, 'image/png', 'entity-model', '1'); }}><img src={ExportToolIcon} /></a>
+                    <a className={classNames(styles.btn, { [styles.active]: showComments})} onClick={() => setShowComments(!showComments)}><img src={CommentsToolIcon} /></a>
+                    <a className={classNames(styles.btn, { [styles.active]: showRightSidebar})} onClick={() => setShowRightSidebar(!showRightSidebar)}><img src={CreateToolIcon} /></a>
                 </div>
             </div>
-            <div className={styles.right_sidebar}>
+            {showRightSidebar && (<div className={styles.right_sidebar}>
                 <div className={styles.search}>
                     <Input placeholder={i18n('Поиск')} findBtn className={styles.input_global} defaultValue={entitiesSearch} onBlur={(e) => { setEntitiesSearch(e.target.value); }} />
                 </div>
@@ -402,7 +454,7 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
                 <div className={styles.entities_list}>
                     {entitiesList.map(item => (<a href='#' onClick={() => { return false; }} key={'ei-' + item.id} className={classNames('entity-item', styles.entity_item)} data-id={item.id} data-name={item.name}>{item.name}</a>))}
                 </div>
-            </div>
+            </div>)}
         </div>
     );
         

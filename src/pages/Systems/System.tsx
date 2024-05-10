@@ -30,6 +30,7 @@ import { ReactComponent as PlusInCircle } from '../../assets/icons/plus-in-circl
 import { ReactComponent as Close } from '../../assets/icons/close.svg';
 import { setRecentView } from '../../services/pages/recentviews';
 import { WFItemControl } from '../../components/WFItemControl/WFItemControl';
+import { RelatedObjectsControl } from '../../components/RelatedObjectsControl';
 
 export function System() {
   const [state, setState] = useUrlState({
@@ -43,7 +44,7 @@ export function System() {
       description: '',
       domain_ids: [],
     },
-    metadata: { id: '', artifact_type: 'system', version_id: '', tags: [], state: 'PUBLISHED', ancestor_draft_id: '' },
+    metadata: { id: '', artifact_type: 'system', version_id: '', tags: [], state: 'PUBLISHED', ancestor_draft_id: '', workflow_task_id: '' },
   });
   const [ratingData, setRatingData] = useState({ rating: 0, total_rates: 0 });
   const [ownRating, setOwnRating] = useState(0);
@@ -326,6 +327,7 @@ export function System() {
       <div className={styles.mainContent}>
         {!systemVersionId && (
           <WFItemControl
+            key={`wfc-sys-` + data?.metadata?.workflow_task_id}
             itemMetadata={data.metadata}
             itemIsReadOnly={isReadOnly}
             onEditClicked={() => { setReadOnly(false); }}
@@ -430,7 +432,8 @@ export function System() {
             onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, systemId, 'system', data.metadata.state ?? '', setLoading, setTags, '/systems/edit/', navigate)}
           />
         )}
-        {!isCreateMode && <Tabs tabs={tabs} tabNumber={state.t} onTabChange={(tab: number) => { setState(() => ({ t: tab })); }} />}
+
+        <RelatedObjectsControl artifactId={systemId} artifactType='system'></RelatedObjectsControl>
       </div>
       {!isCreateMode && (
         <div className={styles.rightBar}>

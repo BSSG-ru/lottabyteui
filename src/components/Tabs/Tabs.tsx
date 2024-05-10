@@ -1,7 +1,7 @@
 /* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
 /* eslint-disable jsx-a11y/click-events-have-key-events */
 /* eslint-disable react/function-component-definition */
-import React, { FC, useState } from 'react';
+import React, { FC, useEffect, useState } from 'react';
 
 import styles from './Tabs.module.scss';
 
@@ -18,12 +18,17 @@ export const Tabs: FC<TabsProps> = ({ tabs, tabNumber = 1, onTabChange = () => {
     tabs[i].id = i + 1;
   }
 
-  const [activeTab, setActiveTab] = useState(tabs[tabNumber - 1].id);
+  const [activeTab, setActiveTab] = useState(tabs && tabs[tabNumber - 1] ? tabs[tabNumber - 1].id : 0);
 
   const tabClick = (tab: TabProp) => {
     setActiveTab(() => tab.id);
     onTabChange(Number(tab.id));
   };
+
+  useEffect(() => {
+    if (tabs && tabs[tabNumber - 1])
+    setActiveTab(() => tabs[tabNumber - 1].id);
+  }, [ tabs ]);
 
   if (tabs.length === 1 && tabs[0].key === 'null' && tabs[0].title === 'null') {
     return <> </>;

@@ -5,7 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import classNames from 'classnames';
 import { v4 } from 'uuid';
 import styles from './Products.module.scss';
-import { doNavigate, getArtifactUrl, getDQRuleAutocompleteObjects, getDQRuleDisplayValue, getDQRuleSettings, getDomainAutocompleteObjects, getDomainDisplayValue, handleHttpError, i18n, setDataModified, updateArtifactsCount, uuid, getBusinessEntityDisplayValue, loadEditPageData, tagAddedHandler, tagDeletedHandler, rateClickedHandler, updateEditPageReadOnly, setBreadcrumbEntityName } from '../../utils';
+import { doNavigate, getQueryAutocompleteObjects, getQueryDisplayValue, getArtifactUrl, getDQRuleAutocompleteObjects, getDQRuleDisplayValue, getDQRuleSettings, getDomainAutocompleteObjects, getDomainDisplayValue, handleHttpError, i18n, setDataModified, updateArtifactsCount, uuid, getBusinessEntityDisplayValue, loadEditPageData, tagAddedHandler, tagDeletedHandler, rateClickedHandler, updateEditPageReadOnly, setBreadcrumbEntityName, setCookie, getEntityQueryAutocompleteObjects } from '../../utils';
 import { Tags, TagProp } from '../../components/Tags';
 import { Versions, VersionData } from '../../components/Versions';
 import { FieldArrayEditor } from '../../components/FieldArrayEditor/FieldArrayEditor';
@@ -15,7 +15,7 @@ import { WFItemControl } from '../../components/WFItemControl/WFItemControl';
 import { ReactComponent as CloseIcon } from '../../assets/icons/close.svg';
 import { ReactComponent as PlusInCircle } from '../../assets/icons/plus-in-circle.svg';
 import {
-  createProduct, getProduct, getProductSupplyVariant, getProductType, getProductVersion, getProductVersions, searchProductSupplyVariants, searchProductTypes, updateProduct,
+  createProduct, searchProducts, getProduct, getProductSupplyVariant, getProductType, getProductVersion, getProductVersions, searchProductSupplyVariants, searchProductTypes, updateProduct,
 } from '../../services/pages/products';
 import { getIndicator, searchIndicators } from '../../services/pages/indicators';
 import { ProductData, TDQRule, TData } from '../../types/data';
@@ -32,6 +32,8 @@ import { FieldCheckboxEditor } from '../../components/FieldCheckboxEditor/FieldC
 import { getBusinessEntities } from '../../services/pages/businessEntities';
 import { userInfoRequest } from '../../services/auth';
 import { Prev } from 'react-bootstrap/esm/PageItem';
+import { RelatedObjectsControl } from '../../components/RelatedObjectsControl';
+import { FieldTextareaEditor } from '../../components/FieldTextareaEditor';
 
 export type AttribData = {
   id: string;
@@ -43,8 +45,10 @@ export function Product() {
 
   const [, setLoading] = useState(true);
   const [data, setData] = useState<ProductData>({
-    entity: { name: '', description: '', indicator_ids: [], entity_attribute_ids: [], domain_id: null, problem: '', consumer: '', value: '', finance_source: '', product_type_ids: [], 
-      product_supply_variant_ids: [], data_asset_ids: [], dq_rules: [], link: '', limits: '', limits_internal: '', term_link_ids: [], roles: '' },
+    entity: {
+      name: '', description: '', indicator_ids: [], entity_attribute_ids: [], domain_id: null, entity_query_id: null, product_ids: [], problem: '', consumer: '', value: '', finance_source: '', product_type_ids: [],
+      product_supply_variant_ids: [], data_asset_ids: [], dq_rules: [], link: '', limits: '', limits_internal: '', term_link_ids: [], roles: ''
+    },
     metadata: { id: '', artifact_type: 'product', version_id: '', tags: [], state: 'PUBLISHED', ancestor_draft_id: '' },
   });
   const [ratingData, setRatingData] = useState({ rating: 0, total_rates: 0 });
@@ -54,6 +58,7 @@ export function Product() {
 
   const [isCreateMode, setCreateMode] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
+  const [selectedProductNames, setSelectedProductNames] = useState<any[]>([]);
   const [selectedIndicatorNames, setSelectedIndicatorNames] = useState<any[]>([]);
   const [selectedDataAssetNames, setSelectedDataAssetNames] = useState<any[]>([]);
   const [allowedEntityIds, setAllowedEntityIds] = useState<any[]>([]);
@@ -87,12 +92,14 @@ export function Product() {
       loadEditPageData(productId, productVersionId, setData, setTags, setLoading, setLoaded, getProductVersion, getProduct, setRatingData,
         setOwnRating, getProductVersions, setVersions, setReadOnly);
 
-      
+
     } else {
 
       userInfoRequest().then(resp => {
         resp.json().then(data => {
-          setData((prev) => ({ ...prev, metadata: { ...prev.metadata, state: 'DRAFT' }, entity: { ...prev.entity, domain_id: data.user_domains ? data.user_domains[0] : null} }));
+          //console.log('set userp', data.permissions);
+          setCookie('userp', data.permissions.join(','), { path: '/' });
+          setData((prev) => ({ ...prev, metadata: { ...prev.metadata, state: 'DRAFT' }, entity: { ...prev.entity, domain_id: data.user_domains ? data.user_domains[0] : null } }));
           setDataModified(false);
           setReadOnly(false);
           setLoaded(true);
@@ -132,10 +139,20 @@ export function Product() {
     data.entity.indicator_ids.forEach((id) => {
       getIndicator(id).then((json) => {
         let index = data.entity.indicator_ids.indexOf(json.metadata.id);
-        setSelectedIndicatorNames((prev) => (prev.map( (el, i) => { if (i == index) return `<div><a href="${getArtifactUrl(json.metadata.id, 'indicator')}">${json.entity.name}</a></div>`; else return el; } )));
+        setSelectedIndicatorNames((prev) => (prev.map((el, i) => { if (i == index) return `<div><a href="${getArtifactUrl(json.metadata.id, 'indicator')}">${json.entity.name}</a></div>`; else return el; })));
       }).catch(handleHttpError);
     });
   }, [data.entity.indicator_ids]);
+
+  useEffect(() => {
+    setSelectedProductNames(data.entity.product_ids.map(x => ''));
+    data.entity.product_ids.forEach((id) => {
+      getProduct(id).then((json) => {
+        let index = data.entity.product_ids.indexOf(json.metadata.id);
+        setSelectedProductNames((prev) => (prev.map((el, i) => { if (i == index) return `<div><a href="${getArtifactUrl(json.metadata.id, 'product')}">${json.entity.name}</a></div>`; else return el; })));
+      }).catch(handleHttpError);
+    });
+  }, [data.entity.product_ids]);
 
   useEffect(() => {
     const a = [];
@@ -239,8 +256,8 @@ export function Product() {
     getEntityAttributes(entity_id).then(json => {
       console.log('attribs', json);
       if (entitiesCache[entity_id]) {
-        json.resources.forEach((attr:any) => {
-          if (linkedAttribs.items.filter((a:AttribData) => a.id == attr.metadata.id).length == 0) {
+        json.resources.forEach((attr: any) => {
+          if (linkedAttribs.items.filter((a: AttribData) => a.id == attr.metadata.id).length == 0) {
             newItems.push({ ...attr.entity, id: attr.metadata.id, entity_name: entitiesCache[entity_id].entity.name });
           }
         });
@@ -250,8 +267,8 @@ export function Product() {
         getEntity(entity_id).then(jsone => {
           setEntityCache((prev: any) => ({ ...prev, [entity_id]: jsone }));
 
-          json.resources.forEach((attr:any) => {
-            if (linkedAttribs.items.filter((a:AttribData) => a.id == attr.metadata.id).length == 0) {
+          json.resources.forEach((attr: any) => {
+            if (linkedAttribs.items.filter((a: AttribData) => a.id == attr.metadata.id).length == 0) {
               newItems.push({ ...attr.entity, id: attr.metadata.id, entity_name: jsone.entity.name });
             }
           });
@@ -263,7 +280,16 @@ export function Product() {
 
   };
 
-  const getIndicatorOptions = async (search: string) => searchIndicators({ filters: [], filters_for_join: [], global_query: search, limit: 15, offset: 0, sort: 'name+', state: 'PUBLISHED' }).then((json) => json.items.map((item: any) => ({ value: item.id, label: item.name, name: item.name })));
+  const getIndicatorOptions = async (search: string) => searchIndicators({ filters: [], filters_for_join: [], global_query: search, limit: 15, offset: 0, sort: null, state: 'PUBLISHED' }).then((json) => json.items.map((item: any) => ({ value: item.id, label: item.name, name: item.name })));
+
+  const getProductOptions = async (search: string) => searchProducts({
+    filters: [{
+      "column": "id",
+      "value": productId,
+      "operator": "NOT_EQUAL"
+    }], filters_for_join: [], global_query: search, limit: 15, offset: 0, sort: null, state: 'PUBLISHED'
+  }).then((json) => json.items.map((item: any) => ({ value: item.id, label: item.name, name: item.name })));
+
 
   const getDataAssetOptions = async (search: string) => searchAssets({ filters: [], filters_for_join: [], global_query: search, limit: 15, offset: 0, sort: 'name+', state: 'PUBLISHED' }).then((json) => json.items.map((item: any) => ({ value: item.id, label: item.name, name: item.name })));
 
@@ -391,7 +417,7 @@ export function Product() {
       <div className={styles.mainContent}>
         {!productVersionId && (
           <WFItemControl
-            key={`wfc-${uuid()}`}
+            key={`wfc-prod-` + data?.metadata?.workflow_task_id}
             itemMetadata={data.metadata}
             itemIsReadOnly={isReadOnly}
             onEditClicked={() => { setReadOnly(false); }}
@@ -410,7 +436,7 @@ export function Product() {
               setDataModified(false);
               setBreadcrumbEntityName(productId, d.entity.name);
               setTags(d.metadata.tags ? d.metadata.tags.map((x: any) => ({ value: x.name })) : []);
-              updateEditPageReadOnly(d, setReadOnly, () => {  setLoading(false); setLoaded(true); });
+              updateEditPageReadOnly(d, setReadOnly, () => { setLoading(false); setLoaded(true); });
             }}
           />
         )}
@@ -434,42 +460,41 @@ export function Product() {
           <button className={styles.btn_scheme} onClick={() => { doNavigate(`/products-model/${encodeURIComponent(productId)}`, navigate); }}>{i18n('Схема')}</button>
         )}
         {!isCreateMode && (
-          <Tags
-            isReadOnly={isReadOnly}
-            tags={tags}
-            onTagAdded={(tagName: string) => tagAddedHandler(tagName, productId, 'product', data.metadata.state ?? '', tags, setLoading, setTags, '/products/edit/', navigate)}
-            onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, productId, 'product', data.metadata.state ?? '', setLoading, setTags, '/products/edit/', navigate)}
-          />
+          <div data-uitest="product_tag">
+            <Tags
+              isReadOnly={isReadOnly}
+              tags={tags}
+              onTagAdded={(tagName: string) => tagAddedHandler(tagName, productId, 'product', data.metadata.state ?? '', tags, setLoading, setTags, '/products/edit/', navigate)}
+              onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, productId, 'product', data.metadata.state ?? '', setLoading, setTags, '/products/edit/', navigate)}
+            />
+          </div>
         )}
-        <div className={styles.domain}>
-              <FieldAutocompleteEditor
-                className={styles.long_input}
-                label={`${i18n('Домен')}: `}
+        <div className={styles.domain} data-uitest="product_domain">
+          <FieldAutocompleteEditor
+            className={styles.long_input}
+            label={`${i18n('Домен')}: `}
 
-                defaultValue={data.entity.domain_id}
-                valueSubmitted={(i) => updateProductField('domain_id', i)}
-                getDisplayValue={getDomainDisplayValue}
-                getObjects={getDomainAutocompleteObjects}
-                showValidation={showValidation}
-                artifactType="domain"
-                isReadOnly={isReadOnly}
-                allowClear
-              />
-            </div>
+            defaultValue={data.entity.domain_id}
+            valueSubmitted={(i) => updateProductField('domain_id', i)}
+            getDisplayValue={getDomainDisplayValue}
+            getObjects={getDomainAutocompleteObjects}
+            showValidation={showValidation}
+            artifactType="domain"
+            isReadOnly={isReadOnly}
+            allowClear
+          />
+        </div>
         {!isCreateMode && (
           <>
-            <div className={styles.description}>
-              <FieldEditor
+            <div className={styles.description} data-uitest="product_description">
+              <FieldTextareaEditor
                 isReadOnly={isReadOnly}
-                layout="separated"
+                isMultiline
                 labelPrefix={`${`${i18n('Описание')}:`} `}
                 defaultValue={data.entity.description}
                 className={styles.long_input}
                 valueSubmitted={(val) => {
                   updateProductField('description', val.toString());
-                }}
-                onBlur={(val) => {
-                  updateProductField('description', val);
                 }}
               />
             </div>
@@ -534,8 +559,44 @@ export function Product() {
                 }}
               />
             </div>
-            
-            <div className={styles.indicators}>
+            <div className={styles.entity_query} data-uitest="product_entity_query">
+              <FieldAutocompleteEditor
+                className={styles.long_input}
+                label={`${i18n('Запрос')}: `}
+
+                defaultValue={data.entity.entity_query_id}
+                valueSubmitted={(i) => updateProductField('entity_query_id', i)}
+                getDisplayValue={getQueryDisplayValue}
+                getObjects={getQueryAutocompleteObjects}
+                showValidation={showValidation}
+                artifactType="entity_query"
+                isReadOnly={isReadOnly}
+                allowClear
+              />
+            </div>
+            <div className={styles.products} data-uitest="product_product">
+              <FieldArrayEditor
+                key={`ed-prod-${productId}`}
+                getOptions={getProductOptions}
+                isReadOnly={isReadOnly}
+                layout="separated"
+                labelPrefix={`${i18n('Продукты')}: `}
+                className={styles.long_input}
+                defaultValue={selectedProductNames}
+                inputPlaceholder={i18n('Выберите продукт')}
+                addBtnText={i18n('Добавить')}
+                valueSubmitted={() => { updateProductField('product_ids', data.entity.product_ids); }}
+                onValueIdAdded={(id: string) => {
+                  setData((prev) => ({ ...prev, entity: { ...prev.entity, product_ids: [...prev.entity.product_ids, id] } }));
+                }}
+                onValueIdRemoved={(id: string) => {
+                  const arr = [...data.entity.product_ids];
+                  arr.splice(parseInt(id), 1);
+                  setData((prev) => ({ ...prev, entity: { ...prev.entity, product_ids: arr } }));
+                }}
+              />
+            </div>
+            <div className={styles.indicators} data-uitest="product_indicator">
               <FieldArrayEditor
                 key={`ed-ind-${productId}`}
                 getOptions={getIndicatorOptions}
@@ -601,7 +662,7 @@ export function Product() {
                 }}
               />
             </div>
-            <div className={styles.data_assets}>
+            <div className={styles.data_assets} data-uitest="product_da">
               <FieldArrayEditor
                 key={`ed-dass-${productId}`}
                 getOptions={getDataAssetOptions}
@@ -624,52 +685,52 @@ export function Product() {
               />
             </div>
             {!isCreateMode && (
-                <FieldEditor
-                  isReadOnly={isReadOnly}
-                  layout="separated"
-                  labelPrefix={`${i18n('Ссылка на справочник')} `}
-                  defaultValue={data.entity.link}
-                  className={styles.long_input}
-                  valueSubmitted={(val) => {
-                    updateProductField('link', val.toString());
-                  }}
-                />
+              <FieldEditor
+                isReadOnly={isReadOnly}
+                layout="separated"
+                labelPrefix={`${i18n('Ссылка на справочник')} `}
+                defaultValue={data.entity.link}
+                className={styles.long_input}
+                valueSubmitted={(val) => {
+                  updateProductField('link', val.toString());
+                }}
+              />
             )}
             {!isCreateMode && (
-                <FieldEditor
-                  isReadOnly={isReadOnly}
-                  layout="separated"
-                  labelPrefix={`${i18n('Законодательные ограничения')} `}
-                  defaultValue={data.entity.limits}
-                  className={styles.long_input}
-                  valueSubmitted={(val) => {
-                    updateProductField('limits', val.toString());
-                  }}
-                />
+              <FieldEditor
+                isReadOnly={isReadOnly}
+                layout="separated"
+                labelPrefix={`${i18n('Законодательные ограничения')} `}
+                defaultValue={data.entity.limits}
+                className={styles.long_input}
+                valueSubmitted={(val) => {
+                  updateProductField('limits', val.toString());
+                }}
+              />
             )}
             {!isCreateMode && (
-                <FieldEditor
-                  isReadOnly={isReadOnly}
-                  layout="separated"
-                  labelPrefix={`${i18n('Внутренние ограничения')} `}
-                  defaultValue={data.entity.limits_internal}
-                  className={styles.long_input}
-                  valueSubmitted={(val) => {
-                    updateProductField('limits_internal', val.toString());
-                  }}
-                />
+              <FieldEditor
+                isReadOnly={isReadOnly}
+                layout="separated"
+                labelPrefix={`${i18n('Внутренние ограничения')} `}
+                defaultValue={data.entity.limits_internal}
+                className={styles.long_input}
+                valueSubmitted={(val) => {
+                  updateProductField('limits_internal', val.toString());
+                }}
+              />
             )}
             {!isCreateMode && (
-                <FieldEditor
-                  isReadOnly={isReadOnly}
-                  layout="separated"
-                  labelPrefix={`${i18n('Ключевые роли процесса')} `}
-                  defaultValue={data.entity.roles}
-                  className={styles.long_input}
-                  valueSubmitted={(val) => {
-                    updateProductField('roles', val.toString());
-                  }}
-                />
+              <FieldEditor
+                isReadOnly={isReadOnly}
+                layout="separated"
+                labelPrefix={`${i18n('Ключевые роли процесса')} `}
+                defaultValue={data.entity.roles}
+                className={styles.long_input}
+                valueSubmitted={(val) => {
+                  updateProductField('roles', val.toString());
+                }}
+              />
             )}
             {!isCreateMode && (
               <div className={classNames(styles.data_row, styles.synonyms_row)}>
@@ -697,7 +758,7 @@ export function Product() {
             )}
             <div className={styles.attributes}>
               <div className={`${styles.field_editor} ${styles.long_input}`}>
-                <div className={styles.row_value}>
+                <div className={styles.row_value} data-uitest="product_lo_attr">
                   <div className={styles.value}>{i18n('Атрибуты в связанных дата-активах')}</div>
                   {!isReadOnly && isAttribsEditMode && (
                     <Autocomplete2
@@ -740,7 +801,7 @@ export function Product() {
                         {
                           text: 'Отвязать все атрибуты',
                           onClick: () => {
-                            setLinkedAttribs((prev:any) => ({...prev, items: []}));
+                            setLinkedAttribs((prev: any) => ({ ...prev, items: [] }));
                             setDataModified(true);
                           }
                         }
@@ -769,9 +830,11 @@ export function Product() {
                       onPageChange={(page) => { setTable2Page(page); }}
                       subtitle={i18n('Не привязанные атрибуты')}
                       tableButtons={[
-                        { text: 'Привязать все', onClick: () => {
-                          addAllLinkedAttribs(attribsEntity.value);
-                        }}
+                        {
+                          text: 'Привязать все', onClick: () => {
+                            addAllLinkedAttribs(attribsEntity.value);
+                          }
+                        }
                       ]}
                     />
                   </div>
@@ -852,6 +915,8 @@ export function Product() {
 
           </div>
         )}
+
+        <RelatedObjectsControl artifactId={productId} artifactType='product'></RelatedObjectsControl>
       </div>
       {!isCreateMode && (
         <div className={styles.rightBar}>

@@ -39,16 +39,21 @@ export const WFItemControl: FC<WFItemControlProps> =({ itemMetadata, itemIsReadO
         return false;
     }
 
+    const [workflowTaskId, setWorkflowTaskId] = useState('');
+
     useEffect(() => {
         if (itemMetadata.workflow_task_id) {
-            getWorkflowTask(itemMetadata.workflow_task_id).then((text:string) => {
-                if (text)
-                    setActions(JSON.parse(text).entity.actions);
-            }).catch(handleHttpError);
+            if (workflowTaskId != itemMetadata.workflow_task_id) {
+                setWorkflowTaskId(itemMetadata.workflow_task_id);
+                getWorkflowTask(itemMetadata.workflow_task_id).then((text:string) => {
+                    if (text)
+                        setActions(JSON.parse(text).entity.actions);
+                }).catch(handleHttpError);
+            }
         } else {
             setActions([]);
         }
-    }, [ itemMetadata.workflow_task_id ])
+    }, [ itemMetadata.workflow_task_id ]);
 
     return <div className={styles.wf_item_control}>
         {itemMetadata.state == 'DRAFT' && itemMetadata.published_id && showNotice && (

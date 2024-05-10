@@ -39,7 +39,7 @@ export class Notices extends React.Component<{}, { notices: NoticeData[] }> {
             key={uuid()}
             className={`${styles.notice} ${styles[data.type]}`}
           >
-            <span dangerouslySetInnerHTML={{__html: data.message }}></span>
+            <span dangerouslySetInnerHTML={{__html: data.message.replaceAll(/link\|([^\|]*)\|([^\|]*)\|([^\|]*)/g, '<a href="#" onclick="window.location.href=getArtifactPageUrl(\'$3\', \'$1\'); return false;">$2</a>') }}></span>
             <CloseIcon
               onClick={() => {
                 this.delNotice(data.id);

@@ -86,7 +86,7 @@ export const Autocomplete2: FC<Autocomplete2Props> = ({
         <input type="text" className={styles.input_search} placeholder={placeholder} value={inputValue} onFocus={() => inputFocus()} onBlur={() => { setTimeout( () => { setDropdownShown(false); }, 200);}} onChange={(e) => setInputValue(e.target.value)} onKeyUp={(e) => inputKeyUp(e)} />
         <div className={styles.btn_open} onClick={() => { if (dropdownShown) setDropdownShown(false); else requestItems(''); }}></div>
         <div className={classNames(styles.dropdown, { [styles.opened]: dropdownShown })}>
-            {dropdownItems.map(item => <div key={'dd-i-' + item.id} className={styles.item} onClick={() => dropdownItemClick(item)}>{item.name}</div>)}
+            {dropdownItems.map((item, index) => <div key={'dd-i-' + index} className={styles.item} onClick={() => dropdownItemClick(item)}>{item.name}</div>)}
         </div>
       </div>
     </div>

@@ -9,7 +9,7 @@ import classNames from 'classnames';
 import { RawDraftContentState } from 'draft-js';
 import { v4 } from 'uuid';
 import styles from './Indicators.module.scss';
-import { doNavigate, getArtifactUrl, getDQRuleAutocompleteObjects, getDQRuleDisplayValue, getDQRuleSettings, getDomainAutocompleteObjects, getDomainDisplayValue, handleHttpError, i18n, setDataModified, updateArtifactsCount, getTablePageSize, uuid, getDataTypeDisplayValue, getDataTypeAutocompleteObjects, getBusinessEntityDisplayValue, loadEditPageData, tagAddedHandler, tagDeletedHandler, rateClickedHandler, updateEditPageReadOnly, setBreadcrumbEntityName } from '../../utils';
+import { doNavigate, getArtifactUrl, getDQRuleAutocompleteObjects, getDQRuleDisplayValue, getDQRuleSettings, getDomainAutocompleteObjects, getDomainDisplayValue, handleHttpError, i18n, setDataModified, updateArtifactsCount, getTablePageSize, uuid, getDataTypeDisplayValue, getDataTypeAutocompleteObjects, getBusinessEntityDisplayValue, loadEditPageData, tagAddedHandler, tagDeletedHandler, rateClickedHandler, updateEditPageReadOnly, setBreadcrumbEntityName, setCookie } from '../../utils';
 import { Versions, VersionData } from '../../components/Versions';
 import { ReactComponent as CloseIcon } from '../../assets/icons/close.svg';
 import { ReactComponent as PlusInCircle } from '../../assets/icons/plus-in-circle.svg';
@@ -218,6 +218,8 @@ export function Indicator() {
     } else {
       userInfoRequest().then(resp => {
         resp.json().then(data => {
+          //console.log('set userp', data.permissions);
+          setCookie('userp', data.permissions.join(','), { path: '/' });
           setData((prev) => ({ ...prev, metadata: { ...prev.metadata, state: 'DRAFT' }, entity: { ...prev.entity, domain_id: data.user_domains ? data.user_domains[0] : null} }));
           setDataModified(false);
           setReadOnly(false);
@@ -399,7 +401,7 @@ export function Indicator() {
       <div className={styles.mainContent}>
         {!indicatorVersionId && (
           <WFItemControl
-            key={`wfc-${uuid()}`}
+            key={`wfc-indicator-` + data?.metadata?.workflow_task_id}
             itemMetadata={data.metadata}
             itemIsReadOnly={isReadOnly}
             onEditClicked={() => { setReadOnly(false); }}
@@ -482,7 +484,7 @@ export function Indicator() {
           </div>
         )}
         
-          <div className={styles.data_row}>
+          <div className={styles.description}>
             <FieldTextareaEditor
               isReadOnly={isReadOnly}
               labelPrefix={`${i18n('Описание')}`}
@@ -645,7 +647,7 @@ export function Indicator() {
           </div>
         )}
         {!isCreateMode && (
-          <div className={styles.data_row}>
+          <div className={styles.data_row} data-uitest="da_asset">
             <FieldArrayEditor
               key={`ed-dass-${indicatorId}`}
               getOptions={getDataAssetOptions}
@@ -669,7 +671,7 @@ export function Indicator() {
           </div>
         )}
         {!isCreateMode && (
-          <div className={styles.date_row}>
+          <div className={styles.date_row} data-uitest="formula">
             <FieldEditor key={`feFormula${data.metadata.id ?? ''}`} isReadOnly={isReadOnly} layout="separated" labelPrefix="Формула" isDraftJS mentionParameter={indicatorId} className="" defaultValue={data.entity.formula} valueSubmitted={(v) => { updateIndicatorField('formula', v); }} />
           </div>
         )}

@@ -11,6 +11,8 @@ export type InputProps = {
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onBlur?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   customKeyDownHandler?: CustomKeyDownHandler;
+  customKeyUpHandler?: CustomKeyUpHandler;
+  customSelectHandler?: CustomSelectHandler;
   placeholder?: string;
   label?: string;
   className?: string;
@@ -22,9 +24,12 @@ export type InputProps = {
   filter?: boolean;
   inputStyle?: string;
   readonly?: boolean;
+  enterKeyBlursInput?: boolean;
 };
 
 type CustomKeyDownHandler = (e: KeyboardEvent) => void;
+type CustomKeyUpHandler = (e: KeyboardEvent) => void;
+type CustomSelectHandler = (e: any) => void;
 
 const keyDownHandler = (e: KeyboardEvent, customKeyDownHandler: CustomKeyDownHandler) => {
   customKeyDownHandler(e);
@@ -46,10 +51,13 @@ export const Input: FC<InputProps> = ({
   placeholder,
   onChange = () => {},
   customKeyDownHandler = () => {},
+  customKeyUpHandler = () => {},
+  customSelectHandler = () => {},
   onBlur = () => {},
   label = '',
   className,
-  readonly = false
+  readonly = false,
+  enterKeyBlursInput = true
 }) => {
   const localClassName = className ?? '';
 
@@ -85,7 +93,9 @@ export const Input: FC<InputProps> = ({
         defaultValue={defaultValue}
         placeholder={placeholder}
         onChange={(e) => onChange(e)}
-        onKeyDown={(e) => keyDownHandler(e, customKeyDownHandler)}
+        onKeyDown={(e) => enterKeyBlursInput ? keyDownHandler(e, customKeyDownHandler) : customKeyDownHandler(e)}
+        onKeyUp={(e) => customKeyUpHandler(e)}
+        onSelect={(e) => customSelectHandler(e)}
         onBlur={onBlur}
         id={id ?? ''}
       />

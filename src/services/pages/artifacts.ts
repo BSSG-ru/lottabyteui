@@ -14,3 +14,5 @@ export const getArtifactTypes = async () => fetchWithRefresh(`${URL}/v1/artifact
 export const getWorkflowableArtifactTypes = async () => fetchWithRefresh(`${URL}/v1/artifacts/workflowable_artifact_types`, optionsGet()).then(handleHttpResponse);
 export const getArtifactActions = async () => fetchWithRefresh(`${URL}/v1/artifacts/artifact_actions`, optionsGet()).then(handleHttpResponse);
 export const getArtifactType = async (at: string) => fetchWithRefresh(`${URL}/v1/artifacts/artifact_type/${encodeURIComponent(at)}`, optionsGet()).then(resp => handleHttpResponse(resp, true));
+
+export const getRelatedObjectArtifactTypes = async (artifactType: string) => fetchWithRefresh(`${URL}/v1/artifacts/related_artifact_types/${artifactType}`, optionsGet()).then(handleHttpResponse);

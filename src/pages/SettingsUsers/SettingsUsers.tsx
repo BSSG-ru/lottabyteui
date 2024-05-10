@@ -46,8 +46,8 @@ export function SettingsUsers() {
       header: i18n('Имя'),
     },
     {
-      property: 'user_roles',
-      filter_property: 'user_roles.name',
+      property: 'user_role_names',
+      filter_property: 'user_role_names',
       header: i18n('Роли'),
       render: (item: any) => (
         <span className={styles.value}>

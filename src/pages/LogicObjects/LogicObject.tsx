@@ -42,6 +42,7 @@ import { ReactComponent as Close } from '../../assets/icons/close.svg';
 import { WFItemControl } from '../../components/WFItemControl/WFItemControl';
 import { createDraft } from '../../services/pages/tags';
 import { Checkbox } from '../../components/Checkbox';
+import { RelatedObjectsControl } from '../../components/RelatedObjectsControl';
 
 export function LogicObject() {
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ export function LogicObject() {
   const [, setLoading] = useState(true);
   const [data, setData] = useState({
     entity: { name: null, description: '', system_ids: [], business_entity_id: '', roles: '' },
-    metadata: { id: '', artifact_type: 'entity', version_id: '', tags: [], state: 'PUBLISHED', ancestor_draft_id: '' },
+    metadata: { id: '', artifact_type: 'entity', version_id: '', tags: [], state: 'PUBLISHED', ancestor_draft_id: '', workflow_task_id: '' },
   });
   const [ratingData, setRatingData] = useState({ rating: 0, total_rates: 0 });
   const [ownRating, setOwnRating] = useState(0);
@@ -532,7 +533,7 @@ export function LogicObject() {
       <div className={styles.mainContent}>
         {!logicObjectVersionId && (
           <WFItemControl
-            key={`wfc-${uuid()}`}
+            key={`wfc-ent-` + data?.metadata?.workflow_task_id}
             itemMetadata={data.metadata}
             itemIsReadOnly={isReadOnly}
             onEditClicked={() => { setReadOnly(false); }}
@@ -656,7 +657,53 @@ export function LogicObject() {
             onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, logicObjectId, 'entity', data.metadata.state ?? '', setLoading, setTags, '/logic-objects/edit/', navigate)}
           />
         )}
-        {!isCreateMode && <Tabs tabs={tabs} tabNumber={state.t} onTabChange={(tab: number) => { setState(() => ({ t: tab })); }} />}
+
+        <RelatedObjectsControl key={'roc-' + logicObjectId + tblAttrsKey + (logicObjectVersionId ?? '')} artifactId={logicObjectId} artifactType='entity' createEAttrClick={() => setShowAddAttrDlg(true)}
+          renderEAttrActionsPopup={(row: any) => (
+            <div>
+              <a
+                href=""
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowAddAttrDlg(true);
+                  return false;
+                }}
+                className={styles.btn_create}
+              />
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setUpdateAttrData({
+                    id: row.id,
+                    name: row.name,
+                    description: row.description,
+                    attribute_type: row.attribute_type,
+                    tags: row.tags ?? [],
+                    attribute_id: row.attribute_id,
+                    is_pk: row.is_pk
+                  });
+                  setShowUpdateAttrDlg(true);
+                  return false;
+                }}
+                className={styles.btn_edit}
+              />
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setDelEntityAttrData({ id: row.id, name: row.name, attribute_id: row.attribute_id });
+                  setShowDelEntityAttrDlg(true);
+                  return false;
+                }}
+                className={styles.btn_del}
+              />
+            </div>
+          )}
+        ></RelatedObjectsControl>
       </div>
       {!isCreateMode && (
         <div className={styles.rightBar}>
