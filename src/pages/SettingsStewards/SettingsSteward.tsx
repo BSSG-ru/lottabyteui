@@ -112,7 +112,7 @@ export const SettingsSteward = () => {
   const getUserObjects = async (search: string) => getUsers({
     sort: 'username+',
     global_query: search,
-    limit: 10,
+    limit: 1000,
     offset: 0,
     filters: [],
     filters_for_join: [],

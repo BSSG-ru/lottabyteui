@@ -20,7 +20,7 @@
 
 }
 
-.dg_filter {
+.dg_filter, .lnk_tags_filter {
   display: flex;
   justify-content: flex-start;
   gap: 10px;
@@ -87,7 +87,7 @@
 
 .leftToolBar {
   position: absolute;
-  top: 80px;
+  top: 120px;
   left: 280px;
   width: 140px;
   background: #fff;

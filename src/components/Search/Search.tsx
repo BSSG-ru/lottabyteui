@@ -48,10 +48,8 @@ export const Search: FC<SearchProps> = ({ query }) => {
 
   const tagsPopup = (target: HTMLInputElement) => {
 
-    console.log('rect', window.getSelection()?.getRangeAt(0).getBoundingClientRect());
-
     var s = target.value;
-    console.log('s', s);
+    //console.log('s', s);
     var pos = target.selectionStart;
     if (pos) {
       var start = pos - 1;
@@ -62,8 +60,8 @@ export const Search: FC<SearchProps> = ({ query }) => {
       while (end < s.length && s.at(end) != ' ')
         end++;
 
-      console.log('start', start);
-      console.log('end', end);
+      //console.log('start', start);
+      //console.log('end', end);
 
       if (s.at(start+1) == '@' && end - start > 2) {
         setMode('select-tag');

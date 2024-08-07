@@ -15,7 +15,7 @@ export const getTasksByQueryId = async (queryId: string) => fetchWithRefresh(
 
 export const getTasks = async () => fetchWithRefresh(`${URL}/v1/tasks/?offset=0&limit=999`, optionsGet()).then(handleHttpResponse);
 
-export const createTask = async (data: any) => fetchWithRefresh(`${URL}/v1/tasks/`, optionsPost(data)).then(handleHttpResponse);
+export const createTask = async (data: any) => fetchWithRefresh(`${URL}/v1/tasks/`, optionsPost({...data, schedule_type: data.schedule_type == '' ? null : data.schedule_type})).then(handleHttpResponse);
 
 export const updateTask = async (taskId: string, data: any) => fetchWithRefresh(`${URL}/v1/tasks/${encodeURIComponent(taskId)}`, optionsPatch(data)).then(
   handleHttpResponse,

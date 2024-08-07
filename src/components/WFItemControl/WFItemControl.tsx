@@ -19,11 +19,14 @@ export type WFItemControlProps = {
     itemMetadata: ArtifactMetaData;
     itemIsReadOnly: boolean;
     onEditClicked: () => void;
+    onArchiveClicked?: () => void;
+    onRestoreClicked?: () => void;
+    onDeleteClicked: () => void;
     onObjectIdChanged: (id:string) => void;
     onObjectDataChanged?: (data:any) => void;
 };
 
-export const WFItemControl: FC<WFItemControlProps> =({ itemMetadata, itemIsReadOnly, onEditClicked, onObjectIdChanged, onObjectDataChanged }) => {
+export const WFItemControl: FC<WFItemControlProps> =({ itemMetadata, itemIsReadOnly, onEditClicked, onArchiveClicked, onRestoreClicked, onDeleteClicked, onObjectIdChanged, onObjectDataChanged }) => {
 
     const navigate = useNavigate();
 
@@ -77,7 +80,18 @@ export const WFItemControl: FC<WFItemControlProps> =({ itemMetadata, itemIsReadO
             <div className={styles.wf_notice}><div className={styles.msg}><InfoIcon style={{fill:'#6F9E6E'}} />{i18n('Для этой карточки создан черновик')}</div><Button background='none' className={styles.btn_open_item} onClick={() => navigate(getArtifactUrl(itemMetadata.draft_id ?? '', itemMetadata.artifact_type))}>{i18n('Открыть')}</Button><CloseIcon className={styles.btn_hide} onClick={() => setShowNotice(false)} /></div>
         )}
         {itemMetadata.state == 'PUBLISHED' && !itemMetadata.draft_id && itemIsReadOnly && (
-            <div className={styles.btns}><Button onClick={onEditClicked}>{i18n('Изменить')}</Button></div>
+            <div className={styles.btns}>
+                <Button onClick={onEditClicked}>{i18n('Изменить')}</Button>
+                {onArchiveClicked && (
+                    <Button onClick={onArchiveClicked}>{i18n('Архивировать')}</Button>
+                )}
+                <Button onClick={onDeleteClicked}>{i18n('Удалить')}</Button>
+            </div>
+        )}
+        {itemMetadata.state == 'ARCHIVED' && itemIsReadOnly && onRestoreClicked && (
+            <div className={styles.btns}>
+                <Button onClick={onRestoreClicked}>{i18n('Восстановить из архива')}</Button>
+            </div>
         )}
         {showActionDlg && (
             <Modal show={showActionDlg} backdrop={false} onHide={handleActionDlgClose}>

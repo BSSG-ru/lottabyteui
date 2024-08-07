@@ -25,22 +25,26 @@ import {
   updateIndicator,
   getIndicatorTypes,
   getIndicatorType,
+  restoreIndicatorVersion,
+  archiveIndicator,
+  restoreIndicator,
 } from '../../services/pages/indicators';
 
 import { setRecentView } from '../../services/pages/recentviews';
 import { WFItemControl } from '../../components/WFItemControl/WFItemControl';
 import { FieldArrayEditor } from '../../components/FieldArrayEditor/FieldArrayEditor';
-import { FieldTextareaEditor } from '../../components/FieldTextareaEditor';
 import { FieldAutocompleteEditor } from '../../components/FieldAutocompleteEditor';
 import { getAsset, searchAssets } from '../../services/pages/dataAssets';
 import { TagProp, Tags } from '../../components/Tags';
 import { IndicatorData, TData, TDQRule } from '../../types/data';
 import { FieldCheckboxEditor } from '../../components/FieldCheckboxEditor/FieldCheckboxEditor';
-import { Table } from '../../components/Table';
 import { ReactComponent as Close } from '../../assets/icons/close.svg';
-import { entitiesTableColumns, productsTableColumns } from '../../mocks/systems';
 import { getBusinessEntities } from '../../services/pages/businessEntities';
 import { userInfoRequest } from '../../services/auth';
+import { RelatedObjectsControl } from '../../components/RelatedObjectsControl';
+import { Responsibles } from '../../components/Responsibles';
+import { DeleteObjectModal } from '../../components/DeleteObjectModal';
+import { FieldVisualEditor } from '../../components/FieldVisualEditor';
 
 export function Indicator() {
   const navigate = useNavigate();
@@ -85,83 +89,8 @@ export function Indicator() {
   const [showDelIndicatorDlg, setShowDelIndicatorDlg] = useState(false);
   const [delIndicatorData, setDelIndicatorData] = useState<any>({ id: '', name: '' });
 
-  const tabs = [
-    {
-      key: 'tab-prods',
-      title: i18n('ПРОДУКТЫ'),
-      content: (
-        <Table
-          cookieKey='indicator-prods'
-          key={id + (version_id ?? '')}
-          className={styles.table}
-          columns={productsTableColumns}
-          paginate
-          columnSearch
-          globalSearch
-          dataUrl={
-            (data.entity.name) ? '/v1/product/search' : ''
-          }
-          initialFetchRequest={{
-            sort: 'name+',
-            global_query: '',
-            limit: getTablePageSize(),
-            offset: (state.p3 - 1) * getTablePageSize(),
-            filters: [],
-            filters_preset: [],
-            filters_for_join: [
-              {
-                table: 'reference',
-                column: 'target_id',
-                value: `'${id}'`,
-                on_column: 'id',
-                equal_column: 'source_id',
-                operator: 'EQUAL',
-              },
-            ],
-          }}
-          onRowClick={(row: any) => {
-            navigate(`/products/edit/${encodeURIComponent(row.id)}`);
-          }}
-          showCreateBtn={false}
-          onPageChange={(page: number) => {
-            setState(() => ({ p3: page }));
-          }}
-        />
-      ),
-    },
-    {
-      key: 'tab-entities',
-      title: i18n('ЛОГИЧЕСКИЕ ОБЪЕКТЫ'),
-      content: (
-        <Table
-          cookieKey='indicator-ents'
-          key={`entityTable${data.metadata.id}${version_id ?? ''}`}
-          className={styles.table}
-          columns={entitiesTableColumns}
-          paginate
-          columnSearch
-          globalSearch
-          dataUrl={(data.metadata.id) ? `/v1/entities/search_by_indicator/${encodeURIComponent(data.metadata.id)}` : ''}
-          initialFetchRequest={{
-            sort: 'name+',
-            global_query: '',
-            limit: 5,
-            offset: (state.p4 - 1) * 5,
-            filters: [],
-            filters_preset: [],
-            filters_for_join: [],
-          }}
-          onRowClick={(row: any) => {
-            navigate(`/logic-objects/edit/${encodeURIComponent(row.id)}`);
-          }}
-          showCreateBtn={false}
-          onPageChange={(page: number) => {
-            setState(() => ({ p4: page }));
-          }}
-        />
-      ),
-    },
-  ];
+  const [delObjectData, setDelObjectData] = useState<any>({ id: '', name: '' });
+  const [showDelDlg, setShowDelDlg] = useState(false);
 
   const handleAddEntityDlgClose = () => {
     setShowAddIndicatorDlg(false);
@@ -172,7 +101,7 @@ export function Indicator() {
     return false;
   };
 
-  const getDataAssetOptions = async (search: string) => searchAssets({ filters: [], filters_for_join: [], global_query: search, limit: 15, offset: 0, sort: 'name+', state: 'PUBLISHED' }).then((json) => json.items.map((item: any) => ({ value: item.id, label: item.name, name: item.name })));
+  const getDataAssetOptions = async (search: string) => searchAssets({ filters: [], filters_for_join: [], global_query: search, limit: 1000, offset: 0, sort: 'name+', state: 'PUBLISHED' }).then((json) => json.items.map((item: any) => ({ value: item.id, label: item.name, name: item.name })));
 
   const addIndicatorDlgSubmit = () => {
     setShowAddIndicatorDlg(false);
@@ -389,22 +318,64 @@ export function Indicator() {
   const getTermLinkObjects = async (search: string) => getBusinessEntities({
     sort: 'name+',
     global_query: search,
-    limit: 10,
+    limit: 1000,
     offset: 0,
     filters: [...data.entity.term_link_ids, data.metadata.id, data.metadata.published_id ?? ''].filter((id) => id).map((id) => ({ column: 'id', value: id, operator: 'NOT_EQUAL' })),
     filters_for_join: [],
     state: 'PUBLISHED',
   }).then((json) => json.items);
 
+  const delDlgSubmit = () => {
+    setShowDelDlg(false);
+    setLoading(true);
+    deleteIndicator(delObjectData.id)
+      .then(json => {
+        updateArtifactsCount();
+        setLoading(false);
+
+        if (json.metadata && json.metadata.id)
+          navigate('/indicators/edit/' + encodeURIComponent(json.metadata.id));
+      })
+      .catch(handleHttpError);
+    setDelObjectData({ id: '', name: '' });
+  };
+
+  const archiveBtnClicked = () => { archiveIndicator(data.metadata.id).then(json => {
+    if (json.metadata.id && json.metadata.id != indicatorId) {
+      navigate(`/indicators/edit/${encodeURIComponent(json.metadata.id)}`);
+    }
+    setDataModified(false);
+  }).catch(handleHttpError); };
+
+  const restoreBtnClicked = () => { restoreIndicator(data.metadata.id).then(json => {
+    if (json.metadata.id && json.metadata.id != indicatorId) {
+      navigate(`/indicators/edit/${encodeURIComponent(json.metadata.id)}`);
+    }
+    setDataModified(false);
+  }).catch(handleHttpError); };
+
   return (
     <div className={classNames(styles.page, styles.indicatorPage, { [styles.loaded]: isLoaded })}>
       <div className={styles.mainContent}>
+      {indicatorVersionId && (
+          <Button onClick={() => {
+            restoreIndicatorVersion(indicatorId, indicatorVersionId).then(json => {
+              setDataModified(false);
+              if (json.metadata.id && json.metadata.id !== indicatorId) {
+                navigate(`/indicators/edit/${encodeURIComponent(json.metadata.id)}`);
+              } else { setData(json); }
+            }).catch(handleHttpError);
+          }}>{i18n('Восстановить')}</Button>
+        )}
         {!indicatorVersionId && (
           <WFItemControl
             key={`wfc-indicator-` + data?.metadata?.workflow_task_id}
             itemMetadata={data.metadata}
             itemIsReadOnly={isReadOnly}
             onEditClicked={() => { setReadOnly(false); }}
+            onArchiveClicked={archiveBtnClicked}
+            onRestoreClicked={restoreBtnClicked}
+            onDeleteClicked={() => { setDelObjectData({ id: data.metadata.id, name: data.entity.name }); setShowDelDlg(true); }}
             onObjectIdChanged={(localIndicatorId) => {
               if (localIndicatorId) {
                 setIndicatorId(localIndicatorId);
@@ -443,13 +414,14 @@ export function Indicator() {
           />
         </div>
 
-        {!isCreateMode && (
+        {!isCreateMode && data.metadata.state != 'ARCHIVED' && (
           <button className={styles.btn_scheme} onClick={() => { doNavigate(`/indicators-model/${encodeURIComponent(indicatorId)}`, navigate); }}>{i18n('Схема')}</button>
 
         )}
 
         {!isCreateMode && (
           <Tags
+            key={'tags-' + indicatorId + '-' + indicatorVersionId + '-' + uuid()}
             tags={tags}
             isReadOnly={isReadOnly}
             onTagAdded={(tagName: string) => tagAddedHandler(tagName, indicatorId, 'indicator', data.metadata.state ?? '', tags, setLoading, setTags, '/indicators/edit/', navigate)}
@@ -459,7 +431,7 @@ export function Indicator() {
 
         <FieldAutocompleteEditor
           className={styles.long_input}
-          label={i18n('Тип: ')}
+          label={i18n('Тип')}
           isReadOnly={isReadOnly}
           defaultValue={data.entity.indicator_type_id}
           valueSubmitted={(identity) => updateIndicatorField('indicator_type_id', identity)}
@@ -474,7 +446,7 @@ export function Indicator() {
             <FieldEditor
               isReadOnly={isReadOnly}
               layout="separated"
-              labelPrefix={`${i18n('Код')} `}
+              labelPrefix={`${i18n('Код')}`}
               defaultValue={data.entity.calc_code}
               className={styles.editor}
               valueSubmitted={(val) => {
@@ -485,26 +457,24 @@ export function Indicator() {
         )}
         
           <div className={styles.description}>
-            <FieldTextareaEditor
-              isReadOnly={isReadOnly}
-              labelPrefix={`${i18n('Описание')}`}
-              isMultiline
-              isRequired
-              showValidation={showValidation}
-              defaultValue={data.entity.description}
-              className={styles.editor}
-              valueSubmitted={(val) => {
-                updateIndicatorField('description', val);
-              }}
-
-            />
+              <FieldVisualEditor
+                isReadOnly={isReadOnly}
+                labelPrefix={`${i18n('Описание')}`}
+                isRequired
+                showValidation={showValidation}
+                defaultValue={data.entity.description}
+                className={styles.editor}
+                valueSubmitted={(val) => {
+                  updateIndicatorField('description', val.toString());
+                }}
+              />
           </div>
         
 
           <div className={styles.domain}>
             <FieldAutocompleteEditor
               className={styles.long_input}
-              label={`${i18n('Домен')}: `}
+              label={`${i18n('Домен')}`}
               allowClear
               defaultValue={data.entity.domain_id}
               valueSubmitted={(i) => updateIndicatorField('domain_id', i)}
@@ -606,7 +576,7 @@ export function Indicator() {
           {!isCreateMode && (
             <div className={classNames(styles.data_row, styles.synonyms_row)}>
               <div className={styles.synonyms_head}>
-                <label>{`${i18n('Ссылки на другие Термины')}:`}</label>
+                <label>{`${i18n('Ссылки на другие Термины')}`}</label>
                 {!isReadOnly && (<PlusInCircle onClick={addTermLink} />)}
               </div>
               {(data.entity.term_link_ids ?? []).map((sId, k) => (
@@ -653,13 +623,13 @@ export function Indicator() {
               getOptions={getDataAssetOptions}
               isReadOnly={isReadOnly}
               layout="separated"
-              labelPrefix={`${i18n('Активы')}: `}
+              labelPrefix={`${i18n('Активы')}`}
               className={styles.long_input}
               defaultValue={selectedDataAssetNames}
               inputPlaceholder={i18n('Выберите актив')}
               addBtnText={i18n('Добавить')}
               valueSubmitted={() => { updateIndicatorField('data_asset_ids', data.entity.data_asset_ids); }}
-              onValueIdAdded={(id: string) => {
+              onValueIdAdded={(id: string, name: string) => {
                 setData((prev) => ({ ...prev, entity: { ...prev.entity, data_asset_ids: [...prev.entity.data_asset_ids, id] } }));
               }}
               onValueIdRemoved={(id: string) => {
@@ -679,7 +649,7 @@ export function Indicator() {
         {!isCreateMode && (
           <div className={styles.dqrule_wrap}>
             <div className={styles.dqrule_head}>
-              <label>{`${i18n('Правила проверки качества')}:`}</label>
+              <label>{`${i18n('Правила проверки качества')}`}</label>
               {!isReadOnly && (<PlusInCircle onClick={addDQRule} />)}
             </div>
             {data.entity.dq_rules && data.entity.dq_rules.map((v, index) => (
@@ -745,10 +715,12 @@ export function Indicator() {
 
           </div>
         )}
+
+        <RelatedObjectsControl artifactId={indicatorId} artifactType='indicator'></RelatedObjectsControl>
       </div>
       {!isCreateMode && (
         <div className={styles.rightBar}>
-          {data.metadata.state === 'PUBLISHED' && (
+          {(data.metadata.state == 'PUBLISHED' || data.metadata.state == 'ARCHIVED') && (
             <Versions
               rating={ratingData.rating}
               ownRating={ownRating}
@@ -758,6 +730,9 @@ export function Indicator() {
               root_object_url={`/indicators/edit/${encodeURIComponent(indicatorId)}`}
               onRateClick={r => rateClickedHandler(r, indicatorId, 'indicator', setOwnRating, setRatingData)}
             />
+          )}
+          {data.metadata.state === 'PUBLISHED' && (
+            <Responsibles domain_id={(data && data.entity && data.entity.domain_id) ? data.entity.domain_id : null}></Responsibles>
           )}
         </div>
       )}
@@ -832,6 +807,7 @@ export function Indicator() {
         </Modal.Footer>
       </Modal>
 
+      <DeleteObjectModal show={showDelDlg} objectTitle={delObjectData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />
     </div>
   );
 }

@@ -38,6 +38,10 @@
 
 .description {
     max-width: 750px;
+
+    label {
+        font-weight: bold;
+    }
 }
 
 
@@ -105,6 +109,10 @@
     height: 15px;
     background-size: contain;
     margin: 0 5px;
+}
+
+.tech_name_wrap {
+    max-width: 750px;
 }
 
 .systems_wrap {

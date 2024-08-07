@@ -10,6 +10,14 @@ export const deleteDataAsset = async (assetId: string) => fetchWithRefresh(`${UR
   handleHttpResponse,
 );
 
+export const archiveDataAsset = async (assetId: string) => fetchWithRefresh(`${URL}/v1/data_assets/archive/${encodeURIComponent(assetId)}`, optionsPost()).then(
+  handleHttpResponse,
+);
+
+export const restoreDataAsset = async (assetId: string) => fetchWithRefresh(`${URL}/v1/data_assets/restore/${encodeURIComponent(assetId)}`, optionsPost()).then(
+  handleHttpResponse,
+);
+
 export const getAsset = async (assetId: string) => fetchWithRefresh(`${URL}/v1/data_assets/${encodeURIComponent(assetId)}`, optionsGet()).then(
   handleHttpResponse,
 );
@@ -18,6 +26,9 @@ export const getAssetVersion = async (assetId: string, versionId: string) => fet
   handleHttpResponse,
 );
 
+export const restoreAssetVersion = async (assetId: string, versionId: string) => fetchWithRefresh(`${URL}/v1/data_assets/${encodeURIComponent(assetId)}/versions/${encodeURIComponent(versionId)}/restore`, optionsPost()).then(
+  handleHttpResponse,
+);
 
 export const getAssets = async (body: object | null = null) => fetchWithRefresh(`${URL}/v1/data_assets/search`, optionsPost(body)).then(handleHttpResponse);
 

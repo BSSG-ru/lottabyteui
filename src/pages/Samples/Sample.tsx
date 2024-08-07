@@ -10,9 +10,7 @@ import Button from 'react-bootstrap/Button';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { a11yLight } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import useUrlState from '@ahooksjs/use-url-state';
-import { List } from 'immutable';
 import { v4 } from 'uuid';
-import async from 'react-select/dist/declarations/src/async/index';
 import styles from './Samples.module.scss';
 import { ReactComponent as CloseIcon } from '../../assets/icons/close.svg';
 import { ReactComponent as PlusInCircle } from '../../assets/icons/plus-in-circle.svg';
@@ -23,7 +21,7 @@ import { optionsGet, URL } from '../../services/requst_templates';
 import { getRatingData, getOwnRatingData, setRating } from '../../services/pages/rating';
 import { addTag, deleteTag } from '../../services/pages/tags';
 import { Tags, TagProp } from '../../components/Tags';
-import { Versions, VersionData } from '../../components/Versions';
+import { VersionData } from '../../components/Versions';
 import { Tabs } from '../../components/Tabs';
 import { FieldEditor } from '../../components/FieldEditor';
 
@@ -36,8 +34,6 @@ import {
   getSampleVersions,
   updateSample,
   updateSampleProperty,
-  getSampleDQRulesBySampleId,
-  getSampleDQRules,
   updateSampleDQRule,
   deleteSampleDQRule,
   createSampleDQRule,
@@ -49,10 +45,10 @@ import { getSystem, getSystems } from '../../services/pages/systems';
 import { getEntityQueries, getEntityQuery } from '../../services/pages/entityQueries';
 import { fetchWithRefresh } from '../../services/auth';
 import { FieldCheckboxEditor } from '../../components/FieldCheckboxEditor';
-import { FieldTextareaEditor } from '../../components/FieldTextareaEditor';
 import { setRecentView } from '../../services/pages/recentviews';
 import { TData, TDQRule } from '../../types/data';
 import { getUserByLogin } from '../../services/pages/users';
+import { FieldVisualEditor } from '../../components/FieldVisualEditor';
 
 export function Sample() {
   const navigate = useNavigate();
@@ -618,7 +614,7 @@ export function Sample() {
   const getEntityObjects = async (search: string) => getEntities({
     sort: 'name+',
     global_query: search,
-    limit: 10,
+    limit: 1000,
     offset: 0,
     filters: [],
     filters_for_join: [],
@@ -627,7 +623,7 @@ export function Sample() {
   const getSystemObjects = async (search: string) => getSystems({
     sort: 'name+',
     global_query: search,
-    limit: 10,
+    limit: 1000,
     offset: 0,
     filters: [],
     filters_for_join: [],
@@ -636,7 +632,7 @@ export function Sample() {
   const getEntityQueryObjects = async (search: string) => getEntityQueries({
     sort: 'name+',
     global_query: search,
-    limit: 10,
+    limit: 1000,
     offset: 0,
     filters: [],
     filters_for_join: [],
@@ -663,6 +659,7 @@ export function Sample() {
         )}
         {!isCreateMode && (
           <Tags
+            key={'tags-' + sampleId + '-' + uuid()}
             tags={tags}
             onTagAdded={tagAdded}
             onTagDeleted={tagDeleted}
@@ -671,18 +668,16 @@ export function Sample() {
 
         <div className={styles.general_data}>
           <div className={styles.data_row_desc}>
-            <FieldTextareaEditor
+              <FieldVisualEditor
                 isReadOnly={false}
                 labelPrefix={`${i18n('Описание')}`}
-                isMultiline
                 isRequired
                 showValidation={showValidation}
                 defaultValue={data.entity.description}
                 className={styles.editor}
                 valueSubmitted={(val) => {
-                  updateSampleField('description', val);
+                  updateSampleField('description', val.toString());
                 }}
-
               />
           </div>
           <div className={styles.data_row}>

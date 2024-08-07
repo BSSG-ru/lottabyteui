@@ -15,7 +15,7 @@ import { WFItemControl } from '../../components/WFItemControl/WFItemControl';
 import { ReactComponent as CloseIcon } from '../../assets/icons/close.svg';
 import { ReactComponent as PlusInCircle } from '../../assets/icons/plus-in-circle.svg';
 import {
-  createProduct, searchProducts, getProduct, getProductSupplyVariant, getProductType, getProductVersion, getProductVersions, searchProductSupplyVariants, searchProductTypes, updateProduct,
+  createProduct, searchProducts, getProduct, getProductSupplyVariant, getProductType, getProductVersion, getProductVersions, searchProductSupplyVariants, searchProductTypes, updateProduct, deleteProduct, restoreProductVersion, archiveProduct, restoreProduct,
 } from '../../services/pages/products';
 import { getIndicator, searchIndicators } from '../../services/pages/indicators';
 import { ProductData, TDQRule, TData } from '../../types/data';
@@ -31,9 +31,11 @@ import { getAsset, searchAssets } from '../../services/pages/dataAssets';
 import { FieldCheckboxEditor } from '../../components/FieldCheckboxEditor/FieldCheckboxEditor';
 import { getBusinessEntities } from '../../services/pages/businessEntities';
 import { userInfoRequest } from '../../services/auth';
-import { Prev } from 'react-bootstrap/esm/PageItem';
 import { RelatedObjectsControl } from '../../components/RelatedObjectsControl';
-import { FieldTextareaEditor } from '../../components/FieldTextareaEditor';
+import { Responsibles } from '../../components/Responsibles';
+import { DeleteObjectModal } from '../../components/DeleteObjectModal';
+import { Button } from '../../components/Button';
+import { FieldVisualEditor } from '../../components/FieldVisualEditor';
 
 export type AttribData = {
   id: string;
@@ -78,6 +80,9 @@ export function Product() {
   const [productVersionId, setProductVersionId] = useState<string>(version_id ?? '');
   const [table2page, setTable2Page] = useState(1);
 
+  const [delObjectData, setDelObjectData] = useState<any>({ id: '', name: '' });
+  const [showDelDlg, setShowDelDlg] = useState(false);
+
   useEffect(() => {
     if (id) setProductId(id);
     setProductVersionId(version_id ?? '');
@@ -99,7 +104,7 @@ export function Product() {
         resp.json().then(data => {
           //console.log('set userp', data.permissions);
           setCookie('userp', data.permissions.join(','), { path: '/' });
-          setData((prev) => ({ ...prev, metadata: { ...prev.metadata, state: 'DRAFT' }, entity: { ...prev.entity, domain_id: data.user_domains ? data.user_domains[0] : null } }));
+          setData((prev) => ({ ...prev, metadata: { ...prev.metadata, state: 'DRAFT' }, entity: { ...prev.entity, domain_id: data.steward_domains ? data.steward_domains[0] : null } }));
           setDataModified(false);
           setReadOnly(false);
           setLoaded(true);
@@ -280,18 +285,18 @@ export function Product() {
 
   };
 
-  const getIndicatorOptions = async (search: string) => searchIndicators({ filters: [], filters_for_join: [], global_query: search, limit: 15, offset: 0, sort: null, state: 'PUBLISHED' }).then((json) => json.items.map((item: any) => ({ value: item.id, label: item.name, name: item.name })));
+  const getIndicatorOptions = async (search: string) => searchIndicators({ filters: [], filters_for_join: [], global_query: search, limit: 1000, offset: 0, sort: null, state: 'PUBLISHED' }).then((json) => json.items.map((item: any) => ({ value: item.id, label: item.name, name: item.name })));
 
   const getProductOptions = async (search: string) => searchProducts({
     filters: [{
       "column": "id",
       "value": productId,
       "operator": "NOT_EQUAL"
-    }], filters_for_join: [], global_query: search, limit: 15, offset: 0, sort: null, state: 'PUBLISHED'
+    }], filters_for_join: [], global_query: search, limit: 1000, offset: 0, sort: null, state: 'PUBLISHED'
   }).then((json) => json.items.map((item: any) => ({ value: item.id, label: item.name, name: item.name })));
 
 
-  const getDataAssetOptions = async (search: string) => searchAssets({ filters: [], filters_for_join: [], global_query: search, limit: 15, offset: 0, sort: 'name+', state: 'PUBLISHED' }).then((json) => json.items.map((item: any) => ({ value: item.id, label: item.name, name: item.name })));
+  const getDataAssetOptions = async (search: string) => searchAssets({ filters: [], filters_for_join: [], global_query: search, limit: 1000, offset: 0, sort: 'name+', state: 'PUBLISHED' }).then((json) => json.items.map((item: any) => ({ value: item.id, label: item.name, name: item.name })));
 
   const getProductTypeOptions = async (search: string) => searchProductTypes({ filters: [], filters_for_join: [], global_query: search, limit: 99999, offset: 0, sort: 'name+', state: 'PUBLISHED' }).then((json) => json.items.map((item: any) => ({ value: item.id, label: item.name, name: item.name })));
 
@@ -405,22 +410,64 @@ export function Product() {
   const getTermLinkObjects = async (search: string) => getBusinessEntities({
     sort: 'name+',
     global_query: search,
-    limit: 10,
+    limit: 1000,
     offset: 0,
     filters: [...data.entity.term_link_ids, data.metadata.id, data.metadata.published_id ?? ''].filter((id) => id).map((id) => ({ column: 'id', value: id, operator: 'NOT_EQUAL' })),
     filters_for_join: [],
     state: 'PUBLISHED',
   }).then((json) => json.items);
 
+  const delDlgSubmit = () => {
+    setShowDelDlg(false);
+    setLoading(true);
+    deleteProduct(delObjectData.id)
+      .then(json => {
+        updateArtifactsCount();
+        setLoading(false);
+
+        if (json.metadata && json.metadata.id)
+          navigate('/products/edit/' + encodeURIComponent(json.metadata.id));
+      })
+      .catch(handleHttpError);
+    setDelObjectData({ id: '', name: '' });
+  };
+
+  const archiveBtnClicked = () => { archiveProduct(data.metadata.id).then(json => {
+    if (json.metadata.id && json.metadata.id != productId) {
+      navigate(`/products/edit/${encodeURIComponent(json.metadata.id)}`);
+    }
+    setDataModified(false);
+  }).catch(handleHttpError); };
+
+  const restoreBtnClicked = () => { restoreProduct(data.metadata.id).then(json => {
+    if (json.metadata.id && json.metadata.id != productId) {
+      navigate(`/products/edit/${encodeURIComponent(json.metadata.id)}`);
+    }
+    setDataModified(false);
+  }).catch(handleHttpError); };
+
   return (
     <div className={classNames(styles.page, styles.productPage, { [styles.loaded]: isLoaded })}>
       <div className={styles.mainContent}>
+        {productVersionId && (
+          <Button onClick={() => {
+            restoreProductVersion(productId, productVersionId).then(json => {
+              setDataModified(false);
+              if (json.metadata.id && json.metadata.id !== productId) {
+                navigate(`/products/edit/${encodeURIComponent(json.metadata.id)}`);
+              } else { setData(json); }
+            }).catch(handleHttpError);
+          }}>{i18n('Восстановить')}</Button>
+        )}
         {!productVersionId && (
           <WFItemControl
             key={`wfc-prod-` + data?.metadata?.workflow_task_id}
             itemMetadata={data.metadata}
             itemIsReadOnly={isReadOnly}
             onEditClicked={() => { setReadOnly(false); }}
+            onArchiveClicked={archiveBtnClicked}
+            onRestoreClicked={restoreBtnClicked}
+            onDeleteClicked={() => { setDelObjectData({ id: data.metadata.id, name: data.entity.name }); setShowDelDlg(true); }}
             onObjectIdChanged={(id) => {
               if (id) {
                 setProductId(id);
@@ -456,12 +503,13 @@ export function Product() {
             showValidation={showValidation}
           />
         </div>
-        {!isCreateMode && (
+        {!isCreateMode && data.metadata.state != 'ARCHIVED' && (
           <button className={styles.btn_scheme} onClick={() => { doNavigate(`/products-model/${encodeURIComponent(productId)}`, navigate); }}>{i18n('Схема')}</button>
         )}
         {!isCreateMode && (
           <div data-uitest="product_tag">
             <Tags
+              key={'tags-' + productId + '-' + productVersionId + '-' + uuid()}
               isReadOnly={isReadOnly}
               tags={tags}
               onTagAdded={(tagName: string) => tagAddedHandler(tagName, productId, 'product', data.metadata.state ?? '', tags, setLoading, setTags, '/products/edit/', navigate)}
@@ -487,12 +535,11 @@ export function Product() {
         {!isCreateMode && (
           <>
             <div className={styles.description} data-uitest="product_description">
-              <FieldTextareaEditor
+              <FieldVisualEditor
                 isReadOnly={isReadOnly}
-                isMultiline
-                labelPrefix={`${`${i18n('Описание')}:`} `}
+                labelPrefix={`${i18n('Описание')}:`}
                 defaultValue={data.entity.description}
-                className={styles.long_input}
+                className={styles.editor}
                 valueSubmitted={(val) => {
                   updateProductField('description', val.toString());
                 }}
@@ -562,8 +609,7 @@ export function Product() {
             <div className={styles.entity_query} data-uitest="product_entity_query">
               <FieldAutocompleteEditor
                 className={styles.long_input}
-                label={`${i18n('Запрос')}: `}
-
+                label={`${i18n('Запрос')}:`}
                 defaultValue={data.entity.entity_query_id}
                 valueSubmitted={(i) => updateProductField('entity_query_id', i)}
                 getDisplayValue={getQueryDisplayValue}
@@ -586,7 +632,7 @@ export function Product() {
                 inputPlaceholder={i18n('Выберите продукт')}
                 addBtnText={i18n('Добавить')}
                 valueSubmitted={() => { updateProductField('product_ids', data.entity.product_ids); }}
-                onValueIdAdded={(id: string) => {
+                onValueIdAdded={(id: string, name: string) => {
                   setData((prev) => ({ ...prev, entity: { ...prev.entity, product_ids: [...prev.entity.product_ids, id] } }));
                 }}
                 onValueIdRemoved={(id: string) => {
@@ -608,7 +654,7 @@ export function Product() {
                 inputPlaceholder={i18n('Выберите показатель')}
                 addBtnText={i18n('Добавить')}
                 valueSubmitted={() => { updateProductField('indicator_ids', data.entity.indicator_ids); }}
-                onValueIdAdded={(id: string) => {
+                onValueIdAdded={(id: string, name: string) => {
                   setData((prev) => ({ ...prev, entity: { ...prev.entity, indicator_ids: [...prev.entity.indicator_ids, id] } }));
                 }}
                 onValueIdRemoved={(id: string) => {
@@ -630,7 +676,7 @@ export function Product() {
                 inputPlaceholder={i18n('Выберите тип продукта')}
                 addBtnText={i18n('Добавить')}
                 valueSubmitted={() => { updateProductField('product_type_ids', data.entity.product_type_ids); }}
-                onValueIdAdded={(id: string) => {
+                onValueIdAdded={(id: string, name: string) => {
                   setData((prev) => ({ ...prev, entity: { ...prev.entity, product_type_ids: [...prev.entity.product_type_ids, id] } }));
                 }}
                 onValueIdRemoved={(id: string) => {
@@ -652,7 +698,7 @@ export function Product() {
                 inputPlaceholder={i18n('Выберите вариант поставки')}
                 addBtnText={i18n('Добавить')}
                 valueSubmitted={() => { updateProductField('product_supply_variant_ids', data.entity.product_supply_variant_ids); }}
-                onValueIdAdded={(id: string) => {
+                onValueIdAdded={(id: string, name: string) => {
                   setData((prev) => ({ ...prev, entity: { ...prev.entity, product_supply_variant_ids: [...prev.entity.product_supply_variant_ids, id] } }));
                 }}
                 onValueIdRemoved={(id: string) => {
@@ -688,7 +734,7 @@ export function Product() {
               <FieldEditor
                 isReadOnly={isReadOnly}
                 layout="separated"
-                labelPrefix={`${i18n('Ссылка на справочник')} `}
+                labelPrefix={`${i18n('Ссылка на справочник')}:`}
                 defaultValue={data.entity.link}
                 className={styles.long_input}
                 valueSubmitted={(val) => {
@@ -700,7 +746,7 @@ export function Product() {
               <FieldEditor
                 isReadOnly={isReadOnly}
                 layout="separated"
-                labelPrefix={`${i18n('Законодательные ограничения')} `}
+                labelPrefix={`${i18n('Законодательные ограничения')}:`}
                 defaultValue={data.entity.limits}
                 className={styles.long_input}
                 valueSubmitted={(val) => {
@@ -712,7 +758,7 @@ export function Product() {
               <FieldEditor
                 isReadOnly={isReadOnly}
                 layout="separated"
-                labelPrefix={`${i18n('Внутренние ограничения')} `}
+                labelPrefix={`${i18n('Внутренние ограничения')}:`}
                 defaultValue={data.entity.limits_internal}
                 className={styles.long_input}
                 valueSubmitted={(val) => {
@@ -724,7 +770,7 @@ export function Product() {
               <FieldEditor
                 isReadOnly={isReadOnly}
                 layout="separated"
-                labelPrefix={`${i18n('Ключевые роли процесса')} `}
+                labelPrefix={`${i18n('Ключевые роли процесса')}:`}
                 defaultValue={data.entity.roles}
                 className={styles.long_input}
                 valueSubmitted={(val) => {
@@ -759,7 +805,7 @@ export function Product() {
             <div className={styles.attributes}>
               <div className={`${styles.field_editor} ${styles.long_input}`}>
                 <div className={styles.row_value} data-uitest="product_lo_attr">
-                  <div className={styles.value}>{i18n('Атрибуты в связанных дата-активах')}</div>
+                  <div className={styles.value}>{i18n('Атрибуты в связанных дата-активах') + ':'}</div>
                   {!isReadOnly && isAttribsEditMode && (
                     <Autocomplete2
                       getOptions={getEntityOptions}
@@ -920,7 +966,10 @@ export function Product() {
       </div>
       {!isCreateMode && (
         <div className={styles.rightBar}>
-          {data.metadata.state === 'PUBLISHED' && (
+          
+          {(data.metadata.state == 'PUBLISHED' || data.metadata.state == 'ARCHIVED') && (
+            
+
             <Versions
               rating={ratingData.rating}
               ownRating={ownRating}
@@ -931,9 +980,13 @@ export function Product() {
               onRateClick={r => rateClickedHandler(r, productId, 'product', setOwnRating, setRatingData)}
             />
           )}
+          {data.metadata.state === 'PUBLISHED' && (
+            <Responsibles domain_id={(data && data.entity && data.entity.domain_id) ? data.entity.domain_id : null}></Responsibles>
+          )}
         </div>
       )}
 
+      <DeleteObjectModal show={showDelDlg} objectTitle={delObjectData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />
     </div>
   );
 }

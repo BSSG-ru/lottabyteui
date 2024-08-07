@@ -23,9 +23,9 @@ type TagsProps = {
   inputPlaceholder?: string;
   addBtnText?: string;
   isReadOnly?: boolean;
-  onTagAdded: (tagName: string) => void;
-  onTagIdAdded?: (id: string) => void;
-  onTagDeleted: (tagName: string) => void;
+  onTagAdded?: (tagName: string) => void;
+  onTagIdAdded?: (id: string, name: string) => void;
+  onTagDeleted?: (tagName: string) => void;
   onTagIdDeleted?: (tagId: string) => void;
   getOptions?: (search: string) => Promise<any[]>;
   disableCreate?: boolean;
@@ -39,19 +39,22 @@ const eventHandler = (
   addMode: boolean,
   setQuery: React.Dispatch<React.SetStateAction<string>>,
   setAddMode: React.Dispatch<React.SetStateAction<boolean>>,
-  onTagAdded: (tagName: string) => void,
-  onTagDeleted: (tagName: string) => void,
+  onTagAdded?: (tagName: string) => void,
+  onTagDeleted?: (tagName: string) => void,
   onTagIdDeleted?: (tagId: string) => void,
-  onTagIdAdded?: (id: string) => void
+  onTagIdAdded?: (id: string, name: string) => void
 ) => {
   if (!addMode) {
     setAddMode((prev) => (prev = !prev));
   } else if (query) {
     const result = query.replaceAll('#', '');
     if (result) {
-      onTagAdded(result);
+      console.log('add tag id', selectedId);
+      console.log('add tag', result);
+      if (onTagAdded)
+        onTagAdded(result);
       if (onTagIdAdded)
-        onTagIdAdded(selectedId);
+        onTagIdAdded(selectedId, result);
       setAddMode(false);
     }
     
@@ -87,6 +90,8 @@ export const Tags: FC<TagsProps> = ({
 
   useEffect(() => {
 
+    console.log('tags', tags);
+
     let hiddenItem = 0;
     if (tagsWrapperRef && tagsWrapperRef.current) {
       Array.from(tagsWrapperRef.current.children).forEach((child: Element) => {
@@ -105,7 +110,7 @@ export const Tags: FC<TagsProps> = ({
       <div className={styles.tag_adder}>
         {addMode && !disableCreate && (
           <AutocompleteCreatable  getOptions={getTagOptions ?? getTagOptionsDef}
-            onChanged={(data:any) => { setQuery(data.label);  setSelectedId(data.id); }} 
+            onChanged={(data:any) => { console.log('setSelTag2', data); setQuery(data.label);  setSelectedId(data.value); }} 
             onCreateOption={s => { setQuery(s); eventHandler(
               s,
               '',
@@ -120,12 +125,12 @@ export const Tags: FC<TagsProps> = ({
             />
             
         )}
-        {addMode && disableCreate && getTagOptions && (
+        {addMode && !isReadOnly && disableCreate && getTagOptions && (
           <Autocomplete2  defaultInputValue={query} getOptions={getTagOptions} defaultOptions
-          onChanged={(data:any) => { setQuery(data.label); setSelectedId(data.value); }} onInputChanged={(v) => { if (v) setQuery(v); } } 
+          onChanged={(data:any) => { console.log('setSelTag1', data); setQuery(data.label); setSelectedId(data.value); }} onInputChanged={(v) => { if (v) setQuery(v); } } 
           />
         )}
-        {addMode && disableCreate && !getTagOptions && (
+        {addMode && !isReadOnly && disableCreate && !getTagOptions && (
           <Input type="text" value={query} onChange={(e) => { setQuery(e.target.value); }} />
         )}
         {isReadOnly ? ('') : (

@@ -8,9 +8,20 @@ export const deleteProduct = async (productId: string) => fetchWithRefresh(`${UR
   handleHttpResponse,
 );
 
+export const archiveProduct = async (productId: string) => fetchWithRefresh(`${URL}/v1/product/archive/${encodeURIComponent(productId)}`, optionsPost()).then(
+  handleHttpResponse,
+);
+
+export const restoreProduct = async (productId: string) => fetchWithRefresh(`${URL}/v1/product/restore/${encodeURIComponent(productId)}`, optionsPost()).then(
+  handleHttpResponse,
+);
+
+
 export const getProductVersion = async (productId: string, versionId: string) => fetchWithRefresh(`${URL}/v1/product/${encodeURIComponent(productId)}/versions/${encodeURIComponent(versionId)}`, optionsGet()).then(
   handleHttpResponse,
 );
+
+export const restoreProductVersion = async (productId: string, versionId: string) => fetchWithRefresh(`${URL}/v1/product/${encodeURIComponent(productId)}/versions/${encodeURIComponent(versionId)}/restore`, optionsPost()).then(handleHttpResponse);
 
 export const updateProduct = async (productId: string, data: any) => fetchWithRefresh(`${URL}/v1/product/${encodeURIComponent(productId)}`, optionsPatch(data)).then(
   handleHttpResponse,

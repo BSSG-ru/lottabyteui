@@ -38,7 +38,7 @@ main {
   }
 }
 
-.filter_tags {
+.filter_tags, .lnk_tags_filter {
   flex: 0 0 40px;
   width: 100%;
   min-height: 40px;
@@ -51,6 +51,9 @@ main {
     font-weight: bold;
     flex: 0 0 100px;
   }
+}
+
+.filter_tags {
 
   .btn_filter_tag {
     padding: 5px 10px;
@@ -64,6 +67,28 @@ main {
       color: #fff;
   }
   }
+}
+
+.lnk_tags_filter {
+
+  .btn_filter {
+    background: #fff;
+    border: 1px solid var(--blue-70);
+    color: var(--blue-70);
+    display: none;
+    padding: 5px 10px;
+    margin-left: 5px;
+
+    &.shown {
+      display: inline-flex;
+    }
+
+    &.active {
+        background: var(--blue-70);
+        color: #fff;
+    }
+  }
+
 }
 
 .domains_list {

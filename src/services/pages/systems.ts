@@ -14,6 +14,10 @@ export const getSystemVersion = async (systemId: string, versionId: string) => f
   handleHttpResponse,
 );
 
+export const restoreSystemVersion = async (systemId: string, versionId: string) => fetchWithRefresh(`${URL}/v1/systems/${encodeURIComponent(systemId)}/versions/${encodeURIComponent(versionId)}/restore`, optionsPost()).then(
+  handleHttpResponse,
+);
+
 export const updateSystem = async (systemId: string, data: any) => fetchWithRefresh(`${URL}/v1/systems/${encodeURIComponent(systemId)}`, optionsPatch(data)).then(
   handleHttpResponse,
 );
@@ -29,6 +33,15 @@ export const createSystem = async (data: any) => fetchWithRefresh(`${URL}/v1/sys
 export const deleteSystem = async (systemId: string) => fetchWithRefresh(`${URL}/v1/systems/${encodeURIComponent(systemId)}`, optionsDelete()).then(
   handleHttpResponse,
 );
+
+export const archiveSystem = async (systemId: string) => fetchWithRefresh(`${URL}/v1/systems/archive/${encodeURIComponent(systemId)}`, optionsPost()).then(
+  handleHttpResponse,
+);
+
+export const restoreSysten = async (systemId: string) => fetchWithRefresh(`${URL}/v1/systems/restore/${encodeURIComponent(systemId)}`, optionsPost()).then(
+  handleHttpResponse,
+);
+
 
 export const addSystemTag = async (systemId: string, tagName: string) => fetchWithRefresh(
   `${URL}/v1/tags/linkToArtifact/system/${encodeURIComponent(systemId)}`,

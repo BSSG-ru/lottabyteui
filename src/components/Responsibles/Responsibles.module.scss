@@ -1,0 +1,37 @@
+.responsibles_widget {
+    display: block;
+    width: 266px;
+    margin-top: 50px;
+
+    .title {
+        margin-left: 3px;
+        font-size: 15px;
+        line-height: 18px;
+        margin-bottom: 13px;
+        
+        &_index {
+            margin-left: 4px;
+            span {
+                font-weight: 700;
+            }
+        }
+    }
+
+    .item {
+        display: flex;
+        justify-content: flex-start;
+        text-decoration: none;
+        width: 234px;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        border-radius: 4px;
+        padding: 10px 12px 15px;
+        color: var(--bs-link-color);
+        margin-bottom: 10px;
+
+        .name {
+            margin-left: 10px;
+            flex-grow: 1;
+            color: var(--bs-link-color);
+        }
+    }
+}

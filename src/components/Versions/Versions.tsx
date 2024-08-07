@@ -8,14 +8,18 @@ import React, { FC, useEffect, useState } from 'react';
 import { i18n, uuid } from '../../utils';
 import { ReactComponent as Star } from '../../assets/icons/star.svg';
 import styles from './Versions.module.scss';
-import { stringify } from 'querystring';
+import Modal from 'react-bootstrap/Modal';
 import { Navigate, useNavigate } from 'react-router';
+import Button from 'react-bootstrap/Button';
 
 export type VersionData = {
   name: string;
   description: string;
   version_id: string;
   created_at: string;
+  modifier_display_name: string | null;
+  modifier_email: string | null;
+  modifier_description: string | null;
 };
 
 type VersionsProps = {
@@ -42,12 +46,24 @@ export const Versions: FC<VersionsProps> = ({
   const [, setRate] = useState<number | null>(0);
   const [hover, setHover] = useState<number | null>(null);
   const stars = [...new Array(5)];
+  const [showUserInfoDlg, setShowUserInfoDlg] = useState(false);
+  const [userInfoData, setUserInfoData] = useState({ name: '', email: '', description: ''});
 
   const navigate = useNavigate();
 
   useEffect(() => {
     setRate(ownRating);
   }, [ownRating]);
+
+  const handleUserInfoDlgClose = () => {
+    setShowUserInfoDlg(false);
+    return false;
+  };
+
+  const showUserInfo = (name: string, description: string, email: string) => {
+    setUserInfoData({ name: name, email: email, description: description});
+    setShowUserInfoDlg(true);
+  };
 
   return (
     <div className={styles.wrapper}>
@@ -123,6 +139,9 @@ export const Versions: FC<VersionsProps> = ({
               <div className={styles.version_create}>
                 {`${i18n('Создана')} ${version.created_at}`}
               </div>
+              <div className={styles.version_responsible}>
+                {`${i18n('Ответственный')}`}: <span className={styles.version_user_link} onClick={(e) => { e.stopPropagation(); e.preventDefault(); showUserInfo(version.modifier_display_name ?? '', version.modifier_description ?? '', version.modifier_email ?? ''); return false; }}>{`${version.modifier_display_name}`}</span>
+              </div>
               <div className={styles.version_description}>
                 <span>{i18n('Номер версии:')}</span>
                 <span className={styles.version_description_text}>{version.version_id}</span>
@@ -131,6 +150,28 @@ export const Versions: FC<VersionsProps> = ({
           ))}
         </div>
       </div>
+      <Modal
+        show={showUserInfoDlg}
+        backdrop={false}
+        onHide={handleUserInfoDlgClose}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Данные пользователя {userInfoData.name}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          E-mail: {userInfoData.email ? (<a href={'mailto:' + userInfoData.email}>{userInfoData.email}</a>) : ('(' + i18n('нет') + ')')}
+          <div className={styles.user_desc}>{userInfoData.description}</div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="primary"
+            onClick={handleUserInfoDlgClose}
+          >
+            Закрыть
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
+    
   );
 };

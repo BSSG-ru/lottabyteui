@@ -14,27 +14,21 @@ import {
   updateDomain,
   deleteSystem,
   getDomainVersion,
+  deleteDomain,
+  restoreDomainVersion,
+  archiveDomain,
+  restoreDomain,
 } from '../../services/pages/domains';
 import { Tags, TagProp } from '../../components/Tags';
 import { Versions, VersionData } from '../../components/Versions';
-import { Tabs } from '../../components/Tabs';
-import { Table } from '../../components/Table';
-import {
-  systemsTableColumns,
-  queriesTableColumns,
-  assetsTableColumns,
-  samplesTableColumns,
-  entitiesTableColumns,
-  indicatorsTableColumns,
-  beTableColumns,
-  prodTableColumns,
-} from '../../mocks/systems';
 import { FieldEditor } from '../../components/FieldEditor';
-import { getSystemsUnlikedToDomain } from '../../services/pages/systems';
 import { setRecentView } from '../../services/pages/recentviews';
 import { WFItemControl } from '../../components/WFItemControl/WFItemControl';
 import { Checkbox } from '../../components/Checkbox';
 import { RelatedObjectsControl } from '../../components/RelatedObjectsControl';
+import { DeleteObjectModal } from '../../components/DeleteObjectModal';
+import { Responsibles } from '../../components/Responsibles';
+import { FieldVisualEditor } from '../../components/FieldVisualEditor';
 
 export function Domain() {
   const [state, setState] = useUrlState({
@@ -69,285 +63,9 @@ export function Domain() {
   const [showDelSystemDlg, setShowDelSystemDlg] = useState(false);
   const [delSystemData, setDelSystemData] = useState<any>({ id: '', name: '' });
 
-  const tabs = [
-    {
-      key: 'tab-ind',
-      title: i18n('ПОКАЗАТЕЛИ'),
-      content: (
-        <Table
-          cookieKey='domain-indicators'
-          key={`indicatorsTable${domainId}${domainVersionId || ''}${data ? data.entity.system_ids.length : ''}`}
-          className={styles.table}
-          columns={indicatorsTableColumns}
-          paginate
-          columnSearch
-          globalSearch
-          dataUrl={domainId === '' ? '' : `/v1/indicators/search_by_domain/${encodeURIComponent(domainVersionId ? data.metadata.ancestor_draft_id : domainId)}`}
-          initialFetchRequest={{
-            sort: 'name+',
-            global_query: '',
-            limit: 5,
-            offset: (state.p6 - 1) * 5,
-            filters: [],
-            filters_preset: [],
-            filters_for_join: [],
-          }}
-          showCreateBtn={false}
-          onRowClick={(row: any) => {
-            navigate(`/indicators/edit/${encodeURIComponent(row.id)}`);
-          }}
-          onPageChange={(page: number) => {
-            setState(() => ({ p6: page }));
-          }}
-        />
-      ),
-    }, {
-      key: 'tab-be',
-      title: i18n('БИЗНЕС-СУЩНОСТИ'),
-      content: (
-        <Table
-          cookieKey='domain-bes'
-          key={`beTable${domainId}${domainVersionId || ''}${data ? data.entity.system_ids.length : ''}`}
-          className={styles.table}
-          columns={beTableColumns}
-          paginate
-          columnSearch
-          globalSearch
-          dataUrl={domainId === '' ? '' : '/v1/business_entities/search'}
-          initialFetchRequest={{
-            sort: 'name+',
-            global_query: '',
-            limit: 5,
-            offset: (state.p7 - 1) * 5,
-            filters: [],
-            filters_preset: [{ column: 'domain_id', value: (domainVersionId ? data.metadata.ancestor_draft_id : (domainId ?? '')), operator: 'EQUAL' }],
-            filters_for_join: [],
-          }}
-          showCreateBtn={false}
-          onRowClick={(row: any) => {
-            navigate(`/business-entities/edit/${encodeURIComponent(row.id)}`);
-          }}
-          onPageChange={(page: number) => {
-            setState(() => ({ p7: page }));
-          }}
-        />
-      ),
-    }, {
-      key: 'tab-prods',
-      title: i18n('ПРОДУКТЫ'),
-      content: (
-        <Table
-          cookieKey='domain-prods'
-          key={`prodTable${domainId}${domainVersionId || ''}${data ? data.entity.system_ids.length : ''}`}
-          className={styles.table}
-          columns={prodTableColumns}
-          paginate
-          columnSearch
-          globalSearch
-          dataUrl={domainId === '' ? '' : '/v1/product/search'}
-          initialFetchRequest={{
-            sort: 'name+',
-            global_query: '',
-            limit: 5,
-            offset: (state.p8 - 1) * 5,
-            filters: [],
-            filters_preset: [{ column: 'domain_id', value: (domainVersionId ? data.metadata.ancestor_draft_id : (domainId ?? '')), operator: 'EQUAL' }],
-            filters_for_join: [],
-          }}
-          showCreateBtn={false}
-          onRowClick={(row: any) => {
-            navigate(`/products/edit/${encodeURIComponent(row.id)}`);
-          }}
-          onPageChange={(page: number) => {
-            setState(() => ({ p8: page }));
-          }}
-        />
-      ),
-    },
-    {
-      key: 'tab-sys',
-      title: i18n('СИСТЕМЫ'),
-      content: (
-        <Table
-          cookieKey='domain-systems'
-          key={`systemsTable${domainId}${domainVersionId || ''}${data ? data.entity.system_ids.length : ''}`}
-          className={styles.table}
-          columns={systemsTableColumns}
-          paginate
-          columnSearch
-          globalSearch
-          dataUrl={domainId === '' ? '' : '/v1/systems/search'}
-          initialFetchRequest={{
-            sort: 'name+',
-            global_query: '',
-            limit: 5,
-            offset: (state.p1 - 1) * 5,
-            filters: [],
-            filters_preset: [],
-            filters_for_join: [
-              {
-                table: 'system_to_domain',
-                column: 'domain_id',
-                value: `'${domainVersionId ? data.metadata.ancestor_draft_id : domainId}'`,
-                on_column: 'id',
-                equal_column: 'system_id',
-                operator: 'EQUAL',
-              },
-            ],
-          }}
-          showCreateBtn={!domainVersionId}
-          onRowClick={(row: any) => {
-            navigate(`/systems/edit/${encodeURIComponent(row.id)}`);
-          }}
-          onCreateBtnClick={() => {
-            setAddSystemIds([]);
-            setShowAddSystemDlg(true);
-            getSystemsUnlikedToDomain(domainVersionId ? data.metadata.ancestor_draft_id : domainId).then((json) => {
-              setUnlinkedSystemsList(json.resources);
-            });
-            return false;
-          }}
-          onPageChange={(page: number) => {
-            setState(() => ({ p1: page }));
-          }}
-        />
-      ),
-    },
-    {
-      key: 'tab-log',
-      title: i18n('ЛОГИЧЕСКИЕ ОБЪЕКТЫ'),
-      content: (
-        <Table
-          cookieKey='domain-ents'
-          key={`logObjTable${domainId}${domainVersionId || ''}`}
-          className={styles.table}
-          columns={entitiesTableColumns}
-          paginate
-          columnSearch
-          globalSearch
-          dataUrl={
-            domainId === '' ? '' : `/v1/entities/search_by_domain/${encodeURIComponent(domainVersionId ? data.metadata.ancestor_draft_id : domainId)}`
-          }
-          initialFetchRequest={{
-            sort: 'name+',
-            global_query: '',
-            limit: 5,
-            offset: (state.p2 - 1) * 5,
-            filters: [],
-            filters_preset: [],
-            filters_for_join: [],
-          }}
-          onRowClick={(row: any) => {
-            navigate(`/logic-objects/edit/${encodeURIComponent(row.id)}`);
-          }}
-          showCreateBtn={false}
-          onPageChange={(page: number) => {
-            setState(() => ({ p2: page }));
-          }}
-        />
-      ),
-    },
-    {
-      key: 'tab-req',
-      title: i18n('ЗАПРОСЫ'),
-      content: (
-        <Table
-          cookieKey='domain-queries'
-          key={`reqTable${domainId}${domainVersionId || ''}`}
-          className={styles.table}
-          columns={queriesTableColumns}
-          paginate
-          columnSearch
-          globalSearch
-          dataUrl={
-            domainId === '' ? '' : `/v1/queries/search_by_domain/${encodeURIComponent(domainVersionId ? data.metadata.ancestor_draft_id : domainId)}`
-          }
-          initialFetchRequest={{
-            sort: 'name+',
-            global_query: '',
-            limit: 5,
-            offset: (state.p3 - 1) * 5,
-            filters: [],
-            filters_preset: [],
-            filters_for_join: [],
-          }}
-          onRowClick={(row: any) => {
-            navigate(`/queries/edit/${encodeURIComponent(row.id)}`);
-          }}
-          showCreateBtn={false}
-          onPageChange={(page: number) => {
-            setState(() => ({ p3: page }));
-          }}
-        />
-      ),
-    },
-    {
-      key: 'tab-samples',
-      title: i18n('СЭМПЛЫ'),
-      content: (
-        <Table
-          cookieKey='domain-samples'
-          key={`samplesTable${domainId}${domainVersionId || ''}`}
-          className={styles.table}
-          columns={samplesTableColumns}
-          paginate
-          columnSearch
-          globalSearch
-          dataUrl={
-            domainId === '' ? '' : `/v1/samples/search_by_domain/${encodeURIComponent(domainVersionId ? data.metadata.ancestor_draft_id : domainId)}`
-          }
-          initialFetchRequest={{
-            sort: 'name+',
-            global_query: '',
-            limit: 5,
-            offset: (state.p4 - 1) * 5,
-            filters: [],
-            filters_preset: [],
-            filters_for_join: [],
-          }}
-          showCreateBtn={false}
-          onRowClick={(row: any) => {
-            navigate(`/samples/edit/${encodeURIComponent(row.id)}`);
-          }}
-          onPageChange={(page: number) => {
-            setState(() => ({ p4: page }));
-          }}
-        />
-      ),
-    },
-    {
-      key: 'tab-act',
-      title: i18n('АКТИВЫ'),
-      content: (
-        <Table
-          cookieKey='domain-assets'
-          key={`activesTable${domainId}${domainVersionId || ''}`}
-          className={styles.table}
-          columns={assetsTableColumns}
-          paginate
-          columnSearch
-          globalSearch
-          dataUrl={domainId === '' ? '' : '/v1/data_assets/search'}
-          initialFetchRequest={{
-            sort: 'name+',
-            global_query: '',
-            limit: 5,
-            offset: (state.p5 - 1) * 5,
-            filters: [],
-            filters_preset: [{ column: 'domain_id', value: (domainVersionId ? data.metadata.ancestor_draft_id : (domainId ?? '')), operator: 'EQUAL' }],
-            filters_for_join: [],
-          }}
-          onRowClick={(row: any) => {
-            navigate(`/data_assets/edit/${encodeURIComponent(row.id)}`);
-          }}
-          showCreateBtn={false}
-          onPageChange={(page: number) => {
-            setState(() => ({ p5: page }));
-          }}
-        />
-      ),
-    },
-  ];
+  const [delObjectData, setDelObjectData] = useState<any>({ id: '', name: '' });
+  const [showDelDlg, setShowDelDlg] = useState(false);
+
 
   useEffect(() => {
     if (id) { setDomainId(id); }
@@ -440,15 +158,57 @@ export function Domain() {
     }
   };
 
+  const delDlgSubmit = () => {
+    setShowDelDlg(false);
+    setLoading(true);
+    deleteDomain(delObjectData.id)
+      .then(json => {
+        updateArtifactsCount();
+        setLoading(false);
+
+        if (json.metadata && json.metadata.id)
+          navigate('/domains/edit/' + encodeURIComponent(json.metadata.id));
+      })
+      .catch(handleHttpError);
+    setDelObjectData({ id: '', name: '' });
+  };
+
+  const archiveBtnClicked = () => { archiveDomain(data.metadata.id).then(json => {
+    if (json.metadata.id && json.metadata.id != domainId) {
+      navigate(`/domains/edit/${encodeURIComponent(json.metadata.id)}`);
+    }
+    setDataModified(false);
+  }).catch(handleHttpError); };
+
+  const restoreBtnClicked = () => { restoreDomain(data.metadata.id).then(json => {
+    if (json.metadata.id && json.metadata.id != domainId) {
+      navigate(`/domains/edit/${encodeURIComponent(json.metadata.id)}`);
+    }
+    setDataModified(false);
+  }).catch(handleHttpError); };
+
   return (
     <div className={classNames(styles.page, styles.domainPage, { [styles.loaded]: isLoaded })}>
       <div className={styles.mainContent}>
+      {domainVersionId && (
+          <Button onClick={() => {
+            restoreDomainVersion(domainId, domainVersionId).then(json => {
+              setDataModified(false);
+              if (json.metadata.id && json.metadata.id !== domainId) {
+                navigate(`/domains/edit/${encodeURIComponent(json.metadata.id)}`);
+              } else { setData(json); }
+            }).catch(handleHttpError);
+          }}>{i18n('Восстановить')}</Button>
+        )}
         {!domainVersionId && (
           <WFItemControl
-            key={`wfc-domain-` + data?.metadata?.workflow_task_id}
+            key={`wfc-domain-` + data?.metadata?.workflow_task_id + '-' + uuid()}
             itemMetadata={data.metadata}
             itemIsReadOnly={isReadOnly}
             onEditClicked={() => { setReadOnly(false); }}
+            onArchiveClicked={archiveBtnClicked}
+            onRestoreClicked={restoreBtnClicked}
+            onDeleteClicked={() => { setDelObjectData({ id: data.metadata.id, name: data.entity.name }); setShowDelDlg(true); }}
             onObjectIdChanged={(id) => {
               if (id) {
                 setDomainId(id);
@@ -485,19 +245,20 @@ export function Domain() {
             showValidation={showValidation}
           />
         </div>
-        {!isCreateMode && (
+        {!isCreateMode && data.metadata.state != 'ARCHIVED' && (
           <button className={styles.btn_scheme} onClick={() => { doNavigate(`/domains-model/${encodeURIComponent(domainId)}`, navigate); }}>{i18n('Схема')}</button>
         )}
         {!isCreateMode && (
           <div className={styles.description}>
-            <FieldEditor
+            <FieldVisualEditor
               isReadOnly={isReadOnly}
-              labelPrefix={`${i18n('Описание: ')} `}
+              labelPrefix={`${i18n('Описание')}:`}
               defaultValue={data.entity.description}
               className={styles.long_input}
               valueSubmitted={(val) => {
                 updateDomainField('description', val.toString());
               }}
+              layout=''
               isRequired
               onBlur={(val) => {
                 updateDomainField('description', val);
@@ -507,6 +268,7 @@ export function Domain() {
         )}
         {!isCreateMode && (
           <Tags
+            key={'tags-' + domainId + '-' + domainVersionId + '-' + uuid()}
             isReadOnly={isReadOnly}
             tags={tags}
             onTagAdded={(tagName: string) => tagAddedHandler(tagName, domainId, 'domain', data.metadata.state ?? '', tags, setLoading, setTags, '/domains/edit/', navigate)}
@@ -519,7 +281,7 @@ export function Domain() {
       </div>
       {!isCreateMode && (
         <div className={styles.rightBar}>
-          {data.metadata.state == 'PUBLISHED' && (
+          {(data.metadata.state == 'PUBLISHED' || data.metadata.state == 'ARCHIVED') && (
             <Versions
               rating={ratingData.rating}
               ownRating={ownRating}
@@ -529,6 +291,9 @@ export function Domain() {
               root_object_url={`/domains/edit/${encodeURIComponent(domainId)}`}
               onRateClick={r => rateClickedHandler(r, domainId, 'domain', setOwnRating, setRatingData)}
             />
+          )}
+          {data.metadata.state === 'PUBLISHED' && (
+            <Responsibles domain_id={(data && data.metadata && data.metadata.id) ? data.metadata.id : null}></Responsibles>
           )}
         </div>
       )}
@@ -603,6 +368,7 @@ export function Domain() {
         </Modal.Footer>
       </Modal>
 
+      <DeleteObjectModal show={showDelDlg} objectTitle={delObjectData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />
     </div>
   );
 }

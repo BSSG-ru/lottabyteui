@@ -34,6 +34,10 @@ export class LimitStewardSwitch extends React.Component<{ cookieKey: string }, {
                     e.initEvent('limitStewardChanged', true, true);
                     (e as any).eventName = 'limitStewardChanged';
                     (e as any).limitSteward = !oldLimitSteward;
+                    (e as any).isSteward = this.state.isSteward;
+
+                    console.log('ls event', e);
+                    
                     window.dispatchEvent(e);
                 }
             });
@@ -62,6 +66,8 @@ export class LimitStewardSwitch extends React.Component<{ cookieKey: string }, {
                     e.initEvent('limitStewardChanged', true, true);
                     (e as any).eventName = 'limitStewardChanged';
                     (e as any).limitSteward = v;
+                    (e as any).isSteward = this.state.isSteward;
+                    console.log('ls event', e);
                     window.dispatchEvent(e);
                 }}>
                     <div id="steward-switch-handler" className={styles.switch_handler}></div>

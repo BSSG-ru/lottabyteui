@@ -7,10 +7,14 @@ import useUrlState from '@ahooksjs/use-url-state';
 import styles from './DataAssets.module.scss';
 import { doNavigate, getDomainAutocompleteObjects, getDomainDisplayValue, getDQRuleAutocompleteObjects, getDQRuleDisplayValue, getDQRuleSettings, getEntityDisplayValue, getSystemAutocompleteObjects, getSystemDisplayValue, getTablePageSize, handleHttpError, i18n, loadEditPageData, rateClickedHandler, setBreadcrumbEntityName, setCookie, setDataModified, tagAddedHandler, tagDeletedHandler, updateArtifactsCount, updateEditPageReadOnly, uuid } from '../../utils';
 import {
+  archiveDataAsset,
   createDataAsset,
+  deleteDataAsset,
   getAsset,
   getAssetVersion,
   getAssetVersions,
+  restoreAssetVersion,
+  restoreDataAsset,
   updateAsset,
 } from '../../services/pages/dataAssets';
 import { Tags, TagProp } from '../../components/Tags';
@@ -26,10 +30,7 @@ import {
 import { getCustomAttrDefinitions } from '../../services/pages/customAttrs';
 import { setRecentView } from '../../services/pages/recentviews';
 import { WFItemControl } from '../../components/WFItemControl/WFItemControl';
-import { Table } from '../../components/Table';
-import { attributesTableColumns, samplesTableColumns } from '../../mocks/logic_objects';
-import { Tabs } from '../../components/Tabs';
-import { FieldTextareaEditor } from '../../components/FieldTextareaEditor';
+import Button from 'react-bootstrap/Button';
 import { ReactComponent as PlusInCircle } from '../../assets/icons/plus-in-circle.svg';
 import { ReactComponent as CloseIcon } from '../../assets/icons/close.svg';
 import { AssetData, TData, TDQRule } from '../../types/data';
@@ -37,6 +38,9 @@ import { v4 } from 'uuid';
 import { FieldCheckboxEditor } from '../../components/FieldCheckboxEditor';
 import { userInfoRequest } from '../../services/auth';
 import { RelatedObjectsControl } from '../../components/RelatedObjectsControl';
+import { Responsibles } from '../../components/Responsibles';
+import { DeleteObjectModal } from '../../components/DeleteObjectModal';
+import { FieldVisualEditor } from '../../components/FieldVisualEditor';
 
 export function DataAsset() {
   const navigate = useNavigate();
@@ -50,7 +54,8 @@ export function DataAsset() {
       description: '',
       custom_attributes: [],
       dq_rules: [],
-      roles: ''
+      roles: '',
+      tech_name: ''
     },
     metadata: { id: '', artifact_type: 'data_asset', version_id: '', tags: [], state: 'PUBLISHED' },
   });
@@ -75,74 +80,8 @@ export function DataAsset() {
     t: '1', p1: '1', p2: '1',
   }, { navigateMode: 'replace' });
 
-  const tabs = [
-    {
-      key: 'tab-log',
-      title: i18n('АТРИБУТЫ'),
-      content: (
-        <Table
-          cookieKey='asset-attrs'
-          key={id + (version_id ?? '')}
-          className={styles.table}
-          columns={attributesTableColumns}
-          paginate
-          columnSearch
-          globalSearch
-          dataUrl={
-            data.entity.entity_id ? `/v1/entities/search_attributes_by_entity_id/${encodeURIComponent(data.entity.entity_id)}` : ''
-          }
-          initialFetchRequest={{
-            sort: 'name+',
-            global_query: '',
-            limit: getTablePageSize(),
-            offset: (state.p1 - 1) * getTablePageSize(),
-            filters: [],
-            filters_preset: [],
-            filters_for_join: [],
-          }}
-          showCreateBtn={false}
-          onPageChange={(page: number) => {
-            setState(() => ({ p1: page }));
-          }}
-        />
-      ),
-    },
-    {
-      key: 'tab-samples',
-      title: i18n('СЭМПЛЫ'),
-      content: (
-        <Table
-          cookieKey='asset-samples'
-          key={`samplesTable${data.entity.entity_id}${version_id ?? ''}`}
-          className={styles.table}
-          columns={samplesTableColumns}
-          paginate
-          columnSearch
-          globalSearch
-          dataUrl={(data.entity.entity_id && data.entity.system_id) ? '/v1/samples/search' : ''}
-          initialFetchRequest={{
-            sort: 'name+',
-            global_query: '',
-            limit: 5,
-            offset: (state.p2 - 1) * 5,
-            filters: [],
-            filters_preset: [
-              { column: 'entity_id', value: data.entity.entity_id ?? '00000000-0000-0000-0000-000000000000', operator: 'EQUAL' },
-              { column: 'system_id', value: data.entity.system_id ?? '00000000-0000-0000-0000-000000000000', operator: 'EQUAL' },
-            ],
-            filters_for_join: [],
-          }}
-          onRowClick={(row: any) => {
-            navigate(`/samples/edit/${encodeURIComponent(row.id)}`);
-          }}
-          showCreateBtn={false}
-          onPageChange={(page: number) => {
-            setState(() => ({ p2: page }));
-          }}
-        />
-      ),
-    },
-  ];
+  const [delObjectData, setDelObjectData] = useState<any>({ id: '', name: '' });
+  const [showDelDlg, setShowDelDlg] = useState(false);
 
   useEffect(() => {
     if (id) setAssetId(id);
@@ -168,7 +107,7 @@ export function DataAsset() {
     return getEntities({
       sort: 'name+',
       global_query: search,
-      limit: 10,
+      limit: 1000,
       offset: 0,
       filters: [],
       filters_for_join: filtersForJoin,
@@ -221,7 +160,7 @@ export function DataAsset() {
         resp.json().then(data => {
           //console.log('set userp', data.permissions);
           setCookie('userp', data.permissions.join(','), { path: '/' });
-          setData((prev) => ({ ...prev, metadata: { ...prev.metadata, state: 'DRAFT' }, entity: { ...prev.entity, domain_id: data.user_domains ? data.user_domains[0] : null} }));
+          setData((prev) => ({ ...prev, metadata: { ...prev.metadata, state: 'DRAFT' }, entity: { ...prev.entity, domain_id: data.steward_domains ? data.steward_domains[0] : null} }));
           setDataModified(false);
           setReadOnly(false);
           setLoaded(true);
@@ -422,15 +361,57 @@ export function DataAsset() {
     setDataModified(false);
   };
 
+  const delDlgSubmit = () => {
+    setShowDelDlg(false);
+    setLoading(true);
+    deleteDataAsset(delObjectData.id)
+      .then(json => {
+        updateArtifactsCount();
+        setLoading(false);
+
+        if (json.metadata && json.metadata.id)
+          navigate('/data_assets/edit/' + encodeURIComponent(json.metadata.id));
+      })
+      .catch(handleHttpError);
+    setDelObjectData({ id: '', name: '' });
+  };
+
+  const archiveBtnClicked = () => { archiveDataAsset(data.metadata.id).then(json => {
+    if (json.metadata.id && json.metadata.id != assetId) {
+      navigate(`/data_assets/edit/${encodeURIComponent(json.metadata.id)}`);
+    }
+    setDataModified(false);
+  }).catch(handleHttpError); };
+
+  const restoreBtnClicked = () => { restoreDataAsset(data.metadata.id).then(json => {
+    if (json.metadata.id && json.metadata.id != assetId) {
+      navigate(`/data_assets/edit/${encodeURIComponent(json.metadata.id)}`);
+    }
+    setDataModified(false);
+  }).catch(handleHttpError); };
+
   return (
     <div className={classNames(styles.page, styles.dataAssetPage, { [styles.loaded]: isLoaded })}>
       <div className={styles.mainContent}>
+      {assetVersionId && (
+          <Button onClick={() => {
+            restoreAssetVersion(assetId, assetVersionId).then(json => {
+              setDataModified(false);
+              if (json.metadata.id && json.metadata.id !== assetId) {
+                navigate(`/data_assets/edit/${encodeURIComponent(json.metadata.id)}`);
+              } else { setData(json); }
+            }).catch(handleHttpError);
+          }}>{i18n('Восстановить')}</Button>
+        )}
         {!assetVersionId && (
           <WFItemControl
             key={`wfc-asset-` + data?.metadata?.workflow_task_id}
             itemMetadata={data.metadata}
             itemIsReadOnly={isReadOnly}
             onEditClicked={() => { setReadOnly(false); }}
+            onArchiveClicked={archiveBtnClicked}
+            onRestoreClicked={restoreBtnClicked}
+            onDeleteClicked={() => { setDelObjectData({ id: data.metadata.id, name: data.entity.name }); setShowDelDlg(true); }}
             onObjectIdChanged={(id) => {
               if (id) {
                 setAssetId(id);
@@ -463,11 +444,12 @@ export function DataAsset() {
             showValidation={showValidation}
           />
         </div>
-        {!isCreateMode && (
+        {!isCreateMode && data.metadata.state != 'ARCHIVED' && (
           <button className={styles.btn_scheme} onClick={() => { doNavigate(`/assets-model/${encodeURIComponent(assetId)}`, navigate); }}>{i18n('Схема')}</button>
         )}
         {!isCreateMode && (
           <Tags
+            key={'tags-' + assetId + '-' + assetVersionId + '-' + uuid()}
             tags={tags}
             isReadOnly={isReadOnly}
             onTagAdded={(tagName: string) => tagAddedHandler(tagName, assetId, 'data_asset', data.metadata.state ?? '', tags, setLoading, setTags, '/data_assets/edit/', navigate)}
@@ -476,15 +458,29 @@ export function DataAsset() {
         )}
 
         {!isCreateMode && (
-            <div className={styles.description}>
-              <FieldTextareaEditor 
+            <div className={styles.data_row}>
+              <FieldEditor
                 isReadOnly={isReadOnly}
-                labelPrefix={i18n('Описание')}
-                isMultiline
+                layout="separated"
+                labelPrefix={`${i18n('Техническое название')} `}
+                defaultValue={data.entity.tech_name}
+                className={styles.editor}
+                valueSubmitted={(val) => {
+                  updateAssetField('tech_name', val.toString());
+                }}
+              />
+            </div>
+        )}
+
+        {!isCreateMode && (
+            <div className={styles.description}>
+              <FieldVisualEditor
+                isReadOnly={isReadOnly}
+                labelPrefix={`${i18n('Описание')}`}
                 defaultValue={data.entity.description}
                 className={styles.editor}
                 valueSubmitted={(val) => {
-                  updateAssetField('description', val as string);
+                  updateAssetField('description', val.toString());
                 }}
               />
               
@@ -664,7 +660,7 @@ export function DataAsset() {
         <RelatedObjectsControl artifactId={assetId} artifactType='data_asset'></RelatedObjectsControl>
       </div>
       <div className={styles.rightBar}>
-        {!isCreateMode && data.metadata.state == 'PUBLISHED' && (
+        {!isCreateMode && (data.metadata.state == 'PUBLISHED' || data.metadata.state == 'ARCHIVED') && (
           <Versions
             rating={ratingData.rating}
             ownRating={ownRating}
@@ -675,7 +671,12 @@ export function DataAsset() {
             onRateClick={r => rateClickedHandler(r, assetId, 'data_asset', setOwnRating, setRatingData)}
           />
         )}
+        {data.metadata.state === 'PUBLISHED' && (
+            <Responsibles domain_id={(data && data.entity && data.entity.domain_id) ? data.entity.domain_id : null}></Responsibles>
+          )}
       </div>
+      
+      <DeleteObjectModal show={showDelDlg} objectTitle={delObjectData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />
     </div>
   );
 }

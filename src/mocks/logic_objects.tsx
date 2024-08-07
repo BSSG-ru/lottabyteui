@@ -9,6 +9,9 @@ const map = new Map([
   ['NUMERIC', 'С плавающей точкой'],
   ['BOOLEAN', 'Логический'],
   ['DATE', 'Дата'],
+  ['TIME', 'Время'],
+  ['ARRAY', 'Массив'],
+  ['JSON', 'JSON'],
 ]);
 
 export const renderAttr = (row: any, typeField: string) => {
@@ -69,6 +72,13 @@ export const attributesTableColumns = [
     property: 'created',
     header: i18n('Дата создания'),
     render: (row: any) => renderDate(row, 'created'),
+  },
+  {
+    property: 'tags',
+    header: i18n('Теги'),
+    filterDisabled: true,
+    sortDisabled: true,
+    render: (row: any) => row.tags.join(', '),
   }
 ];
 

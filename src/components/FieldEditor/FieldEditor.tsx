@@ -5,7 +5,9 @@
 import React, {
   ChangeEvent, FC, useCallback, useEffect, useMemo, useState,
 } from 'react';
+
 import styles from './FieldEditor.module.scss';
+
 import { ReactComponent as PencilIcon } from '../../assets/icons/pencil.svg';
 import { ReactComponent as OrangePencilIcon } from '../../assets/icons/pencil_org.svg';
 import { Input } from '../Input';

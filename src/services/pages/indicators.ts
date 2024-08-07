@@ -12,6 +12,14 @@ export const deleteIndicator = async (indicatorId: string) => fetchWithRefresh(`
   handleHttpResponse,
 );
 
+export const archiveIndicator = async (indicatorId: string) => fetchWithRefresh(`${URL}/v1/indicators/archive/${encodeURIComponent(indicatorId)}`, optionsPost()).then(
+  handleHttpResponse,
+);
+
+export const restoreIndicator = async (indicatorId: string) => fetchWithRefresh(`${URL}/v1/indicators/restore/${encodeURIComponent(indicatorId)}`, optionsPost()).then(
+  handleHttpResponse,
+);
+
 export const createIndicator = async (data: any) => fetchWithRefresh(`${URL}/v1/indicators/`, optionsPost(data)).then(handleHttpResponse);
 
 export const updateIndicator = async (indicatorId: string, data: any) => fetchWithRefresh(`${URL}/v1/indicators/${encodeURIComponent(indicatorId)}`, optionsPatch(data)).then(
@@ -23,6 +31,10 @@ export const getIndicatorVersions = async (indicatorId: string) => fetchWithRefr
 );
 
 export const getIndicatorVersion = async (indicatorId: string, versionId: string) => fetchWithRefresh(`${URL}/v1/indicators/${encodeURIComponent(indicatorId)}/versions/${encodeURIComponent(versionId)}`, optionsGet()).then(
+  handleHttpResponse,
+);
+
+export const restoreIndicatorVersion = async (indicatorId: string, versionId: string) => fetchWithRefresh(`${URL}/v1/indicators/${encodeURIComponent(indicatorId)}/versions/${encodeURIComponent(versionId)}/restore`, optionsPost()).then(
   handleHttpResponse,
 );
 

@@ -48,15 +48,19 @@ export const Aside: FC = () => {
     business_entity: '',
     product: '',
     dq_rule: '',
-    draft: ''
+    draft: '',
   });
 
   const nav = useLocation();
   const listener = () => {
     let limit_steward = false;
+    let is_steward = false;
     const lss = (window as any).limitStewardSwitch;
-    if (lss) { limit_steward = lss.state.limitSteward; }
-    getArtifactsCount(limit_steward).then((json) => {
+    if (lss) {
+      limit_steward = lss.state.limitSteward;
+      is_steward = lss.state.isSteward;
+    }
+    getArtifactsCount(limit_steward && is_steward).then((json) => {
       setCount(json);
     });
   };
@@ -67,7 +71,7 @@ export const Aside: FC = () => {
   useEffect(() => {
     document.addEventListener('countUpdateNeeded', listener, false);
     window.addEventListener('limitStewardChanged', (e) => {
-      getArtifactsCount((e as any).limitSteward).then((json) => {
+      getArtifactsCount((e as any).limitSteward && (e as any).isSteward).then((json) => {
         setCount(json);
       });
     });

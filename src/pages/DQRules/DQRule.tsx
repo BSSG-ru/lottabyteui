@@ -7,7 +7,7 @@ import Button from 'react-bootstrap/Button';
 import classNames from 'classnames';
 import { RawDraftContentState } from 'draft-js';
 import styles from './DQRules.module.scss';
-import { handleHttpError, i18n, loadEditPageData, rateClickedHandler, setBreadcrumbEntityName, setDataModified, tagAddedHandler, tagDeletedHandler, updateArtifactsCount, updateEditPageReadOnly } from '../../utils';
+import { handleHttpError, i18n, loadEditPageData, rateClickedHandler, setBreadcrumbEntityName, setDataModified, tagAddedHandler, tagDeletedHandler, updateArtifactsCount, updateEditPageReadOnly, uuid } from '../../utils';
 import { Versions, VersionData } from '../../components/Versions';
 
 import { FieldEditor } from '../../components/FieldEditor';
@@ -30,6 +30,7 @@ import { FieldTextareaEditor } from '../../components/FieldTextareaEditor';
 import { TagProp, Tags } from '../../components/Tags';
 import { DQRuleData } from '../../types/data';
 import { FieldAutocompleteEditor } from '../../components/FieldAutocompleteEditor';
+import { FieldVisualEditor } from '../../components/FieldVisualEditor';
 
 export function DQRule() {
   const navigate = useNavigate();
@@ -213,6 +214,7 @@ export function DQRule() {
             itemMetadata={data.metadata}
             itemIsReadOnly={isReadOnly}
             onEditClicked={() => { setReadOnly(false); }}
+            onDeleteClicked={() => { setDelData({ id: data.metadata.id, name: data.entity.name }); setShowDelDlg(true); }}
             onObjectIdChanged={(localDQRuleId) => {
               if (localDQRuleId) {
                 setDQRuleId(localDQRuleId);
@@ -253,6 +255,7 @@ export function DQRule() {
 
         {!isCreateMode && (
           <Tags
+            key={'tags-' + dqRuleId + '-' + dqRuleVersionId + '-' + uuid()}
             tags={tags}
             isReadOnly={isReadOnly}
             onTagAdded={(tagName: string) => tagAddedHandler(tagName, dqRuleId, 'dq_rule', data.metadata.state ?? '', tags, setLoading, setTags, '/dq_rule/edit/', navigate)}
@@ -262,7 +265,7 @@ export function DQRule() {
 
         <FieldAutocompleteEditor
           className={styles.long_input}
-          label={i18n('Тип: ')}
+          label={i18n('Тип')}
           isReadOnly={isReadOnly}
           defaultValue={data.entity.rule_type_id}
           valueSubmitted={(identity) => updateDQRuleField('rule_type_id', identity)}
@@ -287,18 +290,16 @@ export function DQRule() {
           </div>
         )}
         {!isCreateMode && (
-          <div className={styles.data_row}>
-            <FieldTextareaEditor
-              isReadOnly={isReadOnly}
-              labelPrefix={`${i18n('Описание')}`}
-              isMultiline
-              defaultValue={data.entity.description}
-              className={styles.editor}
-              valueSubmitted={(val) => {
-                updateDQRuleField('description', val);
-              }}
-
-            />
+          <div className={classNames(styles.data_row, styles.description)}>
+              <FieldVisualEditor
+                isReadOnly={isReadOnly}
+                labelPrefix={`${i18n('Описание')}`}
+                defaultValue={data.entity.description}
+                className={styles.editor}
+                valueSubmitted={(val) => {
+                  updateDQRuleField('description', val.toString());
+                }}
+              />
           </div>
         )}
         {!isCreateMode && (
@@ -318,7 +319,7 @@ export function DQRule() {
       </div>
       {!isCreateMode && (
         <div className={styles.rightBar}>
-          {data.metadata.state === 'PUBLISHED' && (
+          {(data.metadata.state == 'PUBLISHED' || data.metadata.state == 'ARCHIVED') && (
             <Versions
               rating={ratingData.rating}
               ownRating={ownRating}

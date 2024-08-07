@@ -259,7 +259,15 @@ export function initEntitiesDiagram() {
                 toShortLength: 1,
                 adjusting: go.Link.None,
                 fromSpot: go.Spot.LeftRightSides,
-                toSpot: go.Spot.LeftRightSides
+                toSpot: go.Spot.LeftRightSides,
+                doubleClick: (e, obj) => {
+                    var e2 = document.createEvent('HTMLEvents');
+                    e2.initEvent('linkDblClick', true, true);
+                    (e2 as any).eventName = 'linkDblClick';
+                    (e2 as any).link = obj;
+
+                    window.dispatchEvent(e2);
+                }
             },
             new go.Binding("zOrder", "zorder", parseInt),
             new go.Binding("points", "points").makeTwoWay(),
@@ -316,6 +324,7 @@ export function initArtifactDiagram() {
     dg.animationManager.isEnabled = false;
     dg.toolManager.dragSelectingTool.isEnabled = true;
     dg.toolManager.draggingTool.isCopyEnabled = false;
+    dg.toolManager.clickCreatingTool.isEnabled = false;
 
     let lnktool = dg.toolManager.linkingTool;
     lnktool.insertLink = function (fromnode: go.Node, fromport, tonode: go.Node, toport) {
@@ -539,17 +548,32 @@ export function initArtifactDiagram() {
                 toShortLength: 1,
                 adjusting: go.Link.None,
                 fromSpot: go.Spot.NotRightSide,
-                toSpot: go.Spot.AllSides
+                toSpot: go.Spot.AllSides,
+                doubleClick: (e, obj) => {
+                    console.log('link dbl', e);
+                    console.log('link dbl obj', e);
+
+
+                    var e2 = document.createEvent('HTMLEvents');
+                    e2.initEvent('linkDblClick', true, true);
+                    (e2 as any).eventName = 'linkDblClick';
+                    (e2 as any).link = obj;
+
+                    window.dispatchEvent(e2);
+                }
             },
             new go.Binding("zOrder", "zorder", parseInt),
             new go.Binding("points", "points").makeTwoWay(),
             gjs(go.Shape,  // the link shape
-                { stroke: "#BDBDBD", strokeWidth: 1 }),
+                { stroke: "#BDBDBD", strokeWidth: 1 },
+                new go.Binding("stroke", "isDummy", function (v) { if (v) return "#E8762D"; else return "#BDBDBD"; })),
             gjs(go.Shape,  // the arrowhead
-                { toArrow: "standard", stroke: null, fill: '#BDBDBD' }
+                { toArrow: "standard", stroke: null, fill: '#BDBDBD' },
+                new go.Binding("fill", "isDummy", function (v) { if (v) return "#E8762D"; else return "#BDBDBD"; })
                 ),
             gjs(go.Shape,
-                { fromArrow: "circle", stroke: '#BDBDBD', fill: 'whitesmoke', strokeWidth: 1, width: 8, height: 8 }
+                { fromArrow: "circle", stroke: '#BDBDBD', fill: 'whitesmoke', strokeWidth: 1, width: 8, height: 8 },
+                new go.Binding("stroke", "isDummy", function (v) { if (v) return "#E8762D"; else return "#BDBDBD"; })
             ),
         );
 

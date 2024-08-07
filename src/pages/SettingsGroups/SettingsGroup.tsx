@@ -110,12 +110,12 @@ export function SettingsGroup() {
   };
 
   const getRoleOptions = async (search: string) => 
-  searchRoles({ filters: [], filters_for_join: [], global_query: search, limit: 15, offset: 0, sort: 'name+', state: 'PUBLISHED' }).then(json => {
+  searchRoles({ filters: [], filters_for_join: [], global_query: search, limit: 1000, offset: 0, sort: 'name+', state: 'PUBLISHED' }).then(json => {
     return json.items.map((item:any) => { return { value: item.id, label: item.name, name: item.name, id: item.id } });
   });
 
   const getPermissionOptions = async (search: string) => 
-  searchPermissions({ filters: [], filters_for_join: [], global_query: search, limit: 15, offset: 0, sort: 'name+', state: 'PUBLISHED' }).then(json => {
+  searchPermissions({ filters: [], filters_for_join: [], global_query: search, limit: 1000, offset: 0, sort: 'name+', state: 'PUBLISHED' }).then(json => {
     return json.items.map((item:any) => { return { value: item.id, label: item.name, name: item.name, id: item.id } });
   });
 
@@ -161,7 +161,7 @@ export function SettingsGroup() {
                     inputPlaceholder={i18n('Выберите роль')} 
                     addBtnText={i18n('Добавить')}
                     valueSubmitted={()=>{ updateGroupField('user_roles', data.entity.user_roles) }}
-                    onValueIdAdded={(id:string) => { 
+                    onValueIdAdded={(id:string, name: string) => { 
                       setData((prev) => ({...prev, entity: {...prev.entity, user_roles: [...prev.entity.user_roles, id ]}}));
                     }}
                     onValueIdRemoved={(id:string) => {
@@ -183,7 +183,7 @@ export function SettingsGroup() {
                     inputPlaceholder={i18n('Выберите разрешение')} 
                     addBtnText={i18n('Добавить')}
                     valueSubmitted={()=>{ updateGroupField('permissions', data.entity.permissions) }}
-                    onValueIdAdded={(id:string) => { 
+                    onValueIdAdded={(id:string, name: string) => { 
                       setData((prev) => ({...prev, entity: {...prev.entity, permissions: [...prev.entity.permissions, id ]}}));
                     }}
                     onValueIdRemoved={(id:string) => {

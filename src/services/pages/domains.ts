@@ -15,6 +15,10 @@ export const getDomainVersion = async (domainId: string, versionId: string) => f
   handleHttpResponse,
 );
 
+export const restoreDomainVersion = async (domainId: string, versionId: string) => fetchWithRefresh(`${URL}/v1/domains/${encodeURIComponent(domainId)}/versions/${encodeURIComponent(versionId)}/restore`, optionsPost()).then(
+  handleHttpResponse,
+);
+
 export const getDomainSystems = async (domainId: string, body: TableRequestBody | null = null) => {
   const body2 = {
     ...body,
@@ -42,6 +46,14 @@ export const deleteDomain = async (domainId: string) => fetchWithRefresh(`${URL}
   handleHttpResponse,
 );
 
+export const archiveDomain = async (domainId: string) => fetchWithRefresh(`${URL}/v1/domains/archive/${encodeURIComponent(domainId)}`, optionsPost()).then(
+  handleHttpResponse,
+);
+
+export const restoreDomain = async (domainId: string) => fetchWithRefresh(`${URL}/v1/domains/restore/${encodeURIComponent(domainId)}`, optionsPost()).then(
+  handleHttpResponse,
+);
+
 export const createDomain = async (data: any) => fetchWithRefresh(`${URL}/v1/domains/`, optionsPost(data)).then(handleHttpResponse);
 
 export const createSystem = async (data: any) => fetchWithRefresh(`${URL}/v1/systems/system`, optionsPost(data)).then(handleHttpResponse);
@@ -53,3 +65,5 @@ export const deleteSystem = async (systemId: string) => fetchWithRefresh(`${URL}
 export const getDomainVersions = async (domainId: string) => fetchWithRefresh(`${URL}/v1/domains/${encodeURIComponent(domainId)}/versions?limit=1000`, optionsGet()).then(
   handleHttpResponse,
 );
+
+export const getDomainResponsibles = async (domainId: string) => fetchWithRefresh(`${URL}/v1/domains/${encodeURIComponent(domainId)}/responsibles`, optionsGet()).then(handleHttpResponse);

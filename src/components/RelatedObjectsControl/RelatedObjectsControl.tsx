@@ -6,7 +6,7 @@ import { getRelatedObjectArtifactTypes } from '../../services/pages/artifacts';
 import { Tabs } from '../Tabs';
 import useUrlState from '@ahooksjs/use-url-state';
 import { renderDate, Table } from '../Table';
-import { getArtifactUrl, i18n } from '../../utils';
+import { getArtifactUrl, getTablePageSize, i18n } from '../../utils';
 import { useNavigate } from 'react-router';
 import { assetsTableColumns, beTableColumns, entitiesTableColumns, indicatorsTableColumns, prodTableColumns, queriesTableColumns, samplesTableColumns, systemsTableColumns } from '../../mocks/systems';
 import { attributesTableColumns } from '../../mocks/logic_objects';
@@ -61,20 +61,22 @@ export const RelatedObjectsControl: FC<RelatedObjectsControlProps> = ({ artifact
         data_asset: assetsTableColumns,
         indicator: indicatorsTableColumns,
         business_entity: beTableColumns,
-        product: prodTableColumns
+        product: prodTableColumns,
+        entity_sample_property: [ ...commonCols ]
     };
 
     const [state, setState] = useUrlState({ t: '1' }, { navigateMode: 'replace' });
     const [relatedArtifactTypes, setRelatedArtifactTypes] = useState<string[]>([]);
     const allowedArtifactTypes = { 'entity_attribute': i18n('Атрибуты'), 'domain': i18n('Домены'), 'system': i18n('Системы'), 'entity': i18n('Лог. объекты'), 'task': i18n('Задачи'), 'entity_query': i18n('Запросы'), 
-    'entity_sample': i18n('Сэмплы'), 'data_asset': i18n('Активы'), 'indicator': i18n('Показатели'), 'business_entity': i18n('Бизнес-сущности'), 'product': i18n('Продукты') };
+    'entity_sample': i18n('Сэмплы'), 'data_asset': i18n('Активы'), 'indicator': i18n('Показатели'), 'business_entity': i18n('Бизнес-сущности'), 'product': i18n('Продукты'), 
+    'entity_sample_property': i18n('Атрибуты сэмпла') };
     const [tabs, setTabs] = useState<any[]>([]);
 
     useEffect(() => {
         if (artifactId) {
             getRelatedObjectArtifactTypes(artifactType).then((json:any) => {
                 let order = { 'entity_attribute': 1, 'domain': 2, 'system' : 3, 'entity': 4, 'task': 5, 'entity_query': 6, 'entity_sample': 7, 'data_asset': 8, 'indicator': 9,
-                    'business_entity': 10, 'product': 11 };
+                    'business_entity': 10, 'product': 11, 'entity_sample_property': 12 };
                 setRelatedArtifactTypes(json.sort((a:any, b:any) => { 
                     var v1 = order[a as keyof typeof order];
                     var v2 = order[b as keyof typeof order];
@@ -109,11 +111,12 @@ export const RelatedObjectsControl: FC<RelatedObjectsControlProps> = ({ artifact
                 initialFetchRequest={{
                   sort: 'name+',
                   global_query: '',
-                  limit: 5,
+                  limit: getTablePageSize('related-' + rat),
                   offset: 0,//(state.p6 - 1) * 5,
                   filters: [],
                   filters_preset: [],
                   filters_for_join: [],
+                  state: 'PUBLISHED'
                 }}
                 showCreateBtn={artifactType == 'entity' && rat == 'entity_attribute'}
                 onCreateBtnClick={(artifactType == 'entity' && rat == 'entity_attribute') ? createEAttrClick : undefined}
@@ -121,12 +124,15 @@ export const RelatedObjectsControl: FC<RelatedObjectsControlProps> = ({ artifact
                 onRowClick={(row: any) => {
                     if (rat == 'entity_attribute')
                         navigate(getArtifactUrl(row.entity_id, 'entity'));
+                    else if (rat == 'entity_sample_property')
+                        navigate(getArtifactUrl(row.entity_sample_id, 'entity_sample') + '?t=2');
                     else
                         navigate(getArtifactUrl(row.id, rat));
                 }}
                 onPageChange={(page: number) => {
                   //setState(() => ({ p6: page }));
                 }}
+                pageSizeCookieSuffix={'related-' + rat}
               />)
         })));
     }, [ relatedArtifactTypes ]);
@@ -135,7 +141,7 @@ export const RelatedObjectsControl: FC<RelatedObjectsControlProps> = ({ artifact
         setTimeout( () => {
             //console.log(';aaaaaaaaaaa');
         setState(() => ({ t: 1 }));
-        }, 2000);
+        }, 200);
     }, [ tabs ]);
 
     return (

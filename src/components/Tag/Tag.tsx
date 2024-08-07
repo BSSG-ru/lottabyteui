@@ -65,7 +65,8 @@ export const Tag: FC<TagProps> = ({
       ) : (
         <CloseIcon
           onClick={(e:MouseEvent) => {
-            onDelete(value.replace('#', ''));
+            if (onDelete)
+              onDelete(value.replace('#', ''));
             if (valueId) onDeleteId(valueId);
             e.preventDefault();
             e.stopPropagation();

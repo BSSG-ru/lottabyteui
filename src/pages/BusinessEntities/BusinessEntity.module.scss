@@ -1,5 +1,6 @@
 .page {
     padding: 70px 50px 0px;
+    max-width: 1620px;
 
     &.bePage {
         display: none;
@@ -190,6 +191,7 @@
 
 .button {
     margin-bottom: 20px;
+    margin-top: 20px;
     gap: 10px;
     padding: 10px 20px;
 }
@@ -322,7 +324,7 @@
         font-size: 15px;
         line-height: 18px;
     }
-    th {
+    thead tr:first-child th {
         border-bottom: 4px solid rgba(0, 0, 0, 0.05);
     }
     td {
@@ -389,5 +391,11 @@
         right: 10px;
         white-space: nowrap;
         line-height: 30px;
+    }
+}
+
+.tree_global_search {
+    .inp_search {
+        width: 322px;
     }
 }

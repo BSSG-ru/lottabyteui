@@ -31,7 +31,7 @@ export function Domains() {
       property: 'name',
       header: i18n('Название'),
     },
-    { property: 'description', header: i18n('Описание') },
+    //{ property: 'description', header: i18n('Описание') },
     {
       property: 'modified',
       header: i18n('Дата создания'),

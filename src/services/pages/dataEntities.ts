@@ -14,12 +14,23 @@ export const getEntityVersion = async (entityId: string, versionId: string) => f
   handleHttpResponse,
 );
 
+export const restoreEntityVersion = async (entityId: string, versionId: string) => fetchWithRefresh(`${URL}/v1/entities/${encodeURIComponent(entityId)}/versions/${encodeURIComponent(versionId)}/restore`, optionsPost()).then(
+  handleHttpResponse,
+);
 
 export const updateEntity = async (entityId: string, data: any) => fetchWithRefresh(`${URL}/v1/entities/${encodeURIComponent(entityId)}`, optionsPatch(data)).then(
   handleHttpResponse,
 );
 
 export const deleteEntity = async (entityId: string) => fetchWithRefresh(`${URL}/v1/entities/${encodeURIComponent(entityId)}`, optionsDelete()).then(
+  handleHttpResponse,
+);
+
+export const archiveEntity = async (entityId: string) => fetchWithRefresh(`${URL}/v1/entities/archive/${encodeURIComponent(entityId)}`, optionsPost()).then(
+  handleHttpResponse,
+);
+
+export const restoreEntity = async (entityId: string) => fetchWithRefresh(`${URL}/v1/entities/restore/${encodeURIComponent(entityId)}`, optionsPost()).then(
   handleHttpResponse,
 );
 

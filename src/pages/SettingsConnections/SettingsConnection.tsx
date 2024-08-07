@@ -97,7 +97,7 @@ export function SettingsConnection() {
   const getSystemObjects = async (search: string) => getSystems({
     sort: 'name+',
     global_query: search,
-    limit: 10,
+    limit: 1000,
     offset: 0,
     filters: [],
     filters_for_join: [],

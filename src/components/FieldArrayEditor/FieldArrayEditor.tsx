@@ -27,7 +27,7 @@ export type FieldArrayEditorProps = {
   inputPlaceholder: string;
   addBtnText: string;
   getOptions?: (search: string) => Promise<any[]>;
-  onValueIdAdded?: (id: string) => void;
+  onValueIdAdded?: (id: string, name: string) => void;
   onValueIdRemoved?: (id: string) => void;
 };
 

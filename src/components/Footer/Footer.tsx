@@ -9,7 +9,7 @@ export const Footer: FC = () => (
     <Notices />
     <footer className={styles.footer}>
       <Copyright />
-      <span className={styles.lotta}>Lottabyte, 2022</span>
+      <span className={styles.lotta}>Lottabyte, 2024</span>
     </footer>
   </>
 );

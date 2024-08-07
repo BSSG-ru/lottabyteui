@@ -98,21 +98,36 @@ export function handleHttpResponse(resp: Response, asText?: boolean) {
               (window as any).notices.addNotice('error', element.message);
             });
           }
-        });
+        }).catch(handleHttpError);
       }
 
       if (asText !== undefined) { return resp.text(); }
       return resp.json();
     case 400: case 404: case 500: case 409:
+      try {
       resp.clone().json().then((json) => {
         if (json.errors !== undefined && json.errors.length > 0) {
           json.errors.forEach((element: any) => {
-            (window as any).notices.addNotice('error', element.message);
+              var msg = element.message;
+              if (!msg) {
+                msg = element.code;
+                if (msg == 'not_found')
+                  msg = i18n('объект не найден');
+                msg = i18n('Ошибка') + ': ' + msg;
+              }
+              if (!msg)
+                msg = i18n('Ошибка');
+              (window as any).notices.addNotice('error', msg);
           });
         } else {
           throw Error(`Ошибка ${resp.statusText}`);
         }
-      });
+        })
+        .catch(handleHttpError);
+      } catch (e) {
+        console.log('exc', e);
+        throw Error("Exxxxception");
+      }
       return resp.json();
     default:
       throw Error(`Ошибка ${resp.statusText}`);
@@ -160,6 +175,8 @@ export const getArtifactTypeDisplayName = (artifact_type: string) => {
       return i18n('Задача');
     case 'dq_rule':
       return i18n('Правило проверки качества');
+    case 'entity_attribute':
+      return i18n('Атрибут ЛО');
     default:
       return artifact_type;
   }
@@ -264,7 +281,7 @@ export const getSystemDisplayValue = async (identity: string) => {
 export const getDQRuleAutocompleteObjects = async (search: string) => searchDQRules({
   sort: 'name+',
   global_query: search,
-  limit: 10,
+  limit: 1000,
   offset: 0,
   filters: [],
   filters_for_join: [],
@@ -273,7 +290,7 @@ export const getDQRuleAutocompleteObjects = async (search: string) => searchDQRu
 export const getDomainAutocompleteObjects = async (search: string) => getDomains({
   sort: 'name+',
   global_query: search,
-  limit: 10,
+  limit: 1000,
   offset: 0,
   filters: [],
   filters_for_join: [],
@@ -282,7 +299,7 @@ export const getDomainAutocompleteObjects = async (search: string) => getDomains
 export const getEntityQueryAutocompleteObjects = async (search: string) => getEntityQueries({
   sort: 'name+',
   global_query: search,
-  limit: 10,
+  limit: 1000,
   offset: 0,
   filters: [],
   filters_for_join: [],
@@ -291,7 +308,7 @@ export const getEntityQueryAutocompleteObjects = async (search: string) => getEn
 export const getDataTypeAutocompleteObjects = async (search: string) => getDataTypes({
   sort: 'name+',
   global_query: search,
-  limit: 10,
+  limit: 1000,
   offset: 0,
   filters: [],
   filters_for_join: [],
@@ -300,7 +317,7 @@ export const getDataTypeAutocompleteObjects = async (search: string) => getDataT
 export const getSystemAutocompleteObjects = async (search: string) => getSystems({
   sort: 'name+',
   global_query: search,
-  limit: 10,
+  limit: 1000,
   offset: 0,
   filters: [],
   filters_for_join: [],
@@ -309,7 +326,7 @@ export const getSystemAutocompleteObjects = async (search: string) => getSystems
 export const getBusinessEntityAutocompleteObjects = async (search: string) => getBusinessEntities({
   sort: 'name+',
   global_query: search,
-  limit: 10,
+  limit: 1000,
   offset: 0,
   filters: [],
   filters_for_join: [],
@@ -318,7 +335,7 @@ export const getBusinessEntityAutocompleteObjects = async (search: string) => ge
 export const getQueryAutocompleteObjects = async (search: string) => getEntityQueries({
   sort: 'name+',
   global_query: search,
-  limit: 10,
+  limit: 1000,
   offset: 0,
   filters: [],
   filters_for_join: [],
@@ -338,17 +355,18 @@ export const getDataModified = () => (window as any).lbDataModified ?? false;
 export const doNavigate = (target: string, nav: NavigateFunction) => {
   if (!getDataModified() || confirm('Изменения не сохранены. Продолжить?')) {
     setDataModified(false);
-    nav(target);
+    window.location.href = target;
+    //nav(target);
   }
 };
 
-export const getTablePageSize = () => {
-  const v = getCookie('table-page-size');
+export const getTablePageSize = (suffix?: string) => {
+  const v = getCookie('table-page-size' + (suffix ? ('-' + suffix) : ''));
   return v ? parseInt(v) : 50;
 };
 
-export const setTablePageSize = (v: number) => {
-  setCookie('table-page-size', v.toString());
+export const setTablePageSize = (v: number, suffix?: string) => {
+  setCookie('table-page-size' + (suffix ? ('-' + suffix) : ''), v.toString());
 };
 
 export const loadEditPageData = (id: string, versionId: string, setData: (data: any) => void, setTags: (tags: any) => void,
@@ -398,6 +416,9 @@ export const loadEditPageData = (id: string, versionId: string, setData: (data: 
           description: x.entity.description,
           version_id: x.metadata.version_id,
           created_at: new Date(x.metadata.modified_at).toLocaleString(),
+          modifier_display_name: x.metadata.modifier_display_name,
+          modifier_email: x.metadata.modifier_email,
+          modifier_description: x.metadata.modifier_description,
         })),
       );
     })
@@ -490,7 +511,7 @@ export const updateEditPageReadOnly = (json: any, setReadOnly: (v: boolean) => v
       done();
     });
   } else {
-    setReadOnly(json.metadata.state === 'PUBLISHED');
+    setReadOnly(json.metadata.state === 'PUBLISHED' || json.metadata.state === 'ARCHIVED');
     done();
   }
 };

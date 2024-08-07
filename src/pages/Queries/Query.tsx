@@ -4,13 +4,16 @@ import { useNavigate, useParams } from 'react-router-dom';
 import classNames from 'classnames';
 import { Button, Modal } from 'react-bootstrap';
 import styles from './Queries.module.scss';
-import { doNavigate, handleHttpError, i18n, loadEditPageData, rateClickedHandler, setBreadcrumbEntityName, setDataModified, tagAddedHandler, tagDeletedHandler, updateArtifactsCount, updateEditPageReadOnly } from '../../utils';
+import { doNavigate, handleHttpError, i18n, loadEditPageData, rateClickedHandler, setBreadcrumbEntityName, setDataModified, tagAddedHandler, tagDeletedHandler, updateArtifactsCount, updateEditPageReadOnly, uuid } from '../../utils';
 import {
+  archiveEntityQuery,
   createEntityQuery,
   deleteEntityQuery,
   getEntityQuery,
   getEntityQueryVersion,
   getEntityQueryVersions,
+  restoreEntityQuery,
+  restoreEntityQueryVersion,
   updateEntityQuery,
 } from '../../services/pages/entityQueries';
 import { Tags, TagProp } from '../../components/Tags';
@@ -24,6 +27,8 @@ import { setRecentView } from '../../services/pages/recentviews';
 import { WFItemControl } from '../../components/WFItemControl/WFItemControl';
 import { Input } from '../../components/Input';
 import { Textarea } from '../../components/Textarea';
+import { RelatedObjectsControl } from '../../components/RelatedObjectsControl';
+import { DeleteObjectModal } from '../../components/DeleteObjectModal';
 
 export function Query() {
   const navigate = useNavigate();
@@ -61,6 +66,9 @@ export function Query() {
 
   const [showDelQueryDlg, setShowDelQueryDlg] = useState(false);
   const [delQueryData, setDelQueryData] = useState<any>({ id: '', name: '' });
+
+  const [delObjectData, setDelObjectData] = useState<any>({ id: '', name: '' });
+  const [showDelDlg, setShowDelDlg] = useState(false);
 
   const handleAddEntityDlgClose = () => {
     setShowAddQueryDlg(false);
@@ -196,7 +204,7 @@ export function Query() {
   const getSystemObjects = async (search: string) => getSystems({
     sort: 'name+',
     global_query: search,
-    limit: 10,
+    limit: 1000,
     offset: 0,
     filters: [],
     filters_for_join: [],
@@ -205,21 +213,63 @@ export function Query() {
   const getEntityObjects = async (search: string) => getEntities({
     sort: 'name+',
     global_query: search,
-    limit: 10,
+    limit: 1000,
     offset: 0,
     filters: [],
     filters_for_join: [],
   }).then((json) => json.items);
 
+  const delDlgSubmit = () => {
+    setShowDelDlg(false);
+    setLoading(true);
+    deleteEntityQuery(delObjectData.id)
+      .then(json => {
+        updateArtifactsCount();
+        setLoading(false);
+
+        if (json.metadata && json.metadata.id)
+          navigate('/queries/edit/' + encodeURIComponent(json.metadata.id));
+      })
+      .catch(handleHttpError);
+    setDelObjectData({ id: '', name: '' });
+  };
+
+  const archiveBtnClicked = () => { archiveEntityQuery(data.metadata.id).then(json => {
+    if (json.metadata.id && json.metadata.id != queryId) {
+      navigate(`/queries/edit/${encodeURIComponent(json.metadata.id)}`);
+    }
+    setDataModified(false);
+  }).catch(handleHttpError); };
+
+  const restoreBtnClicked = () => { restoreEntityQuery(data.metadata.id).then(json => {
+    if (json.metadata.id && json.metadata.id != queryId) {
+      navigate(`/queries/edit/${encodeURIComponent(json.metadata.id)}`);
+    }
+    setDataModified(false);
+  }).catch(handleHttpError); };
+
   return (
     <div className={classNames(styles.page, styles.queryPage, { [styles.loaded]: isLoaded })}>
       <div className={styles.mainContent}>
+        {queryVersionId && (
+          <Button onClick={() => {
+            restoreEntityQueryVersion(queryId, queryVersionId).then(json => {
+              setDataModified(false);
+              if (json.metadata.id && json.metadata.id !== queryId) {
+                navigate(`/queries/edit/${encodeURIComponent(json.metadata.id)}`);
+              } else { setData(json); }
+            }).catch(handleHttpError);
+          }}>{i18n('Восстановить')}</Button>
+        )}
         {!queryVersionId && (
           <WFItemControl
             key={`wfc-query-` + data?.metadata?.workflow_task_id}
             itemMetadata={data.metadata}
             itemIsReadOnly={isReadOnly}
             onEditClicked={() => { setReadOnly(false); }}
+            onArchiveClicked={archiveBtnClicked}
+            onRestoreClicked={restoreBtnClicked}
+            onDeleteClicked={() => { setDelObjectData({ id: data.metadata.id, name: data.entity.name }); setShowDelDlg(true); }}
             onObjectIdChanged={(localQueryId) => {
               if (localQueryId) {
                 setQueryId(localQueryId);
@@ -256,11 +306,12 @@ export function Query() {
             showValidation={showValidation}
           />
         </div>
-        {!isCreateMode && (
+        {!isCreateMode && data.metadata.state != 'ARCHIVED' && (
           <button className={styles.btn_scheme} onClick={() => { doNavigate('/queries-model/' + encodeURIComponent(queryId), navigate); }}>{i18n('Схема')}</button>
         )}
         {!isCreateMode && (
           <Tags
+            key={'tags-' + queryId + '-' + queryVersionId + '-' + uuid()}
             tags={tags}
             isReadOnly={isReadOnly}
             
@@ -319,10 +370,12 @@ export function Query() {
             <TasksControl queryId={queryId} isReadOnly={false} />
           </>
         )}
+
+        <RelatedObjectsControl artifactId={queryId} artifactType='entity_query'></RelatedObjectsControl>
       </div>
       {!isCreateMode && (
         <div className={styles.rightBar}>
-          {data.metadata.state == 'PUBLISHED' && (
+          {(data.metadata.state == 'PUBLISHED' || data.metadata.state == 'ARCHIVED') && (
           <Versions
             rating={ratingData.rating}
             ownRating={ownRating}
@@ -405,6 +458,8 @@ export function Query() {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      <DeleteObjectModal show={showDelDlg} objectTitle={delObjectData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />
     </div>
   );
 }

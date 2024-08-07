@@ -39,6 +39,7 @@ export function Drafts() {
     { property: 'description', header: i18n('Описание') },
     {
       property: 'modified',
+      filter_property: 'tbl1.modified',
       header: i18n('Дата обновления'),
       render: (row: any) => renderDate(row, 'modified'),
     },

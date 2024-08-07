@@ -4,12 +4,11 @@ import styles from './EntitiesModel.module.scss';
 import { ReactDiagram } from 'gojs-react';
 import { exportDiagram, initEntitiesDiagram, SaveRequestData } from '../../gojs-utils';
 import '../../gojs-controls';
-import { getEntities, getEntitiesModel, getEntityAttributes, searchEntities } from '../../services/pages/dataEntities';
+import { getEntitiesModel, getEntityAttributes, searchEntities } from '../../services/pages/dataEntities';
 import { getCookie, handleHttpError, i18n, uuid } from '../../utils';
 import { fetchWithRefresh } from '../../services/auth';
 import { optionsPatch } from '../../services/requst_templates';
 import { URL } from '../../services/requst_templates';
-import { getArtifactsModel } from '../../services/pages/artifacts';
 import PlusIcon from '../../assets/icons/plus.png';
 import MinusIcon from '../../assets/icons/minus.png';
 import FitIcon from '../../assets/icons/fit.png';
@@ -20,10 +19,10 @@ import ExportToolIcon from '../../assets/icons/export.svg';
 import CreateToolIcon from '../../assets/icons/create-obj-white.svg';
 import { Button } from '../../components/Button';
 import classNames from 'classnames';
-import { Table } from '../../components/Table';
-import { Input } from '../../components/Input';
+import Modal from 'react-bootstrap/Modal';import { Input } from '../../components/Input';
 import { Textarea } from '../../components/Textarea';
 import { createComment, getComments } from '../../services/pages/comments';
+import { Tags } from '../../components/Tags';
 
 
 export type EntitiesModelProps = {
@@ -36,9 +35,7 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
     const [linkDataArray, setLinkDataArray] = useState([]);
     const [diagram, setDiagram] = useState<go.Diagram | null>(null);
     const [diagramIsLoading, setDiagramIsLoading] = useState<boolean>(true);
-    const [domainNames, setDomainNames] = useState<string[]>([]);
     const [tagNames, setTagNames] = useState<string[]>([]);
-    const [filterDomainNames, setFilterDomainNames] = useState<string[]>([]);
     const [filterTagNames, setFilterTagNames] = useState<string[]>([]);
     const [entitiesSearch, setEntitiesSearch] = useState<string>('');
     const [entitiesList, setEntitiesList] = useState<any[]>([]);
@@ -47,6 +44,10 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
     const [comments, setComments] = useState<any[]>([]);
     const [newCommentText, setNewCommentText] = useState<string>('');
     const [showRightSidebar, setShowRightSidebar] = useState<boolean>(true);
+    const [showLinkDlg, setShowLinkDlg] = useState<boolean>(false);
+    const [linkDlgData, setLinkDlgData] = useState<any>({});
+    const [linkTags, setLinkTags] = useState<string[]>([]);
+    const [filterLinkTags, setFilterLinkTags] = useState<any>({});
 
     const diagramRef = useCallback((ref: ReactDiagram | null) => {
         if (ref != null) {
@@ -96,12 +97,21 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
     };
 
     useEffect(() => {
+        window.addEventListener('linkDblClick', function (e) {
+
+            setShowLinkDlg(true);
+
+            setLinkDlgData({ id: (e as any).link.data.id, tags: (e as any).link.data.tags });
+        })
+    }, []);
+
+    useEffect(() => {
         getEntitiesModel().then((json:any) => {
-            setNodeDataArray(json.nodes);
+            setNodeDataArray(json.nodes.map((n:any) => ({...n, hidden: true})));
             setLinkDataArray(json.links.map((d:any) =>({...d, points: d.points ? JSON.parse(d.points) : ''})));
 
             let tags_arr:string[] = [];
-            let domains_arr:string[] = [];
+            
             json.nodes.forEach((node:any) => {
                 if (node.tagNames) {
                     node.tagNames.forEach((tn:string) => {
@@ -109,17 +119,20 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
                             tags_arr.push(tn);
                     })
                 }
-                if (node.domainNames) {
-                    node.domainNames.forEach((dn:string) => {
-                        if (domains_arr.indexOf(dn) == -1)
-                            domains_arr.push(dn);
+            });
+
+            setTagNames(tags_arr);
+
+            let lnkTags:string[] = [];
+            json.links.forEach((lnk:any) => {
+                if (lnk && lnk.tags) {
+                    lnk.tags.forEach((t:any) => {
+                        if (!lnkTags.includes(t.name))
+                            lnkTags.push(t.name);
                     })
                 }
             });
-
-            setDomainNames(domains_arr);
-            setFilterDomainNames(domains_arr);
-            setTagNames(tags_arr);
+            setLinkTags(lnkTags);
 
             document.querySelector('.diagram-div')?.addEventListener('drop', function(e) { 
                 e.preventDefault();
@@ -198,45 +211,25 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
 
                     let addLinksData = [];
                     let addedLinkIds = [];
-                    /*for (let i = 0; i < repository.length; i++) {
-                        if (repository[i].type === 'RepoLinkType') {
-                            if (repository[i].properties.from === repoNodeId || repository[i].properties.to === repoNodeId) {
-
-                                for (let j = 0; j < dg.model.nodeDataArray.length; j++) {
-                                    let rid = getRepoIdForPartData(dg.model.nodeDataArray[j]);
-                                    if ((rid === repository[i].properties.from && repoNodeId === repository[i].properties.to)
-                                        || (rid === repository[i].properties.to && repoNodeId === repository[i].properties.from)) {
-
-                                        let linkData = getNewLinkDataFromRepo(dg, repository[i]);
-
-                                        let added = false;
-                                        for (let k = 0; k < addedLinkIds.length; k++) {
-                                            if (addedLinkIds[k] === repository[i].id)
-                                                added = true;
-                                        }
-
-                                        if (!added) {
-                                            addLinksData.push(linkData);
-                                            addedLinkIds.push(repository[i].id);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    for (let i = 0; i < addLinksData.length; i++) {
-                        diagram?.model.addLinkData(addLinksData[i]);
-                    }*/
-
-                    
+                                        
                 }
              });
 
              setDiagramIsLoading(false);
 
+             setTimeout(function () { filterNodes(); }, 500);
+             
+
         }).catch(handleHttpError);
     }, [ diagram ]);
+
+    useEffect(() => {
+        let obj:any = {'': true};
+        linkTags.forEach((tn:string) => {
+            obj[tn] = true;
+        });
+        setFilterLinkTags(obj);
+    }, [ linkTags ]);
 
     const onModelChange = (e:go.IncrementalData) => {
 
@@ -305,14 +298,6 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
         
     };
 
-
-    const clickDomainFilter = (name: string) => {
-        if (filterDomainNames.indexOf(name) == -1)
-            setFilterDomainNames((prev) => ([...prev, name]));
-        else
-            setFilterDomainNames((prev) => (prev.filter(x => x != name)));
-    };
-
     const clickTagFilter = (name: string) => {
         if (filterTagNames.indexOf(name) == -1)
             setFilterTagNames((prev) => ([...prev, name]));
@@ -320,38 +305,49 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
             setFilterTagNames((prev) => (prev.filter(x => x != name)));
     };
 
-    useEffect(() => {
+    const filterNodes = () => {
         var it = diagram?.nodes;
         while (it?.next()) {
             if (it.value.data.artifactType == 'entity') {
                 let isVisible = true;
-                if (filterTagNames.length > 0) {
+                //if (filterTagNames.length > 0) {
                     if (!it.value.data.tagNames || it.value.data.tagNames.filter((x:string) => filterTagNames.indexOf(x) !== -1).length == 0)
                         isVisible = false;
-                }
-                if (filterDomainNames.length > 0) {
-                    if (!it.value.data.domainNames || it.value.data.domainNames.filter((x:string) => filterDomainNames.indexOf(x) !== -1).length == 0)
-                        isVisible = false;
-                }
+                //}
                 it.value.visible = isVisible;
             }
         }
+    };
 
-        /*filterTagNames.forEach(at => {
-            if (filterArtifactTypes[at]) {
-                var it = diagram?.findNodesByExample({artifactType: at});
-                while (it?.next()) {
-                    it.value.visible = true;
-                }
-            } else {
-                var it = diagram?.findNodesByExample({artifactType: at});
-                while (it?.next()) {
+    useEffect(() => {
+        filterNodes();
+    }, [ filterTagNames ]);
+
+    useEffect(() => {
+        var it = diagram?.links;
+            while (it?.next()) {
+                if (!it.value.data.isDummy)
                     it.value.visible = false;
+            }
+
+        Object.keys(filterLinkTags).forEach(tn => {
+            if (filterLinkTags[tn]) {
+                it = diagram?.links;
+                while (it?.next()) {
+                    if (!it.value.data.isDummy) {
+                        let tags = it.value.data.tags;
+                        if (tn == '') {
+                            if (!tags || tags.length == 0)
+                                it.value.visible = true;
+                        } else {
+                            if (tags.some((t:any) => t.name == tn))
+                                it.value.visible = true;
+                        }
+                    }
                 }
             }
-        });*/
-        
-    }, [ filterDomainNames, filterTagNames ]);
+        })
+    }, [ filterLinkTags ]);
 
     useEffect(() => {
         if (diagram) {
@@ -404,6 +400,33 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
         });
     };
 
+    const handleLinkDlgClose = () => {
+        setShowLinkDlg(false);
+        return false;
+    };
+
+    const onSaveLinkDlg = () => {
+        setShowLinkDlg(false);
+
+        diagram?.startTransaction('update link');
+
+        var data = (diagram?.model as go.GraphLinksModel).findLinkDataForKey(linkDlgData.id);
+        if (data)
+            diagram?.model.setDataProperty(data ,'tags', linkDlgData.tags);
+
+        diagram?.commitTransaction();
+
+        return false;
+    }
+
+    const linkTagIdAdded = (tagId: string, tagName: string) => {
+        setLinkDlgData((prev:any) => ({...prev, tags: [...prev.tags, { id: tagId, name: tagName } ]}));
+    };
+
+    const linkTagIdDeleted = (tagId: string) => {
+        setLinkDlgData((prev:any) => ({...prev, tags: prev.tags.filter((x:any) => x.id != tagId)}));
+    };
+
     return (
         <div className={styles.dg_outer_wrap}>
             {showComments && (<div className={styles.comments_panel}>
@@ -418,18 +441,21 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
                 </div>))}
             </div>)}
             <div className={styles.dg_wrap}>
-                <div className={styles.filter_domains}>
-                    <label>Домены</label>
-                    <div className={styles.domains_list}>
-                        {domainNames.map((dn, index) => (<Button key={'btn-domain-' + index} className={classNames(styles.btn_filter_domain, { [styles.active]: filterDomainNames.indexOf(dn) !== -1 })} onClick={() => clickDomainFilter(dn)}>{dn}</Button>))}
-                    </div>
-                </div>
                 <div className={styles.filter_tags}>
-                    <label>Теги</label>
+                    <label>Теги ЛО</label>
                     <div className={styles.tags_list}>
                         {tagNames.map((tn, index) => (<Button key={'btn-tag-' + index} className={classNames(styles.btn_filter_tag, { [styles.active]: filterTagNames.indexOf(tn) !== -1 })} onClick={() => clickTagFilter(tn)}>{tn}</Button>))}
                     </div>
                 </div>
+                {linkTags.length > 0 && (
+                    <div className={styles.lnk_tags_filter}>
+                        <label>Теги связей</label>
+                        <div className={styles.tags_list}>
+                            <Button key={'lnk-tag-filter-empty'} className={classNames(styles.btn_filter, styles.shown, { [styles.active]: filterLinkTags[''] })} onClick={() => { setFilterLinkTags((prev:any) => ({...prev, '': !filterLinkTags[''] })) }}>(без тега)</Button>
+                            {linkTags.map((tn, index) => <Button key={'lnk-tag-filter-' + index} className={classNames(styles.btn_filter, styles.shown, { [styles.active]: filterLinkTags[tn] })} onClick={() => { setFilterLinkTags((prev:any) => ({...prev, [tn]: !filterLinkTags[tn] })) }}>{tn}</Button>)}
+                        </div>
+                    </div>
+                )}
                 <ReactDiagram ref={diagramRef} initDiagram={initEntitiesDiagram} divClassName={classNames('diagram-div', styles.diagram_div)} nodeDataArray={nodeDataArray} linkDataArray={linkDataArray} modelData={modelData} onModelChange={onModelChange} />
                 <div className={styles.rightToolBar}>
                     <a onClick={() => { diagram?.commandHandler.increaseZoom(); }}><img src={PlusIcon} /></a>
@@ -455,6 +481,19 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
                     {entitiesList.map(item => (<a href='#' onClick={() => { return false; }} key={'ei-' + item.id} className={classNames('entity-item', styles.entity_item)} data-id={item.id} data-name={item.name}>{item.name}</a>))}
                 </div>
             </div>)}
+
+            <Modal show={showLinkDlg} backdrop={false} onHide={handleLinkDlgClose}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Связь</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Tags tags={(linkDlgData.tags ?? []).map((t:any) => ({ id: t.id, value: t.name }))} onTagIdAdded={linkTagIdAdded} onTagIdDeleted={linkTagIdDeleted} />
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button onClick={onSaveLinkDlg}>OK</Button>
+                    <Button onClick={handleLinkDlgClose}>Отмена</Button>
+                </Modal.Footer>
+            </Modal>
         </div>
     );
         

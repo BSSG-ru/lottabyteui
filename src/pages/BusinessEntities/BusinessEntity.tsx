@@ -21,6 +21,9 @@ import {
   getBusinessEntityVersions,
   updateBusinessEntity,
   getBusinessEntities,
+  restoreBusinessEntityVersion,
+  archiveBusinessEntity,
+  restoreBusinessEntity,
 } from '../../services/pages/businessEntities';
 
 import { setRecentView } from '../../services/pages/recentviews';
@@ -36,6 +39,9 @@ import { assetsTableColumns, entityTableColumns } from '../../mocks/logic_object
 import { Tabs } from '../../components/Tabs';
 import { userInfoRequest } from '../../services/auth';
 import { RelatedObjectsControl } from '../../components/RelatedObjectsControl';
+import { Responsibles } from '../../components/Responsibles';
+import { DeleteObjectModal } from '../../components/DeleteObjectModal';
+import { FieldVisualEditor } from '../../components/FieldVisualEditor';
 
 export function BusinessEntity() {
   const navigate = useNavigate();
@@ -77,80 +83,8 @@ export function BusinessEntity() {
   const [showDelEntityDlg, setShowDelEntityDlg] = useState(false);
   const [delEntityData, setDelEntityData] = useState<any>({ id: '', name: '' });
 
-  const tabs = [
-    {
-      key: 'tab-ent',
-      title: i18n('ЛОГ. ОБЪЕКТЫ'),
-      content: (
-        <Table
-          cookieKey='be-lo'
-          key={`tbl-ent-${businessEntityId}${businessEntityVersionId ?? ''}`}
-          className={styles.table}
-          columns={entityTableColumns}
-          paginate
-          columnSearch
-          globalSearch
-          dataUrl={
-            businessEntityId === ''
-              ? ''
-              : `/v1/entities/search_by_be/${encodeURIComponent(businessEntityVersionId ? data.metadata.ancestor_draft_id : (businessEntityId ?? ''))}`
-          }
-          initialFetchRequest={{
-            sort: 'name+',
-            global_query: '',
-            limit: 5,
-            offset: (state.p3 - 1) * 5,
-            filters: [],
-            filters_preset: [],
-            filters_for_join: [],
-          }}
-          onRowClick={(row: any) => {
-            navigate(`/logic-objects/edit/${encodeURIComponent(row.id)}`);
-          }}
-          showCreateBtn={false}
-          onPageChange={(page: number) => {
-            setState(() => ({ p3: page }));
-          }}
-        />
-      ),
-    },
-    {
-      key: 'tab-assets',
-      title: i18n('АКТИВЫ'),
-      content: (
-        <Table
-          cookieKey='be-assets'
-          key={`tbl-assets-${businessEntityId}${businessEntityVersionId ?? ''}`}
-          className={styles.table}
-          columns={assetsTableColumns}
-          paginate
-          columnSearch
-          globalSearch
-          dataUrl={
-            businessEntityId === ''
-              ? ''
-              : `/v1/data_assets/search_by_be/${encodeURIComponent(businessEntityVersionId ? data.metadata.ancestor_draft_id : (businessEntityId ?? ''))}`
-          }
-          initialFetchRequest={{
-            sort: 'name+',
-            global_query: '',
-            limit: 5,
-            offset: (state.p4 - 1) * 5,
-            filters: [],
-            filters_preset: [],
-            filters_for_join: [],
-          }}
-          onRowClick={(row: any) => {
-            navigate(`/data_assets/edit/${encodeURIComponent(row.id)}`);
-          }}
-          showCreateBtn={false}
-          onPageChange={(page: number) => {
-            setState(() => ({ p4: page }));
-          }}
-        />
-      ),
-    },
-  ];
+  const [delObjectData, setDelObjectData] = useState<any>({ id: '', name: '' });
+  const [showDelDlg, setShowDelDlg] = useState(false);
 
   const handleAddEntityDlgClose = () => {
     setShowAddEntityDlg(false);
@@ -204,7 +138,7 @@ export function BusinessEntity() {
         resp.json().then(data => {
           //console.log('set userp', data.permissions);
           setCookie('userp', data.permissions.join(','), { path: '/' });
-          setData((prev) => ({ ...prev, metadata: { ...prev.metadata, state: 'DRAFT' }, entity: { ...prev.entity, domain_id: data.user_domains ? data.user_domains[0] : null} }));
+          setData((prev) => ({ ...prev, metadata: { ...prev.metadata, state: 'DRAFT' }, entity: { ...prev.entity, domain_id: data.steward_domains ? data.steward_domains[0] : null} }));
           setDataModified(false);
           setReadOnly(false);
           setLoaded(true);
@@ -297,7 +231,7 @@ export function BusinessEntity() {
   const getBEObjects = async (search: string) => getBusinessEntities({
     sort: 'name+',
     global_query: search,
-    limit: 10,
+    limit: 1000,
     offset: 0,
     filters: [...data.entity.synonym_ids, data.metadata.id, data.metadata.published_id ?? ''].filter((id) => id).map((id) => ({ column: 'id', value: id, operator: 'NOT_EQUAL' })),
     filters_for_join: [],
@@ -307,7 +241,7 @@ export function BusinessEntity() {
   const getBELinkObjects = async (search: string) => getBusinessEntities({
     sort: 'name+',
     global_query: search,
-    limit: 10,
+    limit: 1000,
     offset: 0,
     filters: [...data.entity.be_link_ids, data.metadata.id, data.metadata.published_id ?? ''].filter((id) => id).map((id) => ({ column: 'id', value: id, operator: 'NOT_EQUAL' })),
     filters_for_join: [],
@@ -317,15 +251,54 @@ export function BusinessEntity() {
   const getParentBEAutocompleteObjects = async (search: string) => getBusinessEntities({
     sort: 'name+',
     global_query: search,
-    limit: 10,
+    limit: 1000,
     offset: 0,
     filters: [{ column: 'id', value: businessEntityId, operator: 'NOT_EQUAL' }, { column: 'id', value: data.metadata.published_id, operator: 'NOT_EQUAL' }],
     filters_for_join: [],
   }).then((json) => json.items);
 
+  const delDlgSubmit = () => {
+    setShowDelDlg(false);
+    setLoading(true);
+    deleteBusinessEntity(delObjectData.id)
+      .then(json => {
+        updateArtifactsCount();
+        setLoading(false);
+
+        if (json.metadata && json.metadata.id)
+          navigate('/business-entities/edit/' + encodeURIComponent(json.metadata.id));
+      })
+      .catch(handleHttpError);
+    setDelObjectData({ id: '', name: '' });
+  };
+
+  const archiveBtnClicked = () => { archiveBusinessEntity(data.metadata.id).then(json => {
+    if (json.metadata.id && json.metadata.id != businessEntityId) {
+      navigate(`/business-entities/edit/${encodeURIComponent(json.metadata.id)}`);
+    }
+    setDataModified(false);
+  }).catch(handleHttpError); };
+
+  const restoreBtnClicked = () => { restoreBusinessEntity(data.metadata.id).then(json => {
+    if (json.metadata.id && json.metadata.id != businessEntityId) {
+      navigate(`/business-entities/edit/${encodeURIComponent(json.metadata.id)}`);
+    }
+    setDataModified(false);
+  }).catch(handleHttpError); };
+
   return (
     <div className={classNames(styles.page, styles.bePage, { [styles.loaded]: isLoaded })}>
       <div className={styles.mainContent}>
+        {businessEntityVersionId && (
+          <Button onClick={() => {
+            restoreBusinessEntityVersion(businessEntityId, businessEntityVersionId).then(json => {
+              setDataModified(false);
+              if (json.metadata.id && json.metadata.id !== businessEntityId) {
+                navigate(`/business-entities/edit/${encodeURIComponent(json.metadata.id)}`);
+              } else { setData(json); }
+            }).catch(handleHttpError);
+          }}>{i18n('Восстановить')}</Button>
+        )}
         {!businessEntityVersionId && (
           <WFItemControl
             //key={`wfc-${uuid()}`}
@@ -333,6 +306,9 @@ export function BusinessEntity() {
             itemMetadata={data.metadata}
             itemIsReadOnly={isReadOnly}
             onEditClicked={() => { setReadOnly(false); }}
+            onArchiveClicked={archiveBtnClicked}
+            onRestoreClicked={restoreBtnClicked}
+            onDeleteClicked={() => { setDelObjectData({ id: data.metadata.id, name: data.entity.name }); setShowDelDlg(true); }}
             onObjectIdChanged={(id) => {
               if (id) {
                 setBusinessEntityId(id);
@@ -373,7 +349,8 @@ export function BusinessEntity() {
         {!isCreateMode && (
           
             <Tags
-              tags={tags}
+            key={'tags-' + businessEntityId + '-' + businessEntityVersionId + '-' + uuid()}
+            tags={tags}
               isReadOnly={isReadOnly}
               onTagAdded={(tagName: string) => tagAddedHandler(tagName, businessEntityId, 'business_entity', data.metadata.state ?? '', tags, setLoading, setTags, '/business-entities/edit/', navigate)}
               onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, businessEntityId, 'business_entity', data.metadata.state ?? '', setLoading, setTags, '/business-entities/edit/', navigate)}
@@ -465,18 +442,17 @@ export function BusinessEntity() {
         )}
 
             <div className={styles.data_row} data-uitest="be_definition">
-              <FieldTextareaEditor
-                isReadOnly={isReadOnly}
-                labelPrefix={`${i18n('Определение')}`}
-                isMultiline
-                isRequired
-                showValidation={showValidation}
-                defaultValue={data.entity.definition}
-                className={styles.editor}
-                valueSubmitted={(val) => {
-                  updateBEField('definition', val);
-                }}
-              />
+                <FieldVisualEditor
+                  isReadOnly={isReadOnly}
+                  labelPrefix={`${i18n('Определение')}`}
+                  isRequired
+                  showValidation={showValidation}
+                  defaultValue={data.entity.definition}
+                  className={styles.editor}
+                  valueSubmitted={(val) => {
+                    updateBEField('definition', val.toString());
+                  }}
+                />
             </div>
           {!isCreateMode && (
             <div className={styles.data_row} data-uitest="be_parent">
@@ -610,7 +586,7 @@ export function BusinessEntity() {
       </div>
       {!isCreateMode && (
         <div className={styles.rightBar}>
-          {data.metadata.state === 'PUBLISHED' && (
+          {(data.metadata.state == 'PUBLISHED' || data.metadata.state == 'ARCHIVED') && (
             <Versions
               rating={ratingData.rating}
               ownRating={ownRating}
@@ -620,6 +596,9 @@ export function BusinessEntity() {
               root_object_url={`/business-entities/edit/${encodeURIComponent(businessEntityId)}`}
               onRateClick={r => rateClickedHandler(r, businessEntityId, 'business_entity', setOwnRating, setRatingData)}
             />
+          )}
+          {data.metadata.state === 'PUBLISHED' && (
+            <Responsibles domain_id={(data && data.entity && data.entity.domain_id) ? data.entity.domain_id : null}></Responsibles>
           )}
         </div>
       )}
@@ -694,6 +673,7 @@ export function BusinessEntity() {
         </Modal.Footer>
       </Modal>
 
+      <DeleteObjectModal show={showDelDlg} objectTitle={delObjectData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />
     </div>
   );
 }

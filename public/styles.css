@@ -1,0 +1,116 @@
+label {
+  font-size: 15px;
+}
+
+.paginator {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-top: 20px;
+  width: 1500px;
+}
+  
+.paginator * {
+  font-size: 16px;
+  line-height: 19px;
+  font-weight: 400;
+}
+
+.paginator .p-paginator-first, .paginator .p-paginator-last {
+  display: none;
+}
+
+.paginator .p-paginator-prev svg, .paginator .p-paginator-next svg {
+  width: 16px;
+  height: 16px;
+}
+
+
+.paginator .p-paginator-current {
+  font-size: 0;
+  flex-grow: 1;
+}
+
+.paginator .p-paginator-pages .p-link {
+  background: var(--white);
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  padding: 7px;
+  border: 1px solid var(--white);
+  border-radius: 4px;
+  margin: 0 5px;
+}
+
+.paginator .p-paginator-pages .p-link.p-highlight {
+  background: rgba(178, 178, 178, 0.3);
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  padding: 7px;
+  border: 1px solid var(--white);
+  border-radius: 4px;
+  margin: 0 5px;
+  cursor: default;
+}
+
+.paginator .p-paginator-pages .p-link:hover {
+  border-color: rgba(151, 165, 235, 0.7);
+}
+
+
+.paginator .p-dropdown {
+  border-radius: 6px;
+  padding: 8px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: border 0.3s linear;
+  font-size: 15px;
+  line-height: 18px;
+}
+
+.paginator .p-dropdown:hover {
+  border-color: rgba(151, 165, 235, 0.7);
+}
+
+.paginator .p-dropdown-panel {
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: border 0.3s linear;
+  font-size: 15px;
+  line-height: 18px;
+  background: #fff;
+}
+
+.paginator .p-dropdown-panel .p-dropdown-items {
+  padding: 4px 0;
+}
+
+.paginator .p-dropdown-panel .p-dropdown-items .p-dropdown-item {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.paginator .p-dropdown-panel .p-dropdown-items .p-dropdown-item.p-focus {
+  background-color: #1967D2;
+  color: #fff;
+}
+
+.paginator .p-dropdown-trigger {
+  margin-left: 6px;
+}
+
+input.p-column-filter {
+  font-weight: 400;
+  box-shadow: none;
+  border: none;
+  background: url(/filters.svg) no-repeat center left transparent;
+  background-size: 24px 24px;
+  font-size: 15px;
+  line-height: 19px;
+  padding-left: 30px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  outline: none !important;
+}

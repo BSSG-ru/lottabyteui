@@ -35,6 +35,8 @@ export type TasksControlProps = {
 
 export const TasksControl: FC<TasksControlProps> = ({ className, isReadOnly, queryId }) => {
   const initialNewTaskData = {
+    system_connection_id: null,
+    schedule_type: '',
     schedule_params: '',
   };
 
@@ -112,7 +114,7 @@ export const TasksControl: FC<TasksControlProps> = ({ className, isReadOnly, que
   const getSystemObjects = async (search: string) => getSystems({
     sort: 'name+',
     global_query: search,
-    limit: 10,
+    limit: 1000,
     offset: 0,
     filters: [],
     filters_for_join: [],

@@ -215,6 +215,7 @@ export const beTableColumns = [
   },
   {
     property: 'alt_names',
+    filter_property: 'ARRAY_TO_STRING(tbl1.alt_names,\',\')',
     header: i18n('Альтернативные наименования'),
     render: (row: any) => <span>{row.alt_names ? row.alt_names.join(', ') : ''}</span>
   },

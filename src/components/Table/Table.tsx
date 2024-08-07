@@ -79,6 +79,7 @@ type TableProps = {
   rowClassName?: (row: any) => string;
   rowStyle?: (row: any) => CSSProperties;
   cookieKey?: string;
+  pageSizeCookieSuffix?: string;
 };
 
 export type Column = {
@@ -125,12 +126,15 @@ export const Table: FC<TableProps> = ({
   tableButtons,
   rowClassName,
   rowStyle,
-  cookieKey
+  cookieKey,
+  pageSizeCookieSuffix
 }) => {
-  const [searchMode, setSearchMode] = useState(false);
+  
 
   const ck = Cookies.get('table-state-' + cookieKey);
   const [tableState, setTableState] = useState<any>(ck ? JSON.parse(ck) : {});
+
+  const [searchMode, setSearchMode] = useState(false);
 
   const [columnsList, setColumnsList] = useState<Column[]>(columns);
   const [total, setTotal] = useState<number>(0);
@@ -202,6 +206,7 @@ export const Table: FC<TableProps> = ({
   }, [initialData, initialData?.length, fetchRequest.filters]);
 
   useEffect(() => {
+    setSearchMode(tableState && tableState.filters && tableState.filters.length > 0);
     Cookies.set('table-state-' + cookieKey, JSON.stringify(tableState), { expires: 500 });
   }, [ tableState ]);
 
@@ -211,6 +216,7 @@ export const Table: FC<TableProps> = ({
         <div className={styles.wf_bnts}>
           <Button className={classNames(styles.btn_published, { [styles.active]: (wfStatus == 'PUBLISHED') })} onClick={() => setWfStatus('PUBLISHED')}>{i18n('Опубликованные')}</Button>
           <Button className={classNames(styles.btn_published, { [styles.active]: (wfStatus == 'DRAFT') })} onClick={() => setWfStatus('DRAFT')}>{i18n('Черновики')}</Button>
+          <Button className={classNames(styles.btn_published, { [styles.active]: (wfStatus == 'ARCHIVED') })} onClick={() => setWfStatus('ARCHIVED')}>{i18n('Архивные')}</Button>
         </div>
       )}
       {globalSearch ? (
@@ -248,6 +254,7 @@ export const Table: FC<TableProps> = ({
             setSearchMode((prev) => {
               const nextState = !prev;
               if (!nextState) {
+                setTableState((prev:any) => ({...prev, filters: []}));
                 setFetchRequest((prevouse) => ({
                   sort: prevouse.sort,
                   global_query: prevouse.global_query,
@@ -259,6 +266,7 @@ export const Table: FC<TableProps> = ({
                   limit_steward: prevouse.limit_steward,
                   state: prevouse.state,
                 }));
+                
               }
               return nextState;
             });
@@ -400,9 +408,9 @@ export const Table: FC<TableProps> = ({
               onPageChange(payload);
             }}
             setPageSize={(size: number) => {
-              setTablePageSize(size);
+              setTablePageSize(size, pageSizeCookieSuffix);
 
-              setFetchRequest((prev) => ({ ...prev, limit: size }));
+              setFetchRequest((prev) => ({ ...prev, limit: size, offset: 0 }));
 
               if (initialData) {
                 const cpy = [...initialData];

@@ -10,11 +10,24 @@ export const deleteEntityQuery = async (queryId: string) => fetchWithRefresh(`${
   handleHttpResponse,
 );
 
+export const archiveEntityQuery = async (queryId: string) => fetchWithRefresh(`${URL}/v1/queries/archive/${encodeURIComponent(queryId)}`, optionsPost()).then(
+  handleHttpResponse,
+);
+
+export const restoreEntityQuery = async (queryId: string) => fetchWithRefresh(`${URL}/v1/queries/restore/${encodeURIComponent(queryId)}`, optionsPost()).then(
+  handleHttpResponse,
+);
+
+
 export const getEntityQuery = async (queryId: string) => fetchWithRefresh(`${URL}/v1/queries/${encodeURIComponent(queryId)}`, optionsGet()).then(
   handleHttpResponse,
 );
 
 export const getEntityQueryVersion = async (queryId: string, versionId: string) => fetchWithRefresh(`${URL}/v1/queries/${encodeURIComponent(queryId)}/versions/${encodeURIComponent(versionId)}`, optionsGet()).then(
+  handleHttpResponse,
+);
+
+export const restoreEntityQueryVersion = async (queryId: string, versionId: string) => fetchWithRefresh(`${URL}/v1/queries/${encodeURIComponent(queryId)}/versions/${encodeURIComponent(versionId)}/restore`, optionsPost()).then(
   handleHttpResponse,
 );
 

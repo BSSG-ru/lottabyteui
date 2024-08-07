@@ -10,18 +10,12 @@ import styles from './LogicObjects.module.scss';
 import { doNavigate, getBusinessEntityAutocompleteObjects, getBusinessEntityDisplayValue, getSystemAutocompleteObjects, getSystemDisplayValue, handleHttpError, i18n, loadEditPageData, rateClickedHandler, setBreadcrumbEntityName, setDataModified, tagAddedHandler, tagDeletedHandler, updateArtifactsCount, updateEditPageReadOnly, uuid } from '../../utils';
 import { Tags, TagProp } from '../../components/Tags';
 import { Versions, VersionData } from '../../components/Versions';
-import { Tabs } from '../../components/Tabs';
-import { Table } from '../../components/Table';
-import {
-  assetsTableColumns,
-  attributesTableColumns,
-  renderAttribute,
-  samplesTableColumns,
-} from '../../mocks/logic_objects';
+import { renderAttribute } from '../../mocks/logic_objects';
 import { FieldEditor } from '../../components/FieldEditor';
 import { Input } from '../../components/Input';
 import { Textarea } from '../../components/Textarea';
 import {
+  archiveEntity,
   createAttr,
   createEntity,
   deleteEntity,
@@ -31,6 +25,8 @@ import {
   getEntityAttributes,
   getEntityVersion,
   getEntityVersions,
+  restoreEntity,
+  restoreEntityVersion,
   updateAttr,
   updateEntity,
 } from '../../services/pages/dataEntities';
@@ -43,6 +39,8 @@ import { WFItemControl } from '../../components/WFItemControl/WFItemControl';
 import { createDraft } from '../../services/pages/tags';
 import { Checkbox } from '../../components/Checkbox';
 import { RelatedObjectsControl } from '../../components/RelatedObjectsControl';
+import { DeleteObjectModal } from '../../components/DeleteObjectModal';
+import { FieldVisualEditor } from '../../components/FieldVisualEditor';
 
 export function LogicObject() {
   const navigate = useNavigate();
@@ -52,7 +50,7 @@ export function LogicObject() {
   }, { navigateMode: 'replace' });
   const [, setLoading] = useState(true);
   const [data, setData] = useState({
-    entity: { name: null, description: '', system_ids: [], business_entity_id: '', roles: '' },
+    entity: { name: null, description: '', system_ids: [], business_entity_id: '', roles: '', tech_name: '' },
     metadata: { id: '', artifact_type: 'entity', version_id: '', tags: [], state: 'PUBLISHED', ancestor_draft_id: '', workflow_task_id: '' },
   });
   const [ratingData, setRatingData] = useState({ rating: 0, total_rates: 0 });
@@ -90,6 +88,9 @@ export function LogicObject() {
   const [errorTypeText, setErrorTypeText] = useState('');
 
   const [tblAttrsKey, setTblAttrsKey] = useState(uuid());
+
+  const [delObjectData, setDelObjectData] = useState<any>({ id: '', name: '' });
+  const [showDelDlg, setShowDelDlg] = useState(false);
 
   const handleAddEntityDlgClose = () => {
     setShowAddEntityDlg(false);
@@ -279,161 +280,6 @@ export function LogicObject() {
     }
   };
 
-  const tabs = [
-    {
-      key: 'tab-log',
-      title: i18n('АТРИБУТЫ'),
-      content: (
-        <Table
-          cookieKey='ent-attrs'
-          key={logicObjectId + tblAttrsKey + (logicObjectVersionId ?? '')}
-          className={styles.table}
-          columns={attributesTableColumns}
-          paginate={false}
-          columnSearch
-          globalSearch
-          tableButtons={[
-            { text: i18n('Схема'), onClick: () => { doNavigate('/model', navigate); } },
-          ]}
-          dataUrl={
-            logicObjectId === ''
-              ? ''
-              : `/v1/entities/search_attributes_by_entity_id/${encodeURIComponent(
-                logicObjectVersionId ? data.metadata.ancestor_draft_id : (logicObjectId ?? ''),
-              )}`
-          }
-          initialFetchRequest={{
-            sort: 'name+',
-            global_query: '',
-            limit: 100,
-            offset: (state.p1 - 1) * 100,
-            filters: [],
-            filters_preset: [],
-            filters_for_join: [],
-          }}
-          showCreateBtn
-          onCreateBtnClick={() => {
-            setShowAddAttrDlg(true);
-          }}
-          onPageChange={(page: number) => {
-            setState(() => ({ p1: page }));
-          }}
-          renderActionsPopup={(row: any) => (
-            <div>
-              <a
-                href="#"
-                onClick={() => {
-                  setShowAddAttrDlg(true);
-                }}
-                className={styles.btn_create}
-              />
-              <a
-                href="#"
-                onClick={(e) => {
-                  setUpdateAttrData({
-                    id: row.id,
-                    name: row.name,
-                    description: row.description,
-                    attribute_type: row.attribute_type,
-                    tags: row.tags,
-                    attribute_id: row.attribute_id,
-                    is_pk: row.is_pk
-                  });
-                  setShowUpdateAttrDlg(true);
-                  e.preventDefault();
-                  return false;
-                }}
-                className={styles.btn_edit}
-              />
-              <a
-                href="#"
-                onClick={(e) => {
-                  setDelEntityAttrData({ id: row.id, name: row.name, attribute_id: row.attribute_id });
-                  setShowDelEntityAttrDlg(true);
-                  e.preventDefault();
-                  return false;
-                }}
-                className={styles.btn_del}
-              />
-            </div>
-          )}
-        />
-      ),
-    },
-    {
-      key: 'tab-samples',
-      title: i18n('СЭМПЛЫ'),
-      content: (
-        <Table
-          cookieKey='ent-samples'
-          key={`samplesTable${logicObjectId}${logicObjectVersionId ?? ''}`}
-          className={styles.table}
-          columns={samplesTableColumns}
-          paginate
-          columnSearch
-          globalSearch
-          dataUrl={logicObjectId === '' ? '' : '/v1/samples/search'}
-          initialFetchRequest={{
-            sort: 'name+',
-            global_query: '',
-            limit: 5,
-            offset: (state.p2 - 1) * 5,
-            filters: [],
-            filters_preset: [
-              { column: 'entity_id', value: logicObjectVersionId ? data.metadata.ancestor_draft_id : (logicObjectId || ''), operator: 'EQUAL' },
-            ],
-            filters_for_join: [],
-          }}
-          onRowClick={(row: any) => {
-            navigate(`/samples/edit/${encodeURIComponent(row.id)}`);
-          }}
-          showCreateBtn={false}
-          onPageChange={(page: number) => {
-            setState(() => ({ p2: page }));
-          }}
-        />
-      ),
-    },
-    {
-      key: 'tab-assets',
-      title: i18n('АКТИВЫ'),
-      content: (
-        <Table
-          cookieKey='ent-assets'
-          key={`${logicObjectId + tblAttrsKey + (logicObjectVersionId ?? '')}-assets`}
-          className={styles.table}
-          columns={assetsTableColumns}
-          paginate
-          columnSearch
-          globalSearch
-          dataUrl={
-            logicObjectId === ''
-              ? ''
-              : '/v1/data_assets/search'
-          }
-          initialFetchRequest={{
-            sort: 'name+',
-            global_query: '',
-            limit: 5,
-            offset: (state.p3 - 1) * 5,
-            filters: [],
-            filters_preset: [
-              { column: 'entity_id', value: logicObjectVersionId ? data.metadata.ancestor_draft_id : (logicObjectId || ''), operator: 'EQUAL' },
-            ],
-            filters_for_join: [],
-          }}
-          onRowClick={(row: any) => {
-            navigate(`/data_assets/edit/${encodeURIComponent(row.id)}`);
-          }}
-          showCreateBtn={false}
-          onPageChange={(page: number) => {
-            setState(() => ({ p3: page }));
-          }}
-        />
-      ),
-    },
-  ];
-
   useEffect(() => {
     if (id) setLogicObjectId(id);
     setLogicObjectVersionId(version_id ?? '');
@@ -528,15 +374,57 @@ export function LogicObject() {
     }
   };
 
+  const delDlgSubmit = () => {
+    setShowDelDlg(false);
+    setLoading(true);
+    deleteEntity(delObjectData.id)
+      .then(json => {
+        updateArtifactsCount();
+        setLoading(false);
+
+        if (json.metadata && json.metadata.id)
+          navigate('/logic-objects/edit/' + encodeURIComponent(json.metadata.id));
+      })
+      .catch(handleHttpError);
+    setDelObjectData({ id: '', name: '' });
+  };
+
+  const archiveBtnClicked = () => { archiveEntity(data.metadata.id).then(json => {
+    if (json.metadata.id && json.metadata.id != logicObjectId) {
+      navigate(`/logic-objects/edit/${encodeURIComponent(json.metadata.id)}`);
+    }
+    setDataModified(false);
+  }).catch(handleHttpError); };
+
+  const restoreBtnClicked = () => { restoreEntity(data.metadata.id).then(json => {
+    if (json.metadata.id && json.metadata.id != logicObjectId) {
+      navigate(`/logic-objects/edit/${encodeURIComponent(json.metadata.id)}`);
+    }
+    setDataModified(false);
+  }).catch(handleHttpError); };
+
   return (
     <div className={classNames(styles.page, styles.entityPage, { [styles.loaded]: isLoaded })}>
       <div className={styles.mainContent}>
+      {logicObjectVersionId && (
+          <Button onClick={() => {
+            restoreEntityVersion(logicObjectId, logicObjectVersionId).then(json => {
+              setDataModified(false);
+              if (json.metadata.id && json.metadata.id !== logicObjectId) {
+                navigate(`/logic-objects/edit/${encodeURIComponent(json.metadata.id)}`);
+              } else { setData(json); }
+            }).catch(handleHttpError);
+          }}>{i18n('Восстановить')}</Button>
+        )}
         {!logicObjectVersionId && (
           <WFItemControl
             key={`wfc-ent-` + data?.metadata?.workflow_task_id}
             itemMetadata={data.metadata}
             itemIsReadOnly={isReadOnly}
             onEditClicked={() => { setReadOnly(false); }}
+            onArchiveClicked={archiveBtnClicked}
+            onRestoreClicked={restoreBtnClicked}
+            onDeleteClicked={() => { setDelObjectData({ id: data.metadata.id, name: data.entity.name }); setShowDelDlg(true); }}
             onObjectIdChanged={(id) => {
               if (id) {
                 setLogicObjectId(id);
@@ -572,8 +460,22 @@ export function LogicObject() {
             showValidation={showValidation}
           />
         </div>
-        {!isCreateMode && (
+        {!isCreateMode && data.metadata.state != 'ARCHIVED' && (
           <button className={styles.btn_scheme} onClick={() => { doNavigate('/model', navigate); }}>{i18n('Схема')}</button>
+        )}
+        {!isCreateMode && (
+            <div className={styles.tech_name_wrap}>
+              <FieldEditor
+                isReadOnly={isReadOnly}
+                layout="separated"
+                labelPrefix={`${i18n('Техническое название')}:`}
+                defaultValue={data.entity.tech_name}
+                className={styles.editor}
+                valueSubmitted={(val) => {
+                  updateLogicObjectField('tech_name', val.toString());
+                }}
+              />
+            </div>
         )}
         {!isCreateMode && (
           <>
@@ -605,7 +507,7 @@ export function LogicObject() {
               <FieldAutocompleteEditor
                 className={styles.long_input}
                 isReadOnly={isReadOnly}
-                label={i18n('Бизнес-сущность: ')}
+                label={i18n('Бизнес-сущность') + ':'}
                 defaultValue={data.entity.business_entity_id}
                 valueSubmitted={(identity) => { updateLogicObjectField('business_entity_id', identity); }}
                 getDisplayValue={getBusinessEntityDisplayValue}
@@ -621,7 +523,7 @@ export function LogicObject() {
                 <FieldEditor
                   isReadOnly={isReadOnly}
                   layout="separated"
-                  labelPrefix={`${i18n('Ключевые роли процесса')} `}
+                  labelPrefix={`${i18n('Ключевые роли процесса')}:`}
                   defaultValue={data.entity.roles}
                   className={styles.long_input}
                   valueSubmitted={(val) => {
@@ -635,22 +537,20 @@ export function LogicObject() {
 
         {!isCreateMode && (
           <div className={styles.description}>
-            <FieldEditor
-              isReadOnly={isReadOnly}
-              labelPrefix={`${`${i18n('Описание')}:`} `}
-              defaultValue={data.entity.description}
-              className={styles.long_input}
-              valueSubmitted={(val) => {
-                updateLogicObjectField('description', val.toString());
-              }}
-              onBlur={(val) => {
-                updateLogicObjectField('description', val);
-              }}
-            />
+            <FieldVisualEditor
+                isReadOnly={isReadOnly}
+                labelPrefix={`${i18n('Описание')}:`}
+                defaultValue={data.entity.description}
+                className={styles.long_input}
+                valueSubmitted={(val) => {
+                  updateLogicObjectField('description', val.toString());
+                }}
+              />
           </div>
         )}
         {!isCreateMode && (
           <Tags
+            key={'tags-' + logicObjectId + '-' + logicObjectVersionId + '-' + uuid()}
             tags={tags}
             isReadOnly={isReadOnly}
             onTagAdded={(tagName: string) => tagAddedHandler(tagName, logicObjectId, 'entity', data.metadata.state ?? '', tags, setLoading, setTags, '/logic-objects/edit/', navigate)}
@@ -707,7 +607,7 @@ export function LogicObject() {
       </div>
       {!isCreateMode && (
         <div className={styles.rightBar}>
-          {data.metadata.state == 'PUBLISHED' && (
+          {(data.metadata.state == 'PUBLISHED' || data.metadata.state == 'ARCHIVED') && (
             <Versions
               rating={ratingData.rating}
               ownRating={ownRating}
@@ -930,6 +830,8 @@ export function LogicObject() {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      <DeleteObjectModal show={showDelDlg} objectTitle={delObjectData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />
     </div>
   );
 }

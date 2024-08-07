@@ -142,6 +142,10 @@
     .data_row_desc {
         padding: 16px 8px;
         padding-bottom: 0;
+
+        label {
+            font-weight: bold;
+        }
     }
 }
 

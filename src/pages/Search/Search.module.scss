@@ -44,6 +44,10 @@
         font-size: 15px;
         margin-bottom: 20px;
 
+        &.archive {
+            opacity: 0.5;
+        }
+
         label {
             font-weight: 700;
         }

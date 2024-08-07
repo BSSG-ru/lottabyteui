@@ -104,6 +104,7 @@ export type AssetEntityData = {
     custom_attributes: [];
     dq_rules: [];
     roles: string;
+    tech_name: string;
 };
 
 export type AssetData = {

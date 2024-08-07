@@ -11,13 +11,16 @@ import { renderDate, Table, TableDataRequest } from '../../components/Table';
 import { Loader } from '../../components/Loader';
 import { deleteBusinessEntity, getBETree, getBusinessEntities } from '../../services/pages/businessEntities';
 import { DeleteObjectModal } from '../../components/DeleteObjectModal';
-import { TreeTable, TreeTableSortEvent } from 'primereact/treetable';
+import { TreeTable, TreeTablePageEvent, TreeTableSortEvent } from 'primereact/treetable';
 import { TreeNode } from 'primereact/treenode';
 import { Column, ColumnBodyOptions } from 'primereact/column';
 import { Button } from '../../components/Button';
 import classNames from 'classnames';
 import { enableES5 } from 'immer';
 import Cookies from 'js-cookie';
+import { Input } from '../../components/Input';
+import { ReactComponent as Filters } from '../../assets/icons/filters.svg';
+import { FilterMatchMode } from 'primereact/api';
 
 export function BusinessEntities() {
   const navigate = useNavigate();
@@ -32,6 +35,10 @@ export function BusinessEntities() {
   const [showDelDlg, setShowDelDlg] = useState(false);
   const [delBusinessEntityData, setDelBusinessEntityData] = useState<any>({ id: '', name: '' });
   const [wfStatus, setWfStatus] = useState('PUBLISHED');
+
+  const ck = Cookies.get('tree-state-be');
+  const [treeState, setTreeState] = useState<any>(ck ? JSON.parse(ck) : { global_search: '' });
+  const [searchMode, setSearchMode] = useState(false);
 
   const columns = [
     { property: 'id', header: 'ID', isHidden: true },
@@ -114,10 +121,13 @@ export function BusinessEntities() {
   }, []);
 
   useEffect(() => {
-    getBETree({ filters: [], filters_for_join: [], global_search: '', sort: sortData.field ? (sortData.field + (sortData.order == -1 ? '-' : '+')) : 'name+', state: wfStatus }).then(json => {
+
+    Cookies.set('tree-state-be', JSON.stringify(treeState), { expires: 500 });
+
+    getBETree({ filters: [], filters_for_join: [], global_query: treeState.global_search ?? '', sort: sortData.field ? (sortData.field + (sortData.order == -1 ? '-' : '+')) : 'name+', state: wfStatus }).then(json => {
       setData(json);
     });
-  }, [ wfStatus, sortData ]);
+  }, [ wfStatus, sortData, treeState ]);
 
   useEffect(() => {
     Cookies.set('bes-sort', JSON.stringify(sortData), { expires: 500 });
@@ -186,7 +196,11 @@ export function BusinessEntities() {
   };
 
 
-  
+  const treeOnPage = (e: TreeTablePageEvent) => {
+    console.log('page', e);
+  };
+
+  const paginatorTpl = { layout: 'RowsPerPageDropdown CurrentPageReport PrevPageLink PageLinks NextPageLink' };
 
   return (
     <div className={styles.page}>
@@ -198,18 +212,54 @@ export function BusinessEntities() {
           <div className={styles.wf_bnts}>
             <Button className={classNames(styles.btn_published, { [styles.active]: (wfStatus == 'PUBLISHED') })} onClick={() => setWfStatus('PUBLISHED')}>{i18n('Опубликованные')}</Button>
             <Button className={classNames(styles.btn_published, { [styles.active]: (wfStatus == 'DRAFT') })} onClick={() => setWfStatus('DRAFT')}>{i18n('Черновики')}</Button>
+            <Button className={classNames(styles.btn_published, { [styles.active]: (wfStatus == 'ARCHIVED') })} onClick={() => setWfStatus('ARCHIVED')}>{i18n('Архивные')}</Button>
           </div>
           <button className={styles.btn_create2} onClick={() => { navigate("/business-entities/edit/"); }}></button>
           {data ? (
-            <TreeTable key={uuid()} value={data} sortField={sortData.field ? sortData.field : ''} sortOrder={sortData.order ? sortData.order : ''} onSort={(e:TreeTableSortEvent) => { setSortData({ field: e.sortField, order: e.sortOrder }) }} className={styles.tree} tableStyle={{ minWidth: '50rem', marginTop: '30px' }} onRowClick={(e) => { if (e.node && e.node.data) doNavigate('/business-entities/edit/' + e.node.key, navigate); }}>
-              <Column field="name" header={i18n('Название')} expander sortable body={columnBodyWithActions}></Column>
-              <Column field="tech_name" header={i18n('Техническое название')} sortable body={columnBodyWithActions}></Column>
-              <Column field="domain_name" header={i18n('Домен')} sortable body={columnBodyWithActions}></Column>
-              <Column field="alt_names" header={i18n('Альтернативные наименования')} sortable body={columnBodyWithActions}></Column>
-              <Column field="synonyms" header={i18n('Синонимы')} sortable body={columnBodyWithActions}></Column>
-              <Column field="modified" header={i18n('Дата изменения')} sortable dataType='date' body={columnBodyWithActions}></Column>              
-              <Column field="tags" header={i18n('Теги')} sortable body={columnBodyWithActions}></Column>
-            </TreeTable>
+            <>
+              <Button
+                key={uuid()}
+                background="outlined-blue"
+                className={styles.button}
+                onClick={() => {
+                  setSearchMode((prev) => {
+                    const nextState = !prev;
+                    if (!nextState) {
+                      //setTreeState((prev:any) => ({...prev, filters: []}));
+                      /*setFetchRequest((prevouse) => ({
+                        sort: prevouse.sort,
+                        global_query: prevouse.global_query,
+                        limit: prevouse.limit,
+                        offset: prevouse.offset,
+                        filters: [],
+                        filters_for_join: prevouse.filters_for_join,
+                        filters_preset: prevouse.filters_preset,
+                        limit_steward: prevouse.limit_steward,
+                        state: prevouse.state,
+                      }));*/
+                      
+                    }
+                    return nextState;
+                  });
+                }}
+              >
+                <Filters key={uuid()} />
+                {i18n(searchMode ? i18n('Сбросить фильтры') : i18n('Фильтры'))}
+              </Button>
+
+              <TreeTable key={uuid()} value={data} sortField={sortData.field ? sortData.field : ''} sortOrder={sortData.order ? sortData.order : ''} 
+                onSort={(e:TreeTableSortEvent) => { setSortData({ field: e.sortField, order: e.sortOrder }) }} className={styles.tree} tableStyle={{ minWidth: '50rem', marginTop: '30px', width: '1500px' }} 
+                onRowClick={(e) => { if (e.node && e.node.data) doNavigate('/business-entities/edit/' + e.node.key, navigate); }}
+                paginator rows={getTablePageSize()} paginatorClassName='paginator' paginatorDropdownAppendTo='self' rowsPerPageOptions={[5,10,25,50]} paginatorTemplate={paginatorTpl} >
+                <Column field="name" header={i18n('Название')} expander sortable body={columnBodyWithActions} filter={searchMode} filterMatchMode={FilterMatchMode.CONTAINS} filterPlaceholder={i18n('фильтр')}></Column>
+                <Column field="tech_name" header={i18n('Техническое название')} sortable body={columnBodyWithActions} filter={searchMode} filterMatchMode={FilterMatchMode.CONTAINS} filterPlaceholder={i18n('фильтр')}></Column>
+                <Column field="domain_name" header={i18n('Домен')} sortable body={columnBodyWithActions} filter={searchMode} filterMatchMode={FilterMatchMode.CONTAINS} filterPlaceholder={i18n('фильтр')}></Column>
+                <Column field="alt_names" header={i18n('Альтернативные наименования')} sortable body={columnBodyWithActions} filter={searchMode} filterMatchMode={FilterMatchMode.CONTAINS} filterPlaceholder={i18n('фильтр')}></Column>
+                <Column field="synonyms" header={i18n('Синонимы')} sortable body={columnBodyWithActions} filter={searchMode} filterMatchMode={FilterMatchMode.CONTAINS} filterPlaceholder={i18n('фильтр')}></Column>
+                <Column field="modified" header={i18n('Дата изменения')} sortable dataType='date' body={columnBodyWithActions} filter={searchMode} filterMatchMode={FilterMatchMode.CONTAINS} filterPlaceholder={i18n('фильтр')}></Column>              
+                <Column field="tags" header={i18n('Теги')} sortable body={columnBodyWithActions} filter={searchMode} filterMatchMode={FilterMatchMode.CONTAINS} filterPlaceholder={i18n('фильтр')}></Column>
+              </TreeTable>
+            </>
           ) : (
             ''
           )}

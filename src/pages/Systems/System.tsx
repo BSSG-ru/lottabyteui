@@ -5,7 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import useUrlState from '@ahooksjs/use-url-state';
 import classNames from 'classnames';
 import styles from './Systems.module.scss';
-import { handleHttpError, i18n, getDomainDisplayValue, getDomainAutocompleteObjects, updateArtifactsCount, setDataModified, doNavigate, tagAddedHandler, tagDeletedHandler, loadEditPageData, rateClickedHandler, updateEditPageReadOnly, setBreadcrumbEntityName } from '../../utils';
+import { handleHttpError, i18n, getDomainDisplayValue, getDomainAutocompleteObjects, updateArtifactsCount, setDataModified, doNavigate, tagAddedHandler, tagDeletedHandler, loadEditPageData, rateClickedHandler, updateEditPageReadOnly, setBreadcrumbEntityName, uuid } from '../../utils';
 import {
   getSystem,
   getSystemVersions,
@@ -13,17 +13,13 @@ import {
   createSystem,
   getSystemTypes,
   getSystemVersion,
+  restoreSystemVersion,
+  archiveSystem,
+  restoreSysten,
 } from '../../services/pages/systems';
 import { Tags, TagProp } from '../../components/Tags';
 import { Versions, VersionData } from '../../components/Versions';
-import { Tabs } from '../../components/Tabs';
-import { Table } from '../../components/Table';
-import {
-  queriesTableColumns,
-  assetsTableColumns,
-  samplesTableColumns,
-  entitiesTableColumns,
-} from '../../mocks/systems';
+import Button from 'react-bootstrap/Button';
 import { FieldEditor } from '../../components/FieldEditor';
 import { FieldAutocompleteEditor } from '../../components/FieldAutocompleteEditor';
 import { ReactComponent as PlusInCircle } from '../../assets/icons/plus-in-circle.svg';
@@ -31,6 +27,9 @@ import { ReactComponent as Close } from '../../assets/icons/close.svg';
 import { setRecentView } from '../../services/pages/recentviews';
 import { WFItemControl } from '../../components/WFItemControl/WFItemControl';
 import { RelatedObjectsControl } from '../../components/RelatedObjectsControl';
+import { deleteSystem } from '../../services/pages/domains';
+import { DeleteObjectModal } from '../../components/DeleteObjectModal';
+import { FieldVisualEditor } from '../../components/FieldVisualEditor';
 
 export function System() {
   const [state, setState] = useUrlState({
@@ -63,6 +62,9 @@ export function System() {
   const [systemId, setSystemId] = useState<string>(id ?? '');
   const [systemVersionId, setSystemVersionId] = useState<string>(version_id ?? '');
 
+  const [delObjectData, setDelObjectData] = useState<any>({ id: '', name: '' });
+  const [showDelDlg, setShowDelDlg] = useState(false);
+
   const navigate = useNavigate();
 
   const getSystemTypeDisplayValue = async (i: string) => {
@@ -82,146 +84,6 @@ export function System() {
     setSystemTypes(map);
     return res.filter((x) => x.name.toLowerCase().indexOf(search.toLowerCase()) !== -1);
   });
-
-  const tabs = [
-    {
-      key: 'tab-log',
-      title: i18n('ЛОГИЧЕСКИЕ ОБЪЕКТЫ'),
-      content: (
-        <Table
-          cookieKey='sys-ents'
-          key={"logObjTable" + systemId + (systemVersionId ? systemVersionId : '')}
-          className={styles.table}
-          columns={entitiesTableColumns}
-          paginate
-          columnSearch
-          globalSearch
-          dataUrl={systemId === '' ? '' : '/v1/entities/search'}
-          initialFetchRequest={{
-            sort: 'name+',
-            global_query: '',
-            limit: 5,
-            offset: (state.p1 - 1) * 5,
-            filters: [],
-            filters_preset: [],
-            filters_for_join: [
-              {
-                table: 'entity_to_system',
-                column: 'system_id',
-                value: `'${ systemVersionId ? data.metadata.ancestor_draft_id : systemId}'`,
-                on_column: 'id',
-                equal_column: 'entity_id',
-                operator: 'EQUAL',
-              },
-            ],
-          }}
-          onRowClick={(row: any) => {
-            navigate(`/logic-objects/edit/${encodeURIComponent(row.id)}`);
-          }}
-          showCreateBtn={false}
-          onPageChange={(page: number) => {
-            setState(() => ({ p1: page }));
-          }}
-        />
-      ),
-    },
-    {
-      key: 'tab-req',
-      title: i18n('ЗАПРОСЫ'),
-      content: (
-        <Table
-          cookieKey='sys-queries'
-          key={"reqTable" + systemId + (systemVersionId ? systemVersionId : '')}
-          className={styles.table}
-          columns={queriesTableColumns}
-          paginate
-          columnSearch
-          globalSearch
-          dataUrl={systemId === '' ? '' : '/v1/queries/search'}
-          initialFetchRequest={{
-            sort: 'name+',
-            global_query: '',
-            limit: 5,
-            offset: (state.p2 - 1) * 5,
-            filters: [],
-            filters_preset: [{ column: 'system_id', value: systemVersionId ? data.metadata.ancestor_draft_id : (systemId ?? ''), operator: 'EQUAL' }],
-            filters_for_join: [],
-          }}
-          onRowClick={(row: any) => {
-            navigate(`/queries/edit/${encodeURIComponent(row.id)}`);
-          }}
-          showCreateBtn={false}
-          onPageChange={(page: number) => {
-            setState(() => ({ p2: page }));
-          }}
-        />
-      ),
-    },
-    {
-      key: 'tab-samples',
-      title: i18n('СЭМПЛЫ'),
-      content: (
-        <Table
-          cookieKey='sys-samples'
-          key={"samplesTable" + systemId + (systemVersionId ? systemVersionId : '')}
-          className={styles.table}
-          columns={samplesTableColumns}
-          paginate
-          columnSearch
-          globalSearch
-          dataUrl={systemId === '' ? '' : '/v1/samples/search'}
-          initialFetchRequest={{
-            sort: 'name+',
-            global_query: '',
-            limit: 5,
-            offset: (state.p3 - 1) * 5,
-            filters: [],
-            filters_preset: [{ column: 'system_id', value: systemVersionId ? data.metadata.ancestor_draft_id : (systemId ?? ''), operator: 'EQUAL' }],
-            filters_for_join: [],
-          }}
-          showCreateBtn={false}
-          onRowClick={(row: any) => {
-            navigate(`/samples/edit/${encodeURIComponent(row.id)}`);
-          }}
-          onPageChange={(page: number) => {
-            setState(() => ({ p3: page }));
-          }}
-        />
-      ),
-    },
-    {
-      key: 'tab-act',
-      title: i18n('АКТИВЫ'),
-      content: (
-        <Table
-          cookieKey='sys-assets'
-          key={"activesTable" + systemId + (systemVersionId ? systemVersionId : '')}
-          className={styles.table}
-          columns={assetsTableColumns}
-          paginate
-          columnSearch
-          globalSearch
-          dataUrl={systemId === '' ? '' : '/v1/data_assets/search'}
-          initialFetchRequest={{
-            sort: 'name+',
-            global_query: '',
-            limit: 5,
-            offset: (state.p4 - 1) * 5,
-            filters: [],
-            filters_preset: [{ column: 'system_id', value: systemVersionId ? data.metadata.ancestor_draft_id : (systemId ?? ''), operator: 'EQUAL' }],
-            filters_for_join: [],
-          }}
-          onRowClick={(row: any) => {
-            navigate(`/data_assets/edit/${encodeURIComponent(row.id)}`);
-          }}
-          showCreateBtn={false}
-          onPageChange={(page: number) => {
-            setState(() => ({ p4: page }));
-          }}
-        />
-      ),
-    },
-  ];
 
   useEffect(() => {
     getSystemTypes().then((json) => {
@@ -322,15 +184,57 @@ export function System() {
     }
   };
 
+  const delDlgSubmit = () => {
+    setShowDelDlg(false);
+    setLoading(true);
+    deleteSystem(delObjectData.id)
+      .then(json => {
+        updateArtifactsCount();
+        setLoading(false);
+
+        if (json.metadata && json.metadata.id)
+          navigate('/systems/edit/' + encodeURIComponent(json.metadata.id));
+      })
+      .catch(handleHttpError);
+    setDelObjectData({ id: '', name: '' });
+  };
+
+  const archiveBtnClicked = () => { archiveSystem(data.metadata.id).then(json => {
+    if (json.metadata.id && json.metadata.id != systemId) {
+      navigate(`/systems/edit/${encodeURIComponent(json.metadata.id)}`);
+    }
+    setDataModified(false);
+  }).catch(handleHttpError); };
+
+  const restoreBtnClicked = () => { restoreSysten(data.metadata.id).then(json => {
+    if (json.metadata.id && json.metadata.id != systemId) {
+      navigate(`/systems/edit/${encodeURIComponent(json.metadata.id)}`);
+    }
+    setDataModified(false);
+  }).catch(handleHttpError); };
+
   return (
     <div className={classNames(styles.page, styles.systemPage, { [styles.loaded]: isLoaded })}>
       <div className={styles.mainContent}>
+      {systemVersionId && (
+          <Button onClick={() => {
+            restoreSystemVersion(systemId, systemVersionId).then(json => {
+              setDataModified(false);
+              if (json.metadata.id && json.metadata.id !== systemId) {
+                navigate(`/systems/edit/${encodeURIComponent(json.metadata.id)}`);
+              } else { setData(json); }
+            }).catch(handleHttpError);
+          }}>{i18n('Восстановить')}</Button>
+        )}
         {!systemVersionId && (
           <WFItemControl
             key={`wfc-sys-` + data?.metadata?.workflow_task_id}
             itemMetadata={data.metadata}
             itemIsReadOnly={isReadOnly}
             onEditClicked={() => { setReadOnly(false); }}
+            onArchiveClicked={archiveBtnClicked}
+            onRestoreClicked={restoreBtnClicked}
+            onDeleteClicked={() => { setDelObjectData({ id: data.metadata.id, name: data.entity.name }); setShowDelDlg(true); }}
             onObjectIdChanged={(id:string) => {
               if (id) {
                 setSystemId(id);
@@ -367,7 +271,7 @@ export function System() {
             showValidation={showValidation}
           />
         </div>
-        {!isCreateMode && (
+        {!isCreateMode && data.metadata.state != 'ARCHIVED' && (
           <button className={styles.btn_scheme} onClick={() => { doNavigate('/systems-model/' + encodeURIComponent(systemId), navigate); }}>{i18n('Схема')}</button>
         )}
         <FieldAutocompleteEditor
@@ -409,23 +313,21 @@ export function System() {
 
         {!isCreateMode && (
           <div className={styles.description}>
-            <FieldEditor
-              isReadOnly={isReadOnly}
-              labelPrefix={`${i18n('Описание: ')} `}
-              defaultValue={data.entity.description}
-              className={styles.long_input}
-              valueSubmitted={(val) => {
-                updateSystemField('description', val.toString());
-              }}
-              isRequired
-              onBlur={(val) => {
-                updateSystemField('description', val);
-              }}
-            />
+            <FieldVisualEditor
+                isReadOnly={isReadOnly}
+                labelPrefix={`${i18n('Описание')}:`}
+                defaultValue={data.entity.description}
+                className={styles.long_input}
+                valueSubmitted={(val) => {
+                  updateSystemField('description', val.toString());
+                }}
+              />
+            
           </div>
         )}
         {!isCreateMode && (
           <Tags
+            key={'tags-' + systemId + '-' + systemVersionId + '-' + uuid()}
             tags={tags}
             isReadOnly={isReadOnly}
             onTagAdded={(tagName: string) => tagAddedHandler(tagName, systemId, 'system', data.metadata.state ?? '', tags, setLoading, setTags, '/systems/edit/', navigate)}
@@ -437,7 +339,7 @@ export function System() {
       </div>
       {!isCreateMode && (
         <div className={styles.rightBar}>
-          {data.metadata.state == 'PUBLISHED' && (
+          {(data.metadata.state == 'PUBLISHED' || data.metadata.state == 'ARCHIVED') && (
             <Versions
               rating={ratingData.rating}
               ownRating={ownRating}
@@ -451,6 +353,7 @@ export function System() {
         </div>
       )}
 
+      <DeleteObjectModal show={showDelDlg} objectTitle={delObjectData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />
     </div>
   );
 }

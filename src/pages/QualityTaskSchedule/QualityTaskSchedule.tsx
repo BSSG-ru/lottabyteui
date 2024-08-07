@@ -1,13 +1,13 @@
 /* eslint-disable jsx-a11y/anchor-is-valid */
 /* eslint-disable jsx-a11y/anchor-has-content */
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
 
 import useUrlState from '@ahooksjs/use-url-state';
 import { useNavigate } from 'react-router-dom';
 
-import { doNavigate, getTablePageSize, handleHttpError, i18n, updateArtifactsCount, uuid } from '../../utils';
+import { doNavigate, getTablePageSize, handleHttpError, i18n, uuid } from '../../utils';
 import { runTask, getQualityRuleRuns } from '../../services/pages/qualityTasks';
 import { Table } from '../../components/Table';
 import { Loader } from '../../components/Loader';
@@ -22,7 +22,7 @@ type DateiledElementType = {
 export function QualityTaskSchedule() {
   const navigate = useNavigate();
   const [state, setState] = useUrlState({ p: '1', q: undefined }, { navigateMode: 'replace' });
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [data] = useState([]);
   const [currentRow, setCurrentRow] = useState<any>(null);
   const [detailData, setDetailData] = useState([]);
@@ -153,7 +153,7 @@ export function QualityTaskSchedule() {
 
   const ruleRun = () => {
     if (currentRow) {
-      runTask(currentRow.entity_sample_to_dq_rule_id).then((json) => {
+      runTask(currentRow.entity_sample_to_dq_rule_id).then(() => {
         setShowConfirmDetail(true);
       }).catch(handleHttpError);
     }

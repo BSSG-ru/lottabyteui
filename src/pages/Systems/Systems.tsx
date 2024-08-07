@@ -39,7 +39,7 @@ export function Systems() {
       property: 'name',
       header: i18n('Название'),
     },
-    { property: 'description', header: i18n('Описание') },
+    //{ property: 'description', header: i18n('Описание') },
     {
       property: 'workflow_state',
       header: i18n('Состояние'),

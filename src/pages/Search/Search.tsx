@@ -46,8 +46,8 @@ export function Search() {
     indicator: true,
     business_entity: true,
     product: true,
-    dq_rule: true
-    
+    dq_rule: true,
+    entity_attribute: true
   });
 
   useEffect(() => {
@@ -98,8 +98,6 @@ export function Search() {
       });
     }
 
-    console.log('filterArtifactTypes', filterArtifactTypes);
-
     var must = [
       inner_q,
       {
@@ -120,7 +118,7 @@ export function Search() {
     return {
       size,
       from,
-      _source: ['artifact_type', 'id', 'artifact_id', 'name', 'description', 'domains'],
+      _source: ['artifact_type', 'id', 'artifact_id', 'name', 'description', 'domains', 'entity_id', 'tech_name', 'artifact_state'],
       query: {
         bool: {
           must: must,
@@ -179,8 +177,12 @@ export function Search() {
   }, [searchRequest]);
 
   const getHitUrl = (hit: any) => {
+    console.log('hit', hit);
     if (hit._source.id && hit._source.artifact_type) {
-      return getArtifactUrl(hit._source.id, hit._source.artifact_type);
+      if (hit._source.artifact_type == 'entity_attribute' && hit._source.entity_id)
+        return getArtifactUrl(hit._source.entity_id, 'entity');
+      else
+        return getArtifactUrl(hit._source.id, hit._source.artifact_type);
     }
 
     return null;
@@ -194,7 +196,9 @@ export function Search() {
         return <Systems />;
       case 'entity':
         return <LogicObjects />;
-      case 'entity_query':
+      case 'entity_attribute':
+        return <LogicObjects />;
+        case 'entity_query':
         return <Queries />;
       case 'entity_sample':
         return <Samples />;
@@ -235,13 +239,13 @@ export function Search() {
         return (
           <div
             key={`sr_${hit._source.id}`}
-            className={styles.search_result}
+            className={classNames(styles.search_result, {[styles.archive]: hit._source.artifact_state == 'ARCHIVED'})}
           >
             <div className={styles.search_header}>
               {getArtifactTypeIcon(hit._source.artifact_type)}
-              <div className={styles.at}>{getArtifactTypeDisplayName(hit._source.artifact_type)}</div>
+              <div className={styles.at}>{getArtifactTypeDisplayName(hit._source.artifact_type) + (hit._source.artifact_state == 'ARCHIVED' ? (' (' + i18n('Архив') + ')') : '')}</div>
             </div>
-            <a href='' className={styles.name} onClick={() => { if (url) doNavigate(url, navigate); return false; }}>{hit._source.name}</a>
+            <a href={url ?? '###'} className={styles.name} onClick={() => { if (url) doNavigate(url, navigate); return false; }}>{hit._source.name}</a>
             <div className={styles.description}>{hit._source.description}</div>
             
           </div>

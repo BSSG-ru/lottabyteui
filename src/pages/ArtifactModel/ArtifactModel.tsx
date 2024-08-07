@@ -17,6 +17,8 @@ import { useParams } from 'react-router';
 import { Button } from '../../components/Button';
 import classNames from 'classnames';
 import { v4 as uuidv4 } from 'uuid';
+import Modal from 'react-bootstrap/Modal';
+import { Tags } from '../../components/Tags';
 
 export type ArtifactModelProps = {
     artifactType: string;
@@ -25,23 +27,27 @@ export type ArtifactModelProps = {
 export function ArtifactModel({ artifactType } : ArtifactModelProps) {
     const [modelData, setModelData] = useState({});
     const [nodeDataArray, setNodeDataArray] = useState<any[]>([]);
-    const [linkDataArray, setLinkDataArray] = useState([]);
+    const [linkDataArray, setLinkDataArray] = useState<any[]>([]);
     const [diagram, setDiagram] = useState<go.Diagram | null>(null);
     const [diagramIsLoading, setDiagramIsLoading] = useState<boolean>(true);
     const [isLinkingMode, setLinkingMode] = useState<boolean>(false);
 
     const [filterLineageDirs, setFilterLineageDirs] = useState<any>({ left: true, right: false });
 
+    const [showLinkDlg, setShowLinkDlg] = useState<boolean>(false);
+    const [linkDlgData, setLinkDlgData] = useState<any>({});
+    const [linkTags, setLinkTags] = useState<string[]>([]);
+    const [filterLinkTags, setFilterLinkTags] = useState<any>({});
 
     const lineageStruct:any = {
-        domain: { left: [ 'product', 'indicator', 'data_asset', 'entity_sample', 'entity', 'entity_query', 'system' ], right: []},
-        product: { left: [ 'indicator', 'data_asset', 'entity_sample', 'entity', 'entity_query', 'system' ], right: [ 'domain' ] },
-        indicator: { left: [ 'data_asset', 'entity_sample', 'entity', 'entity_query', 'system' ], right: [ 'domain', 'product' ] },
-        data_asset: { left: [ 'entity_sample', 'entity', 'entity_query', 'system' ], right: [ 'domain', 'product', 'indicator' ] },
-        entity_sample: { left: [ 'entity_query', 'system' ], right: [ 'domain', 'product', 'indicator', 'data_asset' ] },
-        entity: { left: [], right: [ 'data_asset', 'domain', 'product', 'indicator' ] },
-        entity_query: { left: [ 'system' ], right: [ 'domain', 'product', 'indicator', 'entity_sample', 'entity', 'entity_query', 'data_asset' ] },
-        system: { left: [], right: [ 'product', 'indicator', 'data_asset', 'entity_sample', 'entity', 'entity_query', 'system' ] }
+        domain: { left: [ 'product', 'indicator', 'data_asset', 'system' ], right: []},
+        product: { left: [ 'indicator', 'data_asset', 'system' ], right: [ ] },
+        indicator: { left: [ 'data_asset', 'system' ], right: [ 'product' ] },
+        data_asset: { left: [ 'system' ], right: [ 'product', 'indicator' ] },
+        entity_sample: { left: [ 'system' ], right: [ 'product', 'indicator', 'data_asset' ] },
+        entity: { left: [], right: [ 'data_asset', 'product', 'indicator' ] },
+        entity_query: { left: [ 'system' ], right: [ 'domain', 'product', 'indicator', 'data_asset' ] },
+        system: { left: [], right: [ 'product', 'indicator', 'data_asset' ] }
     };
 
     const [filterArtifactTypes, setFilterArtifactTypes] = useState<any>({
@@ -52,7 +58,8 @@ export function ArtifactModel({ artifactType } : ArtifactModelProps) {
         data_asset: true,
         indicator: true,
         product: true,
-        domain: true,
+        business_entity: true,
+        domain: true
       });
 
     const { id } = useParams();
@@ -65,17 +72,70 @@ export function ArtifactModel({ artifactType } : ArtifactModelProps) {
         }
     }, [diagram]);
 
+    const updateDummyLinks = () => {
+        var hiddenNodeIds:string[] = [];
+
+        diagram?.nodes.each((node) => {
+            if (!node.isVisible()) {
+                console.log('node', node.data);
+                hiddenNodeIds.push(node.data.id);
+            }
+        });
+
+        var hiddenLinks:go.Link[] = [];
+
+        diagram?.links.each(link => {
+            if (!link.isVisible() && !link.data.isDummy) {
+                hiddenLinks.push(link);
+            }
+        });
+
+        var dummyLinks:any[] = hiddenLinks.map(link => ({...link.data}));
+        
+        for (var i = 0; i < hiddenNodeIds.length; i++) {
+            
+            var dummyLinksNew:any[] = [];
+            var nodeId = hiddenNodeIds[i];
+
+            for (var j = 0; j < dummyLinks.length; j++) {
+                if (dummyLinks[j].from != nodeId && dummyLinks[j].to != nodeId) {
+                    if (!dummyLinksNew.some(lnk => (lnk.from == dummyLinks[j].from && lnk.to == dummyLinks[j].to)))
+                        dummyLinksNew.push(dummyLinks[j]);
+                } else {
+                    if (dummyLinks[j].from == nodeId) {
+                        for (var k = 0; k < dummyLinks.length; k++) {
+                            if (j != k && dummyLinks[k].to == nodeId) {
+                                
+                                if (!dummyLinksNew.some(lnk => (lnk.from == dummyLinks[k].from && lnk.to == dummyLinks[j].to)))
+                                    dummyLinksNew.push({...dummyLinks[j], id: 'dummy-' + uuid(), from: dummyLinks[k].from, points: '', isDummy: true});
+                            }
+                        }
+                    }
+                }
+            }
+
+
+            dummyLinks = [...dummyLinksNew];
+        }
+
+        setLinkDataArray((prev) => (prev.filter(n => !n.isDummy).concat(dummyLinks)));
+    };
+
     useEffect(() => {
         if (artifactType == 'entity') {
             getEntitiesModel().then((json:any) => {
                 setNodeDataArray(json.nodes);
                 setLinkDataArray(json.links.map((d:any) =>({...d, points: d.points ? JSON.parse(d.points) : ''})));
+                setLinkTags([]);
             }).catch(handleHttpError);
         } else 
         {
             if (id)
                 getArtifactModel(id, artifactType).then((json:any) => {
-                    let nodes = json.nodes.map((n:any) => ({...n, hidden: (lineageStruct[artifactType].left.some((x:string) => x == n.artifactType) && !filterLineageDirs.left) || (lineageStruct[artifactType].right.some((x:string) => x == n.artifactType) && !filterLineageDirs.right) }));
+                    let nodes = json.nodes.map((n:any) => ({
+                        ...n, 
+                        hidden: !nodeIsVisible(n)// (lineageStruct[artifactType].left.some((x:string) => x == n.artifactType) && !filterLineageDirs.left && n.lineageDir == 'left') || (lineageStruct[artifactType].right.some((x:string) => x == n.artifactType) && !filterLineageDirs.right && n.lineageDir == 'right') 
+                    }));
                     let nodes2 = [...nodes];
                     nodes.forEach((n:any) => {
                         switch (n.artifactType) {
@@ -85,7 +145,20 @@ export function ArtifactModel({ artifactType } : ArtifactModelProps) {
                         }
                     });
                     setNodeDataArray(nodes2);
-                    setLinkDataArray(json.links.map((d:any) =>({...d, points: d.points ? JSON.parse(d.points) : ''})));
+                    setLinkDataArray(json.links.map((d:any) =>({...d, points: d.points ? JSON.parse(d.points) : '', isDummy: false})));
+                    
+                    let lnkTags:string[] = [];
+                    json.links.forEach((lnk:any) => {
+                        if (lnk && lnk.tags) {
+                            lnk.tags.forEach((t:any) => {
+                                if (!lnkTags.includes(t.name))
+                                    lnkTags.push(t.name);
+                            })
+                        }
+                    });
+                    setLinkTags(lnkTags);
+
+                    updateDummyLinks();
                 }).catch(handleHttpError);
         }
     }, [id]);
@@ -106,7 +179,8 @@ export function ArtifactModel({ artifactType } : ArtifactModelProps) {
 
         if (e.modifiedLinkData) {
             for (let i = 0; i < e.modifiedLinkData?.length; i++) {
-                saveRequestData.addLink(e.modifiedLinkData[i]);
+                if (!e.modifiedLinkData[i].isDummy)
+                    saveRequestData.addLink(e.modifiedLinkData[i]);
             }
         }
 
@@ -115,15 +189,16 @@ export function ArtifactModel({ artifactType } : ArtifactModelProps) {
             for (let i = 0; i < e.insertedLinkKeys.length; i++) {
                 let link = diagram?.findLinkForKey(e.insertedLinkKeys[i]);
                 if (link) {
-                    
-                    saveRequestData.addLink(link);
+                    if (!link.data.isDummy)
+                        saveRequestData.addLink(link);
                 }
             }
         }
 
         if (e.removedLinkKeys) {
             for (let i = 0; i < e.removedLinkKeys.length; i++) {
-                saveRequestData.deleteLink('' + e.removedLinkKeys[i]);
+                if (e.removedLinkKeys[i]?.toString().indexOf('dummy') == -1)
+                    saveRequestData.deleteLink('' + e.removedLinkKeys[i]);
             }
         }
         
@@ -138,14 +213,23 @@ export function ArtifactModel({ artifactType } : ArtifactModelProps) {
         
     };
 
-    
+    const nodeIsVisible = (nodeData: any) => {
+        let at = nodeData.artifactType;
+        let dir = nodeData.lineageDir;
+        console.log('at', at);
+
+        if (filterArtifactTypes[at]) {
+            return !dir || dir == '' || (dir && filterLineageDirs[dir]);
+        }
+        return false;
+    };
 
     useEffect(() => {
-        Object.keys(filterArtifactTypes).forEach(at => {
+        /*Object.keys(filterArtifactTypes).forEach(at => {
             if (filterArtifactTypes[at]) {
                 var it = diagram?.findNodesByExample({artifactType: at});
                 while (it?.next()) {
-                    it.value.visible = true;
+                    it.value.visible = nodeIsVisible(it.value.data);
                 }
             } else {
                 var it = diagram?.findNodesByExample({artifactType: at});
@@ -153,9 +237,42 @@ export function ArtifactModel({ artifactType } : ArtifactModelProps) {
                     it.value.visible = false;
                 }
             }
-        });
+        });*/
+
+        var it = diagram?.nodes;
+        while (it?.next()) {
+            it.value.visible = nodeIsVisible(it.value.data);
+        }
+
+        updateDummyLinks();
         
-    }, [ filterArtifactTypes ])
+    }, [ filterArtifactTypes, filterLineageDirs ]);
+
+    useEffect(() => {
+        var it = diagram?.links;
+            while (it?.next()) {
+                if (!it.value.data.isDummy)
+                    it.value.visible = false;
+            }
+
+        Object.keys(filterLinkTags).forEach(tn => {
+            if (filterLinkTags[tn]) {
+                it = diagram?.links;
+                while (it?.next()) {
+                    if (!it.value.data.isDummy) {
+                        let tags = it.value.data.tags;
+                        if (tn == '') {
+                            if (!tags || tags.length == 0)
+                                it.value.visible = true;
+                        } else {
+                            if (tags.some((t:any) => t.name == tn))
+                                it.value.visible = true;
+                        }
+                    }
+                }
+            }
+        })
+    }, [ filterLinkTags ]);
 
     useEffect(() => {
         if (filterLineageDirs.left) {
@@ -186,13 +303,73 @@ export function ArtifactModel({ artifactType } : ArtifactModelProps) {
         }
     }, [ isLinkingMode ]);
 
+    useEffect(() => {
+        window.addEventListener('linkDblClick', function (e) {
+
+            setShowLinkDlg(true);
+
+            setLinkDlgData({ id: (e as any).link.data.id, tags: (e as any).link.data.tags });
+        })
+    }, []);
+
+    useEffect(() => {
+        let obj:any = {'': true};
+        linkTags.forEach((tn:string) => {
+            obj[tn] = true;
+        });
+        setFilterLinkTags(obj);
+    }, [ linkTags ]);
+
+    const handleLinkDlgClose = () => {
+        setShowLinkDlg(false);
+        return false;
+    };
+
+    const onSaveLinkDlg = () => {
+        setShowLinkDlg(false);
+
+        diagram?.startTransaction('update link');
+
+        var data = (diagram?.model as go.GraphLinksModel).findLinkDataForKey(linkDlgData.id);
+        if (data)
+            diagram?.model.setDataProperty(data ,'tags', linkDlgData.tags);
+
+        diagram?.commitTransaction();
+
+        return false;
+    }
+
+    const linkTagIdAdded = (tagId: string, tagName: string) => {
+        setLinkDlgData((prev:any) => ({...prev, tags: [...prev.tags, { id: tagId, name: tagName } ]}));
+    };
+
+    const linkTagIdDeleted = (tagId: string) => {
+        setLinkDlgData((prev:any) => ({...prev, tags: prev.tags.filter((x:any) => x.id != tagId)}));
+    };
+
     return (
         <div className={styles.artifact_model}>
             <div className={styles.dg_filter}>
                 <Button className={classNames(styles.btn_filter_dir, { [styles.active]: filterLineageDirs.left })} onClick={() => { setFilterLineageDirs((prev:any) => ({...prev, left: !filterLineageDirs.left})) }}>{i18n('Влево')}</Button>
                 <Button className={classNames(styles.btn_filter_dir, { [styles.active]: filterLineageDirs.right })} onClick={() => { setFilterLineageDirs((prev:any) => ({...prev, right: !filterLineageDirs.right})) }}>{i18n('Вправо')}</Button>
-                {Object.keys(filterArtifactTypes).map((at:string) => <Button key={uuid()} className={classNames(styles.btn_filter, { [styles.active]: filterArtifactTypes[at], [styles.shown]: (at == artifactType || (filterLineageDirs.right && lineageStruct[artifactType]['right'].some((e:string) => e == at)) || (filterLineageDirs.left && lineageStruct[artifactType]['left'].some((e:string) => e == at))) })} onClick={() => { setFilterArtifactTypes((prev:any) => ({...prev, [at]: !filterArtifactTypes[at]})) }}>{getArtifactTypeDisplayName(at)}</Button>)}
+                {Object.keys(filterArtifactTypes).map((at:string) => 
+                    <Button 
+                        key={uuid()} 
+                        className={classNames(styles.btn_filter, { 
+                            [styles.active]: filterArtifactTypes[at], 
+                            [styles.shown]: ([ artifactType, 'domain', 'entity', 'entity_query', 'business_entity', 'entity_sample' ].some(x => (x == at)) || (filterLineageDirs.right && lineageStruct[artifactType]['right'].some((e:string) => e == at)) || (filterLineageDirs.left && lineageStruct[artifactType]['left'].some((e:string) => e == at))) 
+                        })} 
+                        onClick={() => { setFilterArtifactTypes((prev:any) => ({...prev, [at]: !filterArtifactTypes[at]})) }}
+                        >{getArtifactTypeDisplayName(at)}</Button>
+                    )
+                }
             </div>
+            {linkTags.length > 0 && (
+                <div className={styles.lnk_tags_filter}>
+                    <Button key={'lnk-tag-filter-empty'} className={classNames(styles.btn_filter, styles.shown, { [styles.active]: filterLinkTags[''] })} onClick={() => { setFilterLinkTags((prev:any) => ({...prev, '': !filterLinkTags[''] })) }}>(без тега)</Button>
+                    {linkTags.map((tn, index) => <Button key={'lnk-tag-filter-' + index} className={classNames(styles.btn_filter, styles.shown, { [styles.active]: filterLinkTags[tn] })} onClick={() => { setFilterLinkTags((prev:any) => ({...prev, [tn]: !filterLinkTags[tn] })) }}>{tn}</Button>)}
+                </div>
+            )}
             <div className={styles.dg_wrap}>
                 <ReactDiagram ref={diagramRef} initDiagram={initArtifactDiagram} divClassName={styles.diagram_div} nodeDataArray={nodeDataArray} linkDataArray={linkDataArray} modelData={modelData} onModelChange={onModelChange} />
                 <div className={styles.rightToolBar}>
@@ -205,8 +382,18 @@ export function ArtifactModel({ artifactType } : ArtifactModelProps) {
                     <a className={classNames({ [styles.active]: isLinkingMode })} onClick={() => { setLinkingMode(!isLinkingMode); }}>Связи</a>
                 </div>
             </div>
+            <Modal show={showLinkDlg} backdrop={false} onHide={handleLinkDlgClose}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Связь</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Tags tags={(linkDlgData.tags ?? []).map((t:any) => ({ id: t.id, value: t.name }))} onTagIdAdded={linkTagIdAdded} onTagIdDeleted={linkTagIdDeleted} />
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button onClick={onSaveLinkDlg}>OK</Button>
+                    <Button onClick={handleLinkDlgClose}>Отмена</Button>
+                </Modal.Footer>
+            </Modal>
         </div>
-    );
-        
-    
+    );   
 }
