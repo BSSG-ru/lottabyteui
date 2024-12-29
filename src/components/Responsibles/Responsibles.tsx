@@ -6,7 +6,7 @@ import { i18n } from '../../utils';
 import styles from './Responsibles.module.scss';
 import { ReactComponent as UserIcon } from '../../assets/icons/users-icon.svg';
 import Modal from 'react-bootstrap/Modal';
-import Button from 'react-bootstrap/Button';
+import { Button } from '../Button';
 
 
 
@@ -33,7 +33,6 @@ export const Responsibles: FC<ResponsiblesProps> = ({ domain_id }) => {
     useEffect(() => {
         if (domain_id) {
             getDomainResponsibles(domain_id).then(json => {
-                console.log('responsibles', json);
                 setUsers(json);
             })
         } else
@@ -56,7 +55,7 @@ export const Responsibles: FC<ResponsiblesProps> = ({ domain_id }) => {
                 <div className={styles.user_desc}>{userInfoData.description}</div>
             </Modal.Body>
             <Modal.Footer>
-                <Button variant="primary" onClick={handleUserInfoDlgClose}>Закрыть</Button>
+                <Button background='blue' onClick={handleUserInfoDlgClose}>Закрыть</Button>
             </Modal.Footer>
       </Modal>
     </div>

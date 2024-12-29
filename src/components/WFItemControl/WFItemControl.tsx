@@ -1,32 +1,37 @@
 import classNames from 'classnames';
 import React, { FC, useEffect, useState } from 'react';
-import { getArtifactUrl, handleHttpError, handleHttpResponse, i18n, uuid } from '../../utils';
+import { getArtifactUrl, getDataModified, handleHttpError, handleHttpResponse, i18n, uuid } from '../../utils';
 import styles from './WFItemControl.module.scss';
 import { ArtifactMetaData } from '../../types/artifact';
 import { Button } from '../Button';
 import { useNavigate } from 'react-router';
-import { ReactComponent as InfoIcon } from '../../assets/icons/info.svg';
-import { ReactComponent as CloseIcon } from '../../assets/icons/close.svg';
-import { WorkflowAction, WorkflowActionParamResult, WorkflowTask } from '../../types/workflow';
+import { ReactComponent as DelIcon } from '../../assets/icons/del.svg';
+import { WorkflowAction, WorkflowActionParamResult } from '../../types/workflow';
 import { getWorkflowTask } from '../../services/pages/workflow';
 import { fetchWithRefresh } from '../../services/auth';
 import { URL, optionsPost } from '../../services/requst_templates';
 import { Modal } from 'react-bootstrap';
 import { Input } from '../Input';
+import { clearStaticNotices, raiseStaticNotice } from '../StaticNoticesArea/StaticNoticesArea';
+import { Loader } from '../Loader';
 
 
 export type WFItemControlProps = {
     itemMetadata: ArtifactMetaData;
     itemIsReadOnly: boolean;
+    isLoading?: boolean;
+    saveItem?: () => any;
     onEditClicked: () => void;
+    onSaveClicked?: () => void;
+    onCancelEditClicked?: () => void;
     onArchiveClicked?: () => void;
     onRestoreClicked?: () => void;
-    onDeleteClicked: () => void;
+    onDeleteClicked?: () => void;
     onObjectIdChanged: (id:string) => void;
     onObjectDataChanged?: (data:any) => void;
 };
 
-export const WFItemControl: FC<WFItemControlProps> =({ itemMetadata, itemIsReadOnly, onEditClicked, onArchiveClicked, onRestoreClicked, onDeleteClicked, onObjectIdChanged, onObjectDataChanged }) => {
+export const WFItemControl: FC<WFItemControlProps> =({ itemMetadata, itemIsReadOnly, onEditClicked, onArchiveClicked, onRestoreClicked, onDeleteClicked, onObjectIdChanged, onObjectDataChanged, onSaveClicked, onCancelEditClicked, isLoading = false, saveItem }) => {
 
     const navigate = useNavigate();
 
@@ -36,6 +41,11 @@ export const WFItemControl: FC<WFItemControlProps> =({ itemMetadata, itemIsReadO
     const [currActionResult, setCurrActionResult] = useState<WorkflowActionParamResult[]>([]);
     const [showActionDlg, setShowActionDlg] = useState(false);
     const [actionError, setActionError] = useState('');
+    const [showLoader, setShowLoader] = useState(false);
+
+    useEffect(() => {
+        setShowLoader(isLoading);
+    }, [ isLoading ]);
 
     const handleActionDlgClose = () => {
         setShowActionDlg(false);
@@ -58,41 +68,52 @@ export const WFItemControl: FC<WFItemControlProps> =({ itemMetadata, itemIsReadO
         }
     }, [ itemMetadata.workflow_task_id ]);
 
+    useEffect(() => {
+        clearStaticNotices();
+        if (itemMetadata.state == 'DRAFT' && itemMetadata.published_id)
+            raiseStaticNotice('warning', i18n('У этого черновика есть опубликованная версия') + '<button onclick="window.location.href=\'' + getArtifactUrl(itemMetadata.published_id ?? '', itemMetadata.artifact_type) + '\'">' + i18n('Открыть') + '</button')
+
+        if (itemMetadata.state == 'PUBLISHED' && itemMetadata.draft_id)
+            raiseStaticNotice('warning', i18n('Для этой карточки создан черновик') + '<button onclick="window.location.href=\'' + getArtifactUrl(itemMetadata.draft_id ?? '', itemMetadata.artifact_type) + '\'">' + i18n('Открыть') + '</button')
+    }, [ itemMetadata.state, itemMetadata.published_id, itemMetadata.draft_id ])
+
     return <div className={styles.wf_item_control}>
-        {itemMetadata.state == 'DRAFT' && itemMetadata.published_id && showNotice && (
-            <div className={styles.wf_notice}><div className={styles.msg}><InfoIcon style={{fill:'#6F9E6E'}} />{i18n('У этого черновика есть опубликованная версия')}</div><Button background='none' className={styles.btn_open_item} onClick={() => navigate(getArtifactUrl(itemMetadata.published_id ?? '', itemMetadata.artifact_type))}>{i18n('Открыть')}</Button><CloseIcon className={styles.btn_hide} onClick={() => setShowNotice(false)} /></div>
+
+        {showLoader ? (<Loader size={30} />) : (
+        <div className={styles.btns}>
+        {((itemMetadata.state == 'PUBLISHED' && !itemMetadata.draft_id) || itemMetadata.artifact_type == 'entity_sample' ) && itemIsReadOnly && (
+            <>
+                <Button background='blue' onClick={onEditClicked}>{i18n('Редактировать')}</Button>
+                {onArchiveClicked && (
+                    <Button onClick={onArchiveClicked}>{i18n('Архивировать')}</Button>
+                )}
+                {onDeleteClicked && (
+                    <Button onClick={onDeleteClicked}><DelIcon /></Button>
+                )}
+            </>
+        )}
+        {!itemIsReadOnly && getDataModified() && (
+            <>
+                <Button onClick={onSaveClicked}>{i18n('Сохранить')}</Button>
+                <Button onClick={onCancelEditClicked}>{i18n('Отменить изменения')}</Button>
+            </>
+        )}
+        {itemMetadata.state == 'ARCHIVED' && itemIsReadOnly && onRestoreClicked && (
+            <Button background='blue' onClick={onRestoreClicked}>{i18n('Восстановить из архива')}</Button>
         )}
         {itemMetadata.state == 'DRAFT' && (
             <>
-                <div className={styles.draft_notice}>{i18n('Черновик')}</div>
-                <div className={styles.btns}>
                     {actions.map(action => {
-                        return <Button key={'wf-action-' + action.id} className={styles.btn_wf_action} onClick={() => {
+                        return <Button key={'wf-action-' + action.id} background={action.display_name == 'Опубликовать' ? 'blue' : 'outlined-blue'} className={styles.btn_wf_action} onClick={() => {
                             setCurrAction(action);
                             setCurrActionResult(action.params.map(p => { return {id: p.id, param_name: p.name, param_type: p.type, param_value: ''} }));
                             setShowActionDlg(true);
                         }}>{action.display_name}</Button>
                     })}
-                </div>
             </>
         )}
-        {itemMetadata.state == 'PUBLISHED' && itemMetadata.draft_id && showNotice && (
-            <div className={styles.wf_notice}><div className={styles.msg}><InfoIcon style={{fill:'#6F9E6E'}} />{i18n('Для этой карточки создан черновик')}</div><Button background='none' className={styles.btn_open_item} onClick={() => navigate(getArtifactUrl(itemMetadata.draft_id ?? '', itemMetadata.artifact_type))}>{i18n('Открыть')}</Button><CloseIcon className={styles.btn_hide} onClick={() => setShowNotice(false)} /></div>
-        )}
-        {itemMetadata.state == 'PUBLISHED' && !itemMetadata.draft_id && itemIsReadOnly && (
-            <div className={styles.btns}>
-                <Button onClick={onEditClicked}>{i18n('Изменить')}</Button>
-                {onArchiveClicked && (
-                    <Button onClick={onArchiveClicked}>{i18n('Архивировать')}</Button>
-                )}
-                <Button onClick={onDeleteClicked}>{i18n('Удалить')}</Button>
-            </div>
-        )}
-        {itemMetadata.state == 'ARCHIVED' && itemIsReadOnly && onRestoreClicked && (
-            <div className={styles.btns}>
-                <Button onClick={onRestoreClicked}>{i18n('Восстановить из архива')}</Button>
-            </div>
-        )}
+        </div>
+        )}        
         {showActionDlg && (
             <Modal show={showActionDlg} backdrop={false} onHide={handleActionDlgClose}>
                 <Modal.Header closeButton><Modal.Title>{currAction?.display_name}</Modal.Title></Modal.Header>
@@ -109,7 +130,7 @@ export const WFItemControl: FC<WFItemControlProps> =({ itemMetadata, itemIsReadO
                     })}
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button onClick={() => {
+                    <Button background='blue' onClick={() => {
                         setActionError('');
                         let isError = false;
                         currAction?.params.filter(p => { return p.required; }).forEach(rp => {
@@ -120,22 +141,39 @@ export const WFItemControl: FC<WFItemControlProps> =({ itemMetadata, itemIsReadO
                         });
 
                         if (!isError) {
-                            fetchWithRefresh(`${URL}` + currAction?.post_url, optionsPost(currActionResult)).then(handleHttpResponse).then(json => {
-                                if (json.success) {
-                                    if (json.item && onObjectDataChanged)
-                                        onObjectDataChanged(json.item);
-                                    if (json.item && json.item.metadata.id)
-                                        onObjectIdChanged(json.item.metadata.id);
-                                    else
-                                        onObjectIdChanged('');
-                                } else {
-                                    (window as any).notices.addNotice('error', i18n('Ошибка при выполнении') + ' "' + currAction?.display_name + '"');
+                            setShowLoader(true);
+                            var func = async () => { return { metadata: { id: 'some' } }; }
+                            if (getDataModified() && saveItem) {
+                                func = async () => {
+                                    return await saveItem().then((json:any) => {
+                                        return json;
+                                    })
                                 }
-                            }).catch(handleHttpError);
+                            }
+
+                            func().then(json2 => {
+                                if (json2 && json2.metadata.id) {
+                                    fetchWithRefresh(`${URL}` + currAction?.post_url, optionsPost(currActionResult)).then(handleHttpResponse).then(json => {
+                                        setShowLoader(false);
+                                        if (json.success) {
+                                            if (json.item && onObjectDataChanged)
+                                                onObjectDataChanged(json.item);
+                                            if (json.item && json.item.metadata.id)
+                                                onObjectIdChanged(json.item.metadata.id);
+                                            else
+                                                onObjectIdChanged('');
+                                        } else {
+                                            (window as any).notices.addNotice('error', i18n('Ошибка при выполнении') + ' "' + currAction?.display_name + '"');
+                                        }
+                                    }).catch(handleHttpError);
+                                }
+                            })
+
+                            
                             setShowActionDlg(false);
                         }
                     }}>{currAction?.display_name}</Button>
-                    <Button background="outlined-orange" onClick={handleActionDlgClose}>{i18n('Отмена')}</Button>
+                    <Button background="outlined-blue" onClick={handleActionDlgClose}>{i18n('Отмена')}</Button>
                 </Modal.Footer>
             </Modal>
         )}

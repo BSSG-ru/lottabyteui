@@ -4,18 +4,16 @@
 import React, { FC, useEffect, useState } from 'react';
 
 import styles from './FieldAutocompleteEditor.module.scss';
-import { ReactComponent as PencilIcon } from '../../assets/icons/pencil.svg';
-import { ReactComponent as OrangePencilIcon } from '../../assets/icons/pencil_org.svg';
 import { ReactComponent as CloseIcon } from '../../assets/icons/close.svg';
-import { Autocomplete } from '../Autocomplete';
-import { getArtifactUrl, i18n, setDataModified, uuid } from '../../utils';
+import { getArtifactUrl, uuid } from '../../utils';
 import { Autocomplete2 } from '../Autocomplete2';
+import classNames from 'classnames';
 
 export type FieldAutocompleteEditorProps = {
-  className: string;
+  className?: string;
   isReadOnly?: boolean;
   label: string;
-  defaultValue: string | null;
+  defaultValue: string | null | undefined;
   defaultOptions?: any;
   isRequired?: boolean;
   showValidation?: boolean;
@@ -27,7 +25,7 @@ export type FieldAutocompleteEditorProps = {
 };
 
 export const FieldAutocompleteEditor: FC<FieldAutocompleteEditorProps> = ({
-  className,
+  className = '',
   isReadOnly,
   label,
   defaultOptions = true,
@@ -40,23 +38,13 @@ export const FieldAutocompleteEditor: FC<FieldAutocompleteEditorProps> = ({
   getObjects,
   allowClear
 }) => {
-  const [isEditMode, setEditMode] = useState<boolean>(false);
   const [value, setValue] = useState('');
   const [displayValue, setDisplayValue] = useState('');
-  const [storedValue, setStoredValue] = useState('');
-  const [storedDisplayValue, setStoredDisplayValue] = useState('');
   const [controlKey, setControlKey] = useState(uuid());
 
   useEffect(() => {
     setValue(defaultValue ?? '');
-    setStoredValue(defaultValue ?? '');
   }, [defaultValue]);
-
-  useEffect(() => {
-    getDisplayValue(storedValue ?? '').then((s) => {
-      setStoredDisplayValue(s ?? '');
-    });
-  }, [storedValue]);
 
   useEffect(() => {
     getDisplayValue(value ?? '').then((s) => {
@@ -68,68 +56,43 @@ export const FieldAutocompleteEditor: FC<FieldAutocompleteEditorProps> = ({
     setControlKey(uuid());
   }, [ displayValue ])
 
-  useEffect(() => {
+  /*useEffect(() => {
     if (value != storedValue)
       setDataModified(true);
-  }, [ value, storedValue ]);
+  }, [ value, storedValue ]);*/
 
-  const editClicked = () => {
-    setEditMode(!isEditMode);
-  };
+  
 
-  const saveClicked = () => {
-    setStoredValue(value);
-    valueSubmitted(value);
-    setEditMode(false);
-  };
-
-  const getStoredDisplayValueHtml = () => {
+  const getDisplayValueHtml = () => {
     if (artifactType) {
-      return <a href={getArtifactUrl(storedValue, artifactType)}>{storedDisplayValue}</a>
+      if (!value) return undefined;
+      return <a href={getArtifactUrl(value, artifactType)}>{displayValue}</a>
     } else
-      return storedDisplayValue;
+      return displayValue;
   };
 
   return (
-    <div
-      className={`${styles.field_autocomplete_editor} ${className}${
-        showValidation && isRequired && !storedValue ? ` ${styles.error}` : ''
-      }`}
-    >
-      <div className={styles.row_value}>
-        <div className={label === '' ? styles.close_label : styles.label}>{label}</div>
-        <div className={styles.display_value}>{storedValue ? getStoredDisplayValueHtml() : i18n('Выберите...')}</div>
-        {isReadOnly ? (
-          ''
-        ) : (
-          <a
-            className={styles.btn_edit}
-            onClick={editClicked}
-          >
-            <PencilIcon />
-          </a>
+    <div className={classNames(styles.field_editor, className, { [styles.error]: isRequired && showValidation && !value })}>
+      {label && (<div className={styles.label}>{label}{isRequired && (<span className={styles.req}>*</span>)}</div>)}
+      <div className={styles.value}>
+        {isReadOnly ? ( getDisplayValueHtml() ?? '—' ) : (
+          <>
+            <Autocomplete2 key={'ac2-' + controlKey}
+              className={styles.autocomplete_comp}
+              getOptions={getObjects}
+              defaultOptions={defaultOptions}
+              defaultInputValue={displayValue}
+              onInputChanged={(v) => { if (!value) setDisplayValue(v); }}
+              onChanged={(data: any) => {
+                setDisplayValue(data.name);
+                setValue(data.id);
+                if (valueSubmitted)
+                  valueSubmitted(data.id);
+              }}
+            />
+            {allowClear && (<a className={styles.btn_clear} onClick={() => { setValue(''); setDisplayValue(''); if (valueSubmitted) valueSubmitted(''); }}><CloseIcon /></a>)}
+          </>
         )}
-      </div>
-      <div className={`${styles.row_edit} ${isEditMode ? styles.show : ''}`}>
-        <Autocomplete2 key={'ac2-' + controlKey}
-          className={styles.autocomplete_comp}
-          getOptions={getObjects}
-          defaultOptions={defaultOptions}
-          defaultInputValue={displayValue}
-          onInputChanged={(v) => { if (!value) setDisplayValue(v); }}
-          onChanged={(data: any) => {
-            setDisplayValue(data.name);
-            setValue(data.id);
-          }}
-        />
-        {allowClear && (<a className={styles.btn_clear} onClick={() => { setValue(''); setDisplayValue(''); }}><CloseIcon /></a>)}
-        
-        <a
-          className={styles.btn_save}
-          onClick={saveClicked}
-        >
-          <OrangePencilIcon />
-        </a>
       </div>
     </div>
   );

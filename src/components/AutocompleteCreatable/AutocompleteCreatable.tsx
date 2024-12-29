@@ -44,8 +44,9 @@ export const AutocompleteCreatable: FC<AutocompleteCreatableProps> = ({
       {label ? <div className={styles.label}>{label}</div> : ''}
       <AsyncCreatableSelect
         className={styles.async_select}
+        styles={{ control: (b) => ({...b, minHeight: '32px'}), dropdownIndicator: (b) => ({ ...b, paddingTop: '6px', paddingBottom: '6px' }), menu: (b) => ({...b, position: 'absolute', zIndex: 9999}) }}
         placeholder={!placeholder ? i18n('Выберите...') : placeholder}
-        cacheOptions={false}
+        cacheOptions={false} menuPosition='fixed'
         maxMenuHeight={200}
         loadOptions={(val: string, callback) => {
           getOptions(val).then((r) => {
@@ -57,7 +58,6 @@ export const AutocompleteCreatable: FC<AutocompleteCreatableProps> = ({
         value={value}
         inputValue={inputValue}
         defaultOptions={defaultOptions}
-        
         onChange={(data: any) => onChanged(data)} onInputChange={onInputChanged} defaultInputValue={value}
         createOptionPosition='first'
         allowCreateWhileLoading={true}

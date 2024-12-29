@@ -7,21 +7,26 @@ import useUrlState from '@ahooksjs/use-url-state';
 import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames';
 import styles from './DQRules.module.scss';
-import { doNavigate, getTablePageSize, handleHttpError, i18n, updateArtifactsCount } from '../../utils';
+import { doNavigate, getRuleTypeAutocompleteObjects, getRuleTypeDisplayValue, getTablePageSize, handleHttpError, i18n, updateArtifactsCount } from '../../utils';
 import { renderDate, Table, TableDataRequest } from '../../components/Table';
 import { Loader } from '../../components/Loader';
-import { deleteDQRule } from '../../services/pages/dqRules';
+import { createDQRule, deleteDQRule } from '../../services/pages/dqRules';
 import { DeleteObjectModal } from '../../components/DeleteObjectModal';
 import { Button } from '../../components/Button';
+import { ModalDlg } from '../../components/ModalDlg';
+import { FieldTextEditor } from '../../components/FieldTextEditor';
+import { FieldAutocompleteEditor } from '../../components/FieldAutocompleteEditor';
 
 export function DQRules() {
   const navigate = useNavigate();
   const [state, setState] = useUrlState({ p: '1', q: undefined }, { navigateMode: 'replace' });
-  const [loading, setLoading] = useState(false);
-  const [data] = useState([]);
-
+  const [loaded, setLoaded] = useState(true);
+  
   const [showDelDlg, setShowDelDlg] = useState(false);
-  const [delDQRuleData, setDelDQRuleData] = useState<any>({ id: '', name: '' });
+  const [delObjectData, setDelObjectData] = useState<any>({ id: '', name: '' });
+  const [showCreateDlg, setShowCreateDlg] = useState(false);
+  const [showCreateValidation, setShowCreateValidation] = useState(false);
+  const [createData, setCreateData] = useState({ name: '', rule_type_id: '' });
 
   const columns = [
     { property: 'id', header: 'ID', isHidden: true },
@@ -30,6 +35,7 @@ export function DQRules() {
       header: i18n('Koд'),
       sortDisabled: true,
       filterDisabled: true,
+      width: '55px'
     },
     {
       property: 'name',
@@ -55,117 +61,99 @@ export function DQRules() {
       header: i18n('Теги'),
       filterDisabled: false,
       sortDisabled: true,
-      render: (row: any) => row.tags.join(', '),
+      render: (row: any) => <div className={styles.pills}>{row.tags.map((tag:any, i:number) => <span key={`tag-pill-${row.id}-${i}`} className={styles.pill}>#{tag}</span>)}</div>,
     },
   ];
 
   const delDlgSubmit = () => {
     setShowDelDlg(false);
-    setLoading(true);
-    deleteDQRule(delDQRuleData.id)
+    deleteDQRule(delObjectData.id)
       .then((json) => {
         updateArtifactsCount();
-        setLoading(false);
         if (json.metadata && json.metadata.id) { navigate(`/dq_rule/edit/${encodeURIComponent(json.metadata.id)}`); }
       })
       .catch(handleHttpError);
-    setDelDQRuleData({ id: '', name: '' });
+    setDelObjectData({ id: '', name: '' });
   };
-  const openInNewTab = (url: string) => {
-    window.open(url, '_blank', 'noreferrer');
-  };
+
+  const submitCreate = () => {
+    if (createData.name && createData.rule_type_id) {
+      setShowCreateDlg(false);
+
+      createDQRule(createData).then(json => {
+        if (json && json.metadata.id) {
+          navigate(`/dq_rule/edit/${encodeURIComponent(json.metadata.id)}`);
+        }
+      }).catch(handleHttpError)
+    } else
+      setShowCreateValidation(true);
+  }
+
   return (
-    <div className={styles.page}>
-      {loading ? (
+    <div className={classNames(styles.page, styles.scrollable, { [styles.loaded]: loaded })}>
+      {!loaded ? (
         <Loader className="centrify" />
       ) : (
         <>
-          <div className={styles.title}>{`${i18n('ПРАВИЛА КАЧЕСТВА')}`}</div>
-          <Button
-            background="outlined-blue"
-            className={styles.button}
-            onClick={() => doNavigate('/quality-tasks', navigate)}
-          >
-            {i18n('Мониторинг DQ')}
+          <div className={styles.title}>{`${i18n('Правила качества')}`}
+            <div className={styles.btns}>
+              <Button background='blue' onClick={() => { setShowCreateValidation(false); setShowCreateDlg(true); }}>Создать правило</Button>
+              <Button background="outlined-blue" className={styles.button2} onClick={() => doNavigate('/dq_rule/quality-tasks', navigate)}>{i18n('Мониторинг DQ')}</Button>
+              <Button background="outlined-blue" className={styles.button2} onClick={() => doNavigate('/dq_rule/quality-schedule-tasks', navigate)}>{i18n('Задачи DQ')}</Button>
+            </div>
+          </div>
+          
 
-          </Button>
+          <Table
+            artifactType='dq_rule'
+            cookieKey='dqrules'
+            className={styles.table}
+            columns={columns}
+            paginate
+            columnSearch
+            globalSearch
+            dataUrl="/v1/dq_rule/search"
+            supportsWorkflow
+            initialFetchRequest={{
+              sort: 'name+',
+              global_query: state.q !== undefined ? state.q : '',
+              limit: getTablePageSize(),
+              offset: (state.p - 1) * getTablePageSize(),
+              filters: [],
+              filters_preset: [],
+              filters_for_join: [],
+            }}
+            onRowClick={(row: any) => {
+              navigate(`/dq_rule/edit/${encodeURIComponent(row.id)}`);
+            }}
+            onDeleteClicked={(row: any) => {
+              setDelObjectData({ id: row.id, name: row.name });
+              setShowDelDlg(true);
+            }}
+            onPageChange={(page: number) => (
+              setState(() => ({ p: page }))
+            )}
+            onQueryChange={(query: string) => (
+              setState(() => ({ p: undefined, q: query }))
+            )}
+          />
+          
+          <DeleteObjectModal show={showDelDlg} objectTitle={delObjectData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />
+          <ModalDlg show={showCreateDlg} title={i18n('Создать правило')} cancelBtnText={i18n('Отменить')} submitBtnText={i18n('Создать')} onClose={() => setShowCreateDlg(false)} dialogClassName={styles.dlg_create} onSubmit={submitCreate}>
+            <div className={styles.fields}>
+                <FieldTextEditor label={i18n('Название правила')} isRequired showValidation={showCreateValidation} className='' defaultValue='' valueSubmitted={(v) => setCreateData((prev) => ({...prev, name: v ?? ''}))} />
 
-          <Button
-            background="outlined-blue"
-            className={styles.button}
-            onClick={() => doNavigate('/quality-schedule-tasks', navigate)}
-          >
-            {i18n('Задачи DQ')}
+                <FieldAutocompleteEditor
+                  label={i18n('Тип')}
+                  defaultValue=''
+                  valueSubmitted={(v) => setCreateData((prev) => ({...prev, rule_type_id: v ?? ''}))}
+                  getDisplayValue={getRuleTypeDisplayValue}
+                  getObjects={getRuleTypeAutocompleteObjects}
+                  showValidation={showCreateValidation}
+                />
 
-          </Button>
-          {data ? (
-            <Table
-              cookieKey='dqrules'
-              className={styles.table}
-              columns={columns}
-              paginate
-              columnSearch
-              globalSearch
-              dataUrl="/v1/dq_rule/search"
-              supportsWorkflow
-              initialFetchRequest={{
-                sort: 'name+',
-                global_query: state.q !== undefined ? state.q : '',
-                limit: getTablePageSize(),
-                offset: (state.p - 1) * getTablePageSize(),
-                filters: [],
-                filters_preset: [],
-                filters_for_join: [],
-              }}
-              showCreateBtn
-              onCreateBtnClick={() => {
-                navigate('/dq_rule/edit/');
-              }}
-              onRowClick={(row: any) => {
-                navigate(`/dq_rule/edit/${encodeURIComponent(row.id)}`);
-              }}
-              renderActionsPopup={(row: any) => (
-                <div>
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      navigate('/dq_rule/edit/');
-                      return false;
-                    }}
-                    className={styles.btn_create}
-                  />
-                  <a
-                    href={`/dq_rule/edit/${encodeURIComponent(row.id)}`}
-                    className={styles.btn_edit}
-                    onClick={(e) => { e.preventDefault(); navigate(`/dq_rule/edit/${encodeURIComponent(row.id)}`); }}
-                  />
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      setDelDQRuleData({ id: row.id, name: row.name });
-                      setShowDelDlg(true);
-                      return false;
-                    }}
-                    className={styles.btn_del}
-                  />
-                </div>
-              )}
-              onPageChange={(page: number) => (
-                setState(() => ({ p: page }))
-              )}
-              onQueryChange={(query: string) => (
-                setState(() => ({ p: undefined, q: query }))
-              )}
-            />
-          ) : (
-            ''
-          )}
-
-          <DeleteObjectModal show={showDelDlg} objectTitle={delDQRuleData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />
+            </div>
+          </ModalDlg>
 
         </>
       )}

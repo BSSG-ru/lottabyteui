@@ -31,6 +31,8 @@ export class Notices extends React.Component<{}, { notices: NoticeData[] }> {
     });
   };
 
+  
+
   render() {
     return (
       <div className={styles.notices_list}>
@@ -39,7 +41,7 @@ export class Notices extends React.Component<{}, { notices: NoticeData[] }> {
             key={uuid()}
             className={`${styles.notice} ${styles[data.type]}`}
           >
-            <span dangerouslySetInnerHTML={{__html: data.message.replaceAll(/link\|([^\|]*)\|([^\|]*)\|([^\|\s,\.\/]*)([\s,\.\/])/g, '<a href="#" onclick="window.location.href=getArtifactPageUrl(\'$3\', \'$1\'); return false;">$2</a>$4') }}></span>
+            <span dangerouslySetInnerHTML={{__html: data.message.replaceAll(/link\|([^\|]*)\|([^\|]*)\|([^\|\s,\.\/]*)($|[\s,\.\/])/g, '<a href="#" onclick="window.location.href=getArtifactPageUrl(\'$3\', \'$1\'); return false;">$2</a>$4') }}></span>
             <CloseIcon
               onClick={() => {
                 this.delNotice(data.id);

@@ -17,7 +17,6 @@ export function Loading() {
         if (response.status === 200) {
           dispatch(changeValidateAction(true) as ChangeValidateAction);
           response.json().then(json => {
-            //console.log('set userp', json.permissions);
             setCookie('userp', json.permissions.join(','), { path: '/' });
           });
           

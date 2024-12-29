@@ -1,28 +1,45 @@
-.wf_bnts {
-    display: inline-block;
-    border-bottom: 1px solid #3B4047;
+@import '../../assets/css/common.scss';
+
+.wf_btns {
+    display: flex;
+    align-items: stretch;
+    
     margin-bottom: 20px;
+    margin-top: 20px;
 
     button {
         background: none;
-        text-transform: uppercase;
         color: #3B4047;
         font-size: 14px;
-        padding: 10px 20px;
-        width: 200px;
+        padding: 0;
+        text-align: left;
+        border-bottom: 1px solid #E5E7EB;
+        border-radius: 0;
+        display: block;
 
         &.active,
         &:hover {
             background: none;
-            font-weight: bold;
-            color: var(--blue-main);
+            font-weight: 700;
+            color: var(--primary60);
         }
+
+        &.active {
+            border-bottom: 2px solid var(--primary60);
+        }
+    }
+
+    .sep {
+        border-bottom: 1px solid #E5E7EB;
+        border-radius: 0;
+        width: 20px;
     }
 }
 
 .header {
     text-align: left;
     padding: 0;
+    line-height: 10px;
 
     &_name {
         display: inline-flex;
@@ -34,6 +51,13 @@
     &_sort {
         display: inline-flex;
         align-items: center;
+        margin-left: 10px;
+    }
+
+    &_sep {
+        display: inline-flex;
+        width: 4px;
+        margin-left: 10px;
     }
 
     &.header_withsort {
@@ -45,9 +69,13 @@
     }
 }
 
+.header_name {
+    min-height: 32px;
+}
+
 .table_wrap {
     position: relative;
-    display: inline-block;
+    display: block;
 
     &.full_width {
         display: block;
@@ -78,36 +106,45 @@
     }
 }
 
+.table_top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .table {
     position: relative;
+    width: 100%;
 
     th {
         position: sticky;
-        top: 0;
+        top: -20px;
         background: #fff;
         z-index: 9;
         
         > div {
-            border-bottom: 3px solid rgba(0, 0, 0, 0.05);
+            border-bottom: 1px solid #D5D8DE;
             padding: 0 10px;
-            min-height: 42px;
+            min-height: 33px;
         }
+    }
+
+    th:not(:first-child)::before {
+        content: " ";
+        border-left: 1px solid #D5D8DE;
+        position: absolute;
+        left: 0;
+        top: 8px;
+        bottom: 8px;
     }
 
     div,
     span {
-        font-size: 15px;
-        line-height: 18px;
-
-
-    }
-
-    .header_name {
-        min-height: 38px;
+        font-size: 14px;
     }
 
     &.table_search .header_name {
-        border-bottom: 3px solid rgba(0, 0, 0, 0.05);
+        border-bottom: 1px solid #D5D8DE;
     }
 
     thead tr.tr_subtitle {
@@ -143,14 +180,12 @@
 }
 
 .body_cell {
-    padding: 19px 16px;
+    padding: 8px 8px;
     position: relative;
 
     .actions_popup {
-        background: var(--gray-25);
+        background: none;
         padding: 3px;
-        box-shadow: 0px 4px 7px rgba(0, 0, 0, 0.15);
-        border-radius: 2px;
         position: absolute;
         align-items: center;
         height: 30px;
@@ -159,16 +194,23 @@
         right: 0;
         display: none;
     }
+}
 
-    &:hover .actions_popup {
-        display: flex;
-    }
+.table tr:hover {
+    background: #f2f2f2;
+}
+
+.table tr:hover .actions_popup {
+    display: flex;
 }
 
 .button {
     padding: 9px 19px;
     gap: 10px;
     margin-bottom: 20px;
+    font-weight: 800;
+    font-size: 14px;
+    border: none;
 }
 
 .table_button {
@@ -235,4 +277,26 @@
 
 .clear {
     clear: both;
+}
+
+.btn_del {
+    display: inline-block;
+    background: url(../../assets/icons/delete.svg);
+    width: 20px;
+    height: 20px;
+    background-size: contain;
+    margin: 0 5px;
+}
+
+.btn_fav {
+    display: inline-block;
+    background: url(../../assets/icons/star-grey.svg);
+    width: 20px;
+    height: 20px;
+    background-size: contain;
+    margin: 0 5px;
+
+    &.active {
+        background-image: url(../../assets/icons/star-y.svg);
+    }
 }

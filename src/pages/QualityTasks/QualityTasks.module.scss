@@ -1,57 +1,15 @@
-.page {
-    padding: 70px 50px 0px;
-
-    &.taskPage {
-        display: flex;
-        align-items: flex-start;
-
-        .mainContent {
-            flex-grow: 1;
-            min-width: 300px;
-        }
-
-        .rightBar {
-            flex: 0 0 253px;
-            padding: 0;
-            margin-left: 30px;
-        }
-    }
-}
+@import '../../assets/css/common.scss';
 
 .red_row_class {
-    background-color: #d7baba;
+    background-color: var(--red10);
 }
 
 .green_row_class {
-    background-color: #bad7bb;
+    background-color: var(--primary10);
 }
 
 .yellow_row_class {
-    background-color: #d7d6ba;
-}
-
-.title {
-    text-transform: uppercase;
-    font-weight: 700;
-    font-size: 16px;
-    margin-bottom: 30px;
-    max-width: 750px;
-}
-
-.input {
-    width: 322px;
-    margin-bottom: 20px;
-}
-
-.long_input {
-    max-width: 750px;
-    margin-bottom: 20px;
-}
-
-.button {
-    margin-bottom: 20px;
-    gap: 10px;
-    padding: 10px 20px;
+    background-color: var(--warning10);
 }
 
 .table {
@@ -262,18 +220,6 @@
     }
 }
 
-.btn_scheme {
-    padding: 9px 19px;
-    margin-bottom: 20px;
-    line-height: 23px;
-
-    line-height: 23px;
-    background-color: var(--white);
-    color: var(--blue-100);
-    border: 1px solid var(--blue-100);
-    border-radius: 4px;
-}
-
 .table_wrap {
     width: 100%;
     max-height: 400px;
@@ -320,4 +266,10 @@
 
 .modal {
     min-width: 50%;
+}
+
+.btns {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }

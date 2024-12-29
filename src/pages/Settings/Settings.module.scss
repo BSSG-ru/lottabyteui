@@ -1,0 +1,32 @@
+@import '../../assets/css/common.scss';
+
+.btn_create {
+    display: inline-block;
+    background: url(../../assets/icons/plus-in-circle-dk.svg);
+    width: 15px;
+    height: 15px;
+    background-size: contain;
+    margin: 0 5px;
+}
+
+.btn_edit {
+    display: inline-block;
+    background: url(../../assets/icons/edit.svg);
+    width: 15px;
+    height: 15px;
+    background-size: contain;
+    margin: 0 5px;
+}
+
+.btn_del {
+    display: inline-block;
+    background: url(../../assets/icons/delete.svg);
+    width: 12px;
+    height: 15px;
+    background-size: contain;
+    margin: 0 5px;
+}
+
+.page .title {
+    margin-bottom: 30px;
+}

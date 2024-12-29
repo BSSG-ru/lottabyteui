@@ -1,0 +1,75 @@
+@import '../../assets/css/common.scss';
+
+.page .title {
+    margin-bottom: 30px;
+}
+
+.error {
+    color: red;
+}
+
+.btns {
+    padding: 0;
+    width: 750px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 16px;
+
+    .btn {
+        margin-left: 10px;
+        padding: 13px 16px;
+    }
+}
+
+.table {
+    width: 100%;
+    min-width: 700px;
+    margin-bottom: 70px;
+
+    th {
+        width: 200px;
+    }
+
+    &_wrapper {
+        overflow-x: auto;
+    }
+
+    &_scroll {
+        width: max-content;
+        overflow-x: auto;
+    }
+}
+
+.btn_create {
+    display: inline-block;
+    background: url(../../assets/icons/plus-in-circle-dk.svg);
+    width: 15px;
+    height: 15px;
+    background-size: contain;
+    margin: 0 5px;
+}
+
+.btn_edit {
+    display: inline-block;
+    background: url(../../assets/icons/edit.svg);
+    width: 15px;
+    height: 15px;
+    background-size: contain;
+    margin: 0 5px;
+}
+
+.btn_del {
+    display: inline-block;
+    background: url(../../assets/icons/delete.svg);
+    width: 12px;
+    height: 15px;
+    background-size: contain;
+    margin: 0 5px;
+}
+
+.tab_white {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}

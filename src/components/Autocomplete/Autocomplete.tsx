@@ -14,6 +14,7 @@ export type AutocompleteProps = {
   value?: string | undefined;
   defaultValue?: string | undefined;
   inputValue?: string | undefined;
+  defaultInputValue?: string | undefined;
   defaultOptions?: any;
   getOptions: (search: string) => Promise<any[]>;
   onChanged: (value: string) => void;
@@ -27,6 +28,7 @@ export const Autocomplete: FC<AutocompleteProps> = ({
   value,
   defaultValue,
   inputValue,
+  defaultInputValue,
   label = '',
   className,
   defaultOptions,
@@ -41,7 +43,7 @@ export const Autocomplete: FC<AutocompleteProps> = ({
     <div className={classNames(styles.autocomplete_wrapper, { [localClassName]: localClassName })}>
       {label ? <div className={styles.label}>{label}</div> : ''}
       <AsyncSelect
-        className={styles.async_select}
+        className={styles.async_select} 
         placeholder={!placeholder ? i18n('Выберите...') : placeholder}
         cacheOptions={false}
         maxMenuHeight={200}
@@ -53,6 +55,7 @@ export const Autocomplete: FC<AutocompleteProps> = ({
         defaultValue={defaultValue}
         value={value}
         inputValue={inputValue}
+        defaultInputValue={defaultInputValue}
         defaultOptions={defaultOptions}
         getOptionValue={(data: any) => data.id}
         getOptionLabel={(data: any) => data.name ?? data.description}

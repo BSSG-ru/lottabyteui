@@ -10,12 +10,13 @@ import { i18n, uuid } from '../../utils';
 import { Button } from '../Button';
 import { Input } from '../Input';
 import { Tag } from '../Tag/Tag';
-import { ReactComponent as PlusInCircle } from '../../assets/icons/plus-in-circle.svg';
+import { ReactComponent as PlusBlue } from '../../assets/icons/plus-blue.svg';
 
 import styles from './Tags.module.scss';
 import { searchTags } from '../../services/pages/tags';
 import { AutocompleteCreatable } from '../AutocompleteCreatable';
 import { Autocomplete2 } from '../Autocomplete2';
+import classNames from 'classnames';
 
 type TagsProps = {
   tags: [] | TagProp[];
@@ -49,8 +50,6 @@ const eventHandler = (
   } else if (query) {
     const result = query.replaceAll('#', '');
     if (result) {
-      console.log('add tag id', selectedId);
-      console.log('add tag', result);
       if (onTagAdded)
         onTagAdded(result);
       if (onTagIdAdded)
@@ -69,13 +68,13 @@ export const Tags: FC<TagsProps> = ({
 }) => {
 
   if (typeof tagPrefix === 'undefined')
-    tagPrefix = '#';
+    tagPrefix = '';
 
   if (typeof inputPlaceholder === 'undefined')
     inputPlaceholder = 'Введите новый тег';
 
   if (typeof addBtnText === 'undefined')
-    addBtnText = 'Добавить тег';
+    addBtnText = 'Добавить';
 
   const tagsWrapperRef = useRef<HTMLDivElement>(null);
 
@@ -89,8 +88,6 @@ export const Tags: FC<TagsProps> = ({
   const getTagOptionsDef = async (search: string) => searchTags(search).then(json => json.map((item:any) => ({ value: item.id, label: item.name })));
 
   useEffect(() => {
-
-    console.log('tags', tags);
 
     let hiddenItem = 0;
     if (tagsWrapperRef && tagsWrapperRef.current) {
@@ -106,11 +103,11 @@ export const Tags: FC<TagsProps> = ({
   }, [tags]);
 
   return (
-    <div className={styles.tags}>
+    <div className={classNames(styles.tags, {[styles.has_tags]: tags && tags.length > 0})}>
       <div className={styles.tag_adder}>
         {addMode && !disableCreate && (
           <AutocompleteCreatable  getOptions={getTagOptions ?? getTagOptionsDef}
-            onChanged={(data:any) => { console.log('setSelTag2', data); setQuery(data.label);  setSelectedId(data.value); }} 
+            onChanged={(data:any) => { setQuery(data.label);  setSelectedId(data.value); }} 
             onCreateOption={s => { setQuery(s); eventHandler(
               s,
               '',
@@ -127,7 +124,7 @@ export const Tags: FC<TagsProps> = ({
         )}
         {addMode && !isReadOnly && disableCreate && getTagOptions && (
           <Autocomplete2  defaultInputValue={query} getOptions={getTagOptions} defaultOptions
-          onChanged={(data:any) => { console.log('setSelTag1', data); setQuery(data.label); setSelectedId(data.value); }} onInputChanged={(v) => { if (v) setQuery(v); } } 
+          onChanged={(data:any) => { setQuery(data.label); setSelectedId(data.value); }} onInputChanged={(v) => { if (v) setQuery(v); } } 
           />
         )}
         {addMode && !isReadOnly && disableCreate && !getTagOptions && (
@@ -136,7 +133,7 @@ export const Tags: FC<TagsProps> = ({
         {isReadOnly ? ('') : (
         <Button
           className={styles.btn}
-          background="outlined-orange"
+          background="none"
           onClick={() => eventHandler(
             query,
             selectedId,
@@ -149,7 +146,7 @@ export const Tags: FC<TagsProps> = ({
             onTagIdAdded
           )}
         >
-          <PlusInCircle />
+          <PlusBlue />
           {addMode ? '' : addBtnText}
         </Button>
         )}
@@ -158,6 +155,7 @@ export const Tags: FC<TagsProps> = ({
         className={styles.tags_wrapper}
         ref={tagsWrapperRef}
       >
+        {tags.length == 0 && (<>—</>)}
         {tags.map((tag: TagProp) => (
           <Tag
             key={uuid()}
@@ -167,6 +165,7 @@ export const Tags: FC<TagsProps> = ({
             hideMode={hideMode}
             onDelete={onTagDeleted}
             onDeleteId={onTagIdDeleted}
+            disableDelete={isReadOnly}
           />
         ))}
         {hideMode && hidden ? (

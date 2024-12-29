@@ -9,8 +9,9 @@
 import React, { FC, useEffect, useState } from 'react';
 import { i18n, setDataModified } from '../../utils';
 import { Autocomplete } from '../Autocomplete';
-import { Input } from '../Input';
+import { FieldDateEditor } from '../FieldDateEditor';
 import styles from './TaskScheduleEditor.module.scss';
+import Moment from 'moment';
 
 export type TaskScheduleEditorProps = {
   className?: string;
@@ -38,12 +39,7 @@ export const TaskScheduleEditor: FC<TaskScheduleEditorProps> = ({
   });
   const [scheduleType, setScheduleType] = useState('');
   const [scheduleTypeName, setScheduleTypeName] = useState('');
-  const [runDate, setRunDate] = useState('');
-  const [runHours, setRunHours] = useState(0);
-  const [runMins, setRunMins] = useState(0);
-  const [runWeekDay, setRunWeekDay] = useState(0);
-  const [runWeekDayName, setRunWeekDayName] = useState('');
-  const [runMonthDay, setRunMonthDay] = useState(0);
+  const [runDate, setRunDate] = useState<Date|null>(null);
   const [cronParams, setCronParams] = useState('');
 
   const padTimeComponent = (x: string | number) => `00${x}`.slice(-2);
@@ -59,13 +55,6 @@ export const TaskScheduleEditor: FC<TaskScheduleEditorProps> = ({
   ].filter((x) => x.name.toLowerCase().indexOf(search.toLowerCase()) !== -1);
 
   useEffect(() => {
-    getWeekDayObjects('').then((items) => {
-      const el = items.find((x) => x.id === runWeekDay);
-      setRunWeekDayName(el ? el.name : '');
-    });
-  }, [runWeekDay]);
-
-  useEffect(() => {
     setScheduleType(defaultScheduleType ?? '');
   }, [defaultScheduleType]);
 
@@ -74,7 +63,7 @@ export const TaskScheduleEditor: FC<TaskScheduleEditorProps> = ({
     { id: 'DAILY', name: i18n('Ежедневно') },
     { id: 'WEEKLY', name: i18n('Еженедельно') },
     { id: 'MONTHLY', name: i18n('Ежемесячно') },
-    { id: 'CRON', name: i18n('CRON') },
+//    { id: 'CRON', name: i18n('CRON') },
   ].filter((x) => x.name.toLowerCase().indexOf(search.toLowerCase()) !== -1);
 
   useEffect(() => {
@@ -92,45 +81,11 @@ export const TaskScheduleEditor: FC<TaskScheduleEditorProps> = ({
       if (defaultScheduleParams) {
         const json = JSON.parse(defaultScheduleParams);
 
-        switch (scheduleType) {
-          case 'ONCE':
-            if (json.datetime) {
-              const d = new Date(json.datetime);
+        if (json.datetime) {
+          const d = new Date(json.datetime);
 
-              setRunDate(d.toISOString().substring(0, 10));
-              setRunHours(d.getHours());
-              setRunMins(d.getMinutes());
-            }
-            break;
-          case 'DAILY':
-            if (json.time) {
-              const parts = json.time.split(':');
-              if (parts.length > 1) {
-                setRunHours(parts[0]);
-                setRunMins(parts[1]);
-              }
-            }
-            break;
-          case 'WEEKLY':
-            if (json.dow) setRunWeekDay(json.dow);
-            if (json.time) {
-              const parts = json.time.split(':');
-              if (parts.length > 1) {
-                setRunHours(parts[0]);
-                setRunMins(parts[1]);
-              }
-            }
-            break;
-          case 'MONTHLY':
-            if (json.dom) setRunMonthDay(json.dom);
-            if (json.time) {
-              const parts = json.time.split(':');
-              if (parts.length > 1) {
-                setRunHours(parts[0]);
-                setRunMins(parts[1]);
-              }
-            }
-            break;
+          setRunDate(d);
+          
         }
       }
     }
@@ -139,41 +94,19 @@ export const TaskScheduleEditor: FC<TaskScheduleEditorProps> = ({
   useEffect(() => {
     let params = {};
 
-    switch (scheduleType) {
-      case 'ONCE':
-        if (runDate) {
-          params = {
-            datetime: `${runDate} ${padTimeComponent(runHours)}:${padTimeComponent(runMins)}:00`,
-          };
-        }
-        break;
-      case 'DAILY':
-        params = {
-          time: `${padTimeComponent(runHours)}:${padTimeComponent(runMins)}:00`,
-        };
-        break;
-      case 'WEEKLY':
-        params = {
-          dow: runWeekDay,
-          time: `${padTimeComponent(runHours)}:${padTimeComponent(runMins)}:00`,
-        };
-        break;
-      case 'MONTHLY':
-        params = {
-          dom: runMonthDay,
-          time: `${padTimeComponent(runHours)}:${padTimeComponent(runMins)}:00`,
-        };
-        break;
-      case 'CRON':
-        params = cronParams;
+    if (runDate) {
+      params = {
+        datetime: `${runDate.toISOString().replace('T', ' ').replace('Z', '')}`,
+      };
     }
+
     const newValue = {
       schedule_type: scheduleType,
       schedule_params: typeof params === 'string' ? params : JSON.stringify(params),
     };
     setValue(newValue);
     onChanged(newValue);
-  }, [runDate, runHours, runMins, runWeekDay, runMonthDay, cronParams, scheduleType]);
+  }, [runDate, scheduleType]);
 
   const getMonthDayObjects = async (search: string) => {
     const arr = [];
@@ -183,117 +116,27 @@ export const TaskScheduleEditor: FC<TaskScheduleEditorProps> = ({
 
   return (
     <>
-      <tr>
-        <th>{i18n('Расписание выполнения')}</th>
-        <td>
-          <Autocomplete
-            defaultOptions
-            getOptions={getScheduleTypeObjects}
-            defaultValue={scheduleType}
-            inputValue={scheduleTypeName}
-            onChanged={(data: any) => {
-              setScheduleType(data.id);
-              setDataModified(true);
-            }}
-          />
-        </td>
-      </tr>
-      {scheduleType === 'ONCE' && (
-        <tr className={styles.tr_date}>
-          <th />
-          <td>
-            <label>{i18n('Дата вызова')}</label>
-            <Input
-              type="date"
-              value={runDate}
-              onChange={(e) => {
-                setRunDate(e.target.value);
-                setDataModified(true);
-              }}
-            />
-          </td>
-        </tr>
-      )}
-      {scheduleType === 'WEEKLY' && (
-        <tr className={styles.tr_wday}>
-          <th />
-          <td>
-            <label>{i18n('День недели')}</label>
-            <Autocomplete
-              defaultOptions
-              getOptions={getWeekDayObjects}
-              defaultValue={runWeekDay.toString()}
-              inputValue={runWeekDayName}
-              onChanged={(data: any) => {
-                setRunWeekDay(data.id);
-                setDataModified(true);
-              }}
-            />
-          </td>
-        </tr>
-      )}
-      {scheduleType === 'MONTHLY' && (
-        <tr className={styles.tr_wday}>
-          <th />
-          <td>
-            <label>{i18n('День')}</label>
-            <Autocomplete
-              defaultOptions
-              getOptions={getMonthDayObjects}
-              defaultValue={runMonthDay.toString()}
-              inputValue={runMonthDay.toString()}
-              onChanged={(data: any) => {
-                setRunMonthDay(data.id);
-                setDataModified(true);
-              }}
-            />
-          </td>
-        </tr>
-      )}
-      {['ONCE', 'DAILY', 'WEEKLY', 'MONTHLY'].includes(scheduleType) && (
-        <tr className={styles.tr_time}>
-          <th>
-            <label>{/* i18n('Время вызова') */}</label>
-          </th>
-          <td>
-            <label>{i18n('Часов')}</label>
-            <Input
-              className={styles.input_num}
-              type="number"
-              value={runHours.toString()}
-              onChange={(e) => {
-                setRunHours(parseInt(e.target.value));
-                setDataModified(true);
-              }}
-            />
-            <label>{i18n('Минут')}</label>
-            <Input
-              className={styles.input_num}
-              type="number"
-              value={runMins.toString()}
-              onChange={(e) => {
-                setRunMins(parseInt(e.target.value));
-                setDataModified(true);
-              }}
-            />
-          </td>
-        </tr>
-      )}
-      {scheduleType === 'CRON' && (
-        <tr className={styles.tr_cron}>
-          <th />
-          <td>
-            <label>{i18n('CRON')}</label>
-            <Input
-              value={cronParams}
-              onChange={(e) => {
-                setCronParams(e.target.value);
-                setDataModified(true);
-              }}
-            />
-          </td>
-        </tr>
-      )}
+
+      <div>
+        <div className={styles.label}>{i18n('Расписание выполнения')}</div>
+        <Autocomplete
+          defaultOptions
+          getOptions={getScheduleTypeObjects}
+          defaultValue={scheduleType}
+          inputValue={scheduleTypeName}
+          onChanged={(data: any) => {
+            setScheduleType(data.id);
+            setDataModified(true);
+          }}
+        />
+      </div>
+      <div>
+        <FieldDateEditor label={i18n('Запуск')} defaultValue={runDate ? Moment(runDate).add(-3, 'hours').toDate() : runDate} valueSubmitted={(v) => {
+          setRunDate(v);
+          setDataModified(true);
+        }} />
+      </div>      
+      
     </>
   );
 };

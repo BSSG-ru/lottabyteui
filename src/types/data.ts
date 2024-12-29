@@ -18,18 +18,52 @@ export type TData = {
     metadata: TMetadata;
 };
 
+export type TaskMetadatabaseData = {
+    id: string;
+    name: string;
+}
+
+export type TaskScheduleEntityData = {
+    description: string;
+    enabled: boolean;
+    schedule_type: string;
+    schedule_params: string;
+}
+
+export type TaskScheduleData = {
+    entity: TaskScheduleEntityData;
+    metadata: ArtifactMetaData;
+}
+
+export type TaskEntityData = {
+    name: string;
+    description: string;
+    short_description: string;
+    query_id: string | null,
+    system_connection_id: string | null,
+    is_metadata_task: boolean,
+    metadatabases: TaskMetadatabaseData[],
+    schedules: TaskScheduleData[]
+}
+
+export type TaskData = {
+    entity: TaskEntityData;
+    metadata: ArtifactMetaData;
+}
+
 export type ProductEntityData = {
     name: string;
     description: string;
+    short_description: string;
     indicator_ids: string[];
     product_ids: string[];
     entity_attribute_ids: string[];
-    domain_id: string | null;
-    entity_query_id: string | null;
-    problem: string | null;
-    consumer: string | null;
-    value: string | null;
-    finance_source: string | null;
+    domain_id: string | null | undefined;
+    entity_query_id: string | null | undefined;
+    problem: string | undefined;
+    consumer: string | undefined;
+    value: string | undefined;
+    finance_source: string | undefined;
     product_type_ids: string[];
     product_supply_variant_ids: string[];
     data_asset_ids: string[];
@@ -61,6 +95,7 @@ export type GroupData = {
 export type IndicatorEntityData = {
     name: string;
     description: string;
+    short_description: string;
     calc_code: string;
     dq_checks: string[];
     formula: string;
@@ -85,6 +120,7 @@ export type IndicatorData = {
 export type DQRuleEntityData = {
     name: string;
     description: string;
+    short_description: string;
     rule_ref: string;
     settings: string;
     rule_type_id: string | null;
@@ -98,6 +134,7 @@ export type DQRuleData = {
 export type AssetEntityData = {
     name: string;
     description: string;
+    short_description: string;
     domain_id: string;
     system_id: string | null;
     entity_id: string | null;

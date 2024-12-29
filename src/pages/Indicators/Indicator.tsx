@@ -1,19 +1,15 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import React, { useEffect, useState } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
-import useUrlState from '@ahooksjs/use-url-state';
 import classNames from 'classnames';
-import { RawDraftContentState } from 'draft-js';
 import { v4 } from 'uuid';
 import styles from './Indicators.module.scss';
-import { doNavigate, getArtifactUrl, getDQRuleAutocompleteObjects, getDQRuleDisplayValue, getDQRuleSettings, getDomainAutocompleteObjects, getDomainDisplayValue, handleHttpError, i18n, setDataModified, updateArtifactsCount, getTablePageSize, uuid, getDataTypeDisplayValue, getDataTypeAutocompleteObjects, getBusinessEntityDisplayValue, loadEditPageData, tagAddedHandler, tagDeletedHandler, rateClickedHandler, updateEditPageReadOnly, setBreadcrumbEntityName, setCookie } from '../../utils';
-import { Versions, VersionData } from '../../components/Versions';
+import { doNavigate, getArtifactUrl, getDQRuleAutocompleteObjects, getDQRuleDisplayValue, getDQRuleSettings, getDomainAutocompleteObjects, getDomainDisplayValue, handleHttpError, i18n, setDataModified, updateArtifactsCount, getTablePageSize, uuid, getDataTypeDisplayValue, getDataTypeAutocompleteObjects, getBusinessEntityDisplayValue, loadEditPageData, tagAddedHandler, tagDeletedHandler, rateClickedHandler, updateEditPageReadOnly, setBreadcrumbEntityName, setCookie, getIndicatorTypeDisplayValue, getIndicatorTypeAutocompleteObjects } from '../../utils';
 import { ReactComponent as CloseIcon } from '../../assets/icons/close.svg';
-import { ReactComponent as PlusInCircle } from '../../assets/icons/plus-in-circle.svg';
-import { FieldEditor } from '../../components/FieldEditor';
+import { ReactComponent as PlusInCircle } from '../../assets/icons/plus-blue.svg';
 import { Input } from '../../components/Input';
 import { Textarea } from '../../components/Textarea';
 import {
@@ -23,51 +19,39 @@ import {
   getIndicatorVersions,
   getIndicatorVersion,
   updateIndicator,
-  getIndicatorTypes,
-  getIndicatorType,
   restoreIndicatorVersion,
   archiveIndicator,
   restoreIndicator,
 } from '../../services/pages/indicators';
 
-import { setRecentView } from '../../services/pages/recentviews';
-import { WFItemControl } from '../../components/WFItemControl/WFItemControl';
 import { FieldArrayEditor } from '../../components/FieldArrayEditor/FieldArrayEditor';
 import { FieldAutocompleteEditor } from '../../components/FieldAutocompleteEditor';
 import { getAsset, searchAssets } from '../../services/pages/dataAssets';
 import { TagProp, Tags } from '../../components/Tags';
 import { IndicatorData, TData, TDQRule } from '../../types/data';
 import { FieldCheckboxEditor } from '../../components/FieldCheckboxEditor/FieldCheckboxEditor';
-import { ReactComponent as Close } from '../../assets/icons/close.svg';
-import { getBusinessEntities } from '../../services/pages/businessEntities';
-import { userInfoRequest } from '../../services/auth';
+import { getBusinessEntities, getBusinessEntity } from '../../services/pages/businessEntities';
 import { RelatedObjectsControl } from '../../components/RelatedObjectsControl';
-import { Responsibles } from '../../components/Responsibles';
-import { DeleteObjectModal } from '../../components/DeleteObjectModal';
 import { FieldVisualEditor } from '../../components/FieldVisualEditor';
+import { EditPage } from '../../components/EditPage';
+import { FieldTextEditor } from '../../components/FieldTextEditor';
+import { FieldTextareaEditor } from '../../components/FieldTextareaEditor';
 
 export function Indicator() {
   const navigate = useNavigate();
-
-  const [state, setState] = useUrlState({
-    t: '1', p1: '1', p2: '1', p3: '1', p4: '1',
-  }, { navigateMode: 'replace' });
   const [, setLoading] = useState(true);
 
   const [data, setData] = useState<IndicatorData>({
-    metadata: { id: '', artifact_type: 'indicator', version_id: '', tags: [], state: 'PUBLISHED', published_id: '' },
+    metadata: { id: '', artifact_type: 'indicator', version_id: '', tags: [], state: 'PUBLISHED', published_id: '', created_by: '' },
     entity: {
-      name: '', description: '', calc_code: '', dq_checks: [], formula: '', domain_id: null, indicator_type_id: 'de96bd1f-27d1-4f5b-b45e-47fcb16dc7b7', data_asset_ids: [], dq_rules: [],
+      name: '', description: '', short_description: '', calc_code: '', dq_checks: [], formula: '', domain_id: null, indicator_type_id: 'de96bd1f-27d1-4f5b-b45e-47fcb16dc7b7', data_asset_ids: [], dq_rules: [],
       examples: '', link: '', datatype_id: null, limits: '', limits_internal: '', roles: '', term_link_ids: []
     },
   });
-  const [ratingData, setRatingData] = useState({ rating: 0, total_rates: 0 });
-  const [ownRating, setOwnRating] = useState(0);
-  const [versions, setVersions] = useState<VersionData[]>([]);
+  const [newFormula, setNewFormula] = useState<string|undefined>(undefined);
 
   const [selectedDataAssetNames, setSelectedDataAssetNames] = useState<any[]>([]);
-
-  const [isCreateMode, setCreateMode] = useState(false);
+  const [selectedTermLinkNames, setSelectedTermLinksNames] = useState<any[]>([]);
   const [showValidation, setShowValidation] = useState(false);
 
   const [isReadOnly, setReadOnly] = useState(true);
@@ -86,18 +70,9 @@ export function Indicator() {
     system_ids: [],
   });
 
-  const [showDelIndicatorDlg, setShowDelIndicatorDlg] = useState(false);
-  const [delIndicatorData, setDelIndicatorData] = useState<any>({ id: '', name: '' });
-
-  const [delObjectData, setDelObjectData] = useState<any>({ id: '', name: '' });
-  const [showDelDlg, setShowDelDlg] = useState(false);
 
   const handleAddEntityDlgClose = () => {
     setShowAddIndicatorDlg(false);
-    return false;
-  };
-  const handleDelEntityDlgClose = () => {
-    setShowDelIndicatorDlg(false);
     return false;
   };
 
@@ -115,85 +90,13 @@ export function Indicator() {
     setNewIndicatorData({ name: '', description: '' });
   };
 
-  const delEntityDlgSubmit = (identity: string) => {
-    setShowDelIndicatorDlg(false);
-    setLoading(true);
-    deleteIndicator(identity)
-      .then(() => {
-        setLoading(false);
-      })
-      .catch(handleHttpError);
-    setDelIndicatorData({ id: '', name: '' });
-  };
-
   useEffect(() => {
     if (id) setIndicatorId(id);
     setIndicatorVersionId(version_id ?? '');
     setDataModified(false);
   }, [id, version_id]);
 
-  const loadIndicatorData = () => {
-    loadEditPageData(indicatorId, indicatorVersionId, setData, setTags, setLoading, setLoaded, getIndicatorVersion, 
-      getIndicator, setRatingData, setOwnRating, getIndicatorVersions, setVersions, setReadOnly);
-    
-  };
-
-  useEffect(() => {
-    setCreateMode(indicatorId === '');
-    if (indicatorId) {
-      if (!indicatorVersionId) { setRecentView('indicator', indicatorId); }
-
-      loadIndicatorData();
-    } else {
-      userInfoRequest().then(resp => {
-        resp.json().then(data => {
-          //console.log('set userp', data.permissions);
-          setCookie('userp', data.permissions.join(','), { path: '/' });
-          setData((prev) => ({ ...prev, metadata: { ...prev.metadata, state: 'DRAFT' }, entity: { ...prev.entity, domain_id: data.user_domains ? data.user_domains[0] : null} }));
-          setDataModified(false);
-          setReadOnly(false);
-          setLoaded(true);
-        });
-      });
-      
-    }
-  }, [indicatorId, indicatorVersionId]);
-
-  useEffect(() => {
-    if (isCreateMode) {
-      if (data.entity.name && data.entity.indicator_type_id && data.entity.description && data.entity.domain_id) {
-        createIndicator({
-          name: data.entity.name,
-          description: data.entity.description,
-          domain_id: data.entity.domain_id,
-          indicator_type_id: data.entity.indicator_type_id,
-        })
-          .then((json) => {
-            setDataModified(false);
-            if (json.metadata.id) {
-              updateArtifactsCount();
-              setIndicatorId(json.metadata.id);
-              window.history.pushState(
-                {},
-                '',
-                `/indicators/edit/${encodeURIComponent(json.metadata.id)}`,
-              );
-            }
-          })
-          .catch(handleHttpError);
-      }
-    }
-  }, [data]);
-
-  useEffect(() => {
-    getIndicatorTypes().then((json) => {
-      const map = new Map();
-      for (let i = 0; i < json.length; i += 1) {
-        map.set(json[i].id, json[i].name);
-      }
-    }).catch(handleHttpError);
-  }, []);
-
+  
   useEffect(() => {
     const a = [];
     for (let i = 0; i < data.entity.data_asset_ids.length; i++) { a.push(''); }
@@ -202,46 +105,26 @@ export function Indicator() {
     data.entity.data_asset_ids.forEach((id, index) => {
       getAsset(id).then((json) => {
         setSelectedDataAssetNames((prev) => ([...prev.slice(0, index), `<div><a href="${getArtifactUrl(json.metadata.id, 'data_asset')}">${json.entity.name}</a></div>`, ...prev.slice(index + 1)]));
+        
       }).catch(handleHttpError);
     });
   }, [data.entity.data_asset_ids]);
 
-  const getIndicatorTypeObj = async (search: string) => getIndicatorTypes().then((json) => {
-    const res = [];
-    const map = new Map();
-    for (let i = 0; i < json.length; i += 1) {
-      res.push({ id: json[i].id, name: json[i].name });
-      map.set(json[i].id, json[i].name);
-    }
-    return res.filter((x) => x.name.toLowerCase().indexOf(search.toLowerCase()) !== -1);
-  });
+  useEffect(() => {
+    const a = [];
+    for (let i = 0; i < data.entity.term_link_ids.length; i++) { a.push(<></>); }
+    setSelectedTermLinksNames(a);
 
-  const getIndicatorTypeDisplayValue = async (i: string) => {
-    if (!i) return '';
+    data.entity.term_link_ids.forEach((id, index) => {
+      getBusinessEntity(id).then((json) => {
+        setSelectedTermLinksNames((prev) => ([...prev.slice(0, index), `<div><a href="${getArtifactUrl(json.metadata.id, 'business_entity')}">${json.entity.name}</a></div>`, ...prev.slice(index + 1)]));
+      }).catch(handleHttpError);
+    });
+  }, [data.entity.term_link_ids]);
 
-    return getIndicatorType(i).then((json: any) => {
-      if (json && json.name) return json.name;
-      return '';
-    }).catch(handleHttpError);
-  };
-
-  const updateIndicatorField = (field: string, value: string | string[] | RawDraftContentState | [] | TDQRule[]) => {
-    if (indicatorId) {
-      const d: any = {};
-      if (typeof value !== 'string' && !Array.isArray(value)) { d[field] = JSON.stringify(value); } else { d[field] = value; }
-      updateIndicator(indicatorId, d)
-        .then((json) => {
-          setDataModified(false);
-          if (json.metadata.id && json.metadata.id !== indicatorId) {
-            navigate(`/indicators/edit/${encodeURIComponent(json.metadata.id)}`);
-          } else { setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } })); }
-        })
-        .catch((err) => { handleHttpError(err); loadIndicatorData(); });
-    } else {
-      setShowValidation(true);
-      setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } }));
-      setDataModified(false);
-    }
+  const updateIndicatorField = (field: string, value: string | string[] | [] | TDQRule[] | undefined) => {
+    setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } }));
+    setDataModified(true);
   };
 
   const addDQRule = () => {
@@ -294,7 +177,7 @@ export function Indicator() {
       (data.entity.dq_rules[index] as TData).metadata.id = uid;
       updateIndicatorField('dq_rules', data.entity.dq_rules);
     }
-    setDataModified(false);
+    setDataModified(true);
   };
 
   const addTermLink = () => {
@@ -315,7 +198,7 @@ export function Indicator() {
     updateIndicatorField('term_link_ids', arr.filter((x) => x));
   };
 
-  const getTermLinkObjects = async (search: string) => getBusinessEntities({
+  const getTermLinkOptions = async (search: string) => getBusinessEntities({
     sort: 'name+',
     global_query: search,
     limit: 1000,
@@ -323,419 +206,307 @@ export function Indicator() {
     filters: [...data.entity.term_link_ids, data.metadata.id, data.metadata.published_id ?? ''].filter((id) => id).map((id) => ({ column: 'id', value: id, operator: 'NOT_EQUAL' })),
     filters_for_join: [],
     state: 'PUBLISHED',
-  }).then((json) => json.items);
-
-  const delDlgSubmit = () => {
-    setShowDelDlg(false);
-    setLoading(true);
-    deleteIndicator(delObjectData.id)
-      .then(json => {
-        updateArtifactsCount();
-        setLoading(false);
-
-        if (json.metadata && json.metadata.id)
-          navigate('/indicators/edit/' + encodeURIComponent(json.metadata.id));
-      })
-      .catch(handleHttpError);
-    setDelObjectData({ id: '', name: '' });
-  };
-
-  const archiveBtnClicked = () => { archiveIndicator(data.metadata.id).then(json => {
-    if (json.metadata.id && json.metadata.id != indicatorId) {
-      navigate(`/indicators/edit/${encodeURIComponent(json.metadata.id)}`);
-    }
-    setDataModified(false);
-  }).catch(handleHttpError); };
-
-  const restoreBtnClicked = () => { restoreIndicator(data.metadata.id).then(json => {
-    if (json.metadata.id && json.metadata.id != indicatorId) {
-      navigate(`/indicators/edit/${encodeURIComponent(json.metadata.id)}`);
-    }
-    setDataModified(false);
-  }).catch(handleHttpError); };
+  }).then((json) => json.items.map((item: any) => ({ value: item.id, label: item.name, name: item.name })));
 
   return (
-    <div className={classNames(styles.page, styles.indicatorPage, { [styles.loaded]: isLoaded })}>
-      <div className={styles.mainContent}>
-      {indicatorVersionId && (
-          <Button onClick={() => {
-            restoreIndicatorVersion(indicatorId, indicatorVersionId).then(json => {
-              setDataModified(false);
-              if (json.metadata.id && json.metadata.id !== indicatorId) {
-                navigate(`/indicators/edit/${encodeURIComponent(json.metadata.id)}`);
-              } else { setData(json); }
-            }).catch(handleHttpError);
-          }}>{i18n('Восстановить')}</Button>
-        )}
-        {!indicatorVersionId && (
-          <WFItemControl
-            key={`wfc-indicator-` + data?.metadata?.workflow_task_id}
-            itemMetadata={data.metadata}
-            itemIsReadOnly={isReadOnly}
-            onEditClicked={() => { setReadOnly(false); }}
-            onArchiveClicked={archiveBtnClicked}
-            onRestoreClicked={restoreBtnClicked}
-            onDeleteClicked={() => { setDelObjectData({ id: data.metadata.id, name: data.entity.name }); setShowDelDlg(true); }}
-            onObjectIdChanged={(localIndicatorId) => {
-              if (localIndicatorId) {
-                setIndicatorId(localIndicatorId);
-                window.history.pushState(
-                  {},
-                  '',
-                  `/indicators/edit/${encodeURIComponent(localIndicatorId)}`,
-                );
-              } else navigate('/indicators/');
-            }}
-            onObjectDataChanged={(data) => {
-              setData(data);
-              setDataModified(false);
-              setBreadcrumbEntityName(indicatorId, data.entity.name);
-              setTags(data.metadata.tags ? data.metadata.tags.map((x: any) => ({ value: x.name })) : []);
-              
-              updateEditPageReadOnly(data, setReadOnly, () => {  setLoading(false); setLoaded(true); });
-            }}
-          />
-        )}
+    <>
+      <EditPage objectId={indicatorId} objectVersionId={indicatorVersionId} data={data} restoreVersion={restoreIndicatorVersion} urlSlug='indicators' setData={setData} isReadOnly={isReadOnly} setReadOnly={setReadOnly}
+              archiveObject={archiveIndicator} artifactType='indicator' setTags={setTags} getObjectVersion={getIndicatorVersion} getObjectVersions={getIndicatorVersions} getObject={getIndicator} deleteObject={deleteIndicator}
+              restoreObject={restoreIndicator} updateObject={(id, data) => { return updateIndicator(id, {...data, formula: typeof newFormula === 'undefined' ? data.formula : newFormula }) }} tabs={[
+              {
+                key: 'tab-gen',
+                title: i18n('Сведения'),
+                unscrollable: true,
+                content: <div className={styles.tab_2col}>
+                  <div className={classNames(styles.col, styles.scrollable)}>
+                    <h2>Общая информация</h2>
+                    {data.metadata.state != 'ARCHIVED' && (
+                      <div>
+                        <button className={styles.btn_scheme} onClick={() => { doNavigate(`/indicators-model/${encodeURIComponent(indicatorId)}`, navigate); }}>{i18n('Смотреть схему')}</button>
+                      </div>
+                    )}
 
-        <div className={styles.title}>
-          <FieldEditor
-            isReadOnly={isReadOnly}
-            labelPrefix={`${i18n('ПОКАЗАТЕЛЬ')}: `}
-            defaultValue={data.entity.name}
-            className={styles.title}
-            valueSubmitted={(val) => {
-              updateIndicatorField('name', val.toString());
-            }}
-            isRequired
-            onBlur={(val) => {
-              updateIndicatorField('name', val);
-            }}
-            showValidation={showValidation}
-          />
-        </div>
+                    <FieldTextEditor
+                        isReadOnly={isReadOnly}
+                        label={i18n('Название')}
+                        defaultValue={data.entity.name}
+                        className=''
+                        valueSubmitted={(val) => {
+                          updateIndicatorField('name', val);
+                        }}
+                      />
 
-        {!isCreateMode && data.metadata.state != 'ARCHIVED' && (
-          <button className={styles.btn_scheme} onClick={() => { doNavigate(`/indicators-model/${encodeURIComponent(indicatorId)}`, navigate); }}>{i18n('Схема')}</button>
+                    <FieldAutocompleteEditor
+                        label={i18n('Тип')}
+                        isReadOnly={isReadOnly}
+                        defaultValue={data.entity.indicator_type_id}
+                        valueSubmitted={(identity) => updateIndicatorField('indicator_type_id', identity)}
+                        getDisplayValue={getIndicatorTypeDisplayValue}
+                        getObjects={getIndicatorTypeAutocompleteObjects}
+                        isRequired
+                        showValidation={showValidation}
+                      />
 
-        )}
+                    <FieldAutocompleteEditor
+                      label={i18n('Домен')}
+                      defaultValue={data.entity.domain_id}
+                      valueSubmitted={(i) => updateIndicatorField('domain_id', i)}
+                      getDisplayValue={getDomainDisplayValue}
+                      getObjects={getDomainAutocompleteObjects}
+                      showValidation={showValidation}
+                      artifactType="domain"
+                      isReadOnly={isReadOnly}
+                      allowClear
+                    />
 
-        {!isCreateMode && (
-          <Tags
-            key={'tags-' + indicatorId + '-' + indicatorVersionId + '-' + uuid()}
-            tags={tags}
-            isReadOnly={isReadOnly}
-            onTagAdded={(tagName: string) => tagAddedHandler(tagName, indicatorId, 'indicator', data.metadata.state ?? '', tags, setLoading, setTags, '/indicators/edit/', navigate)}
-            onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, indicatorId, 'indicator', data.metadata.state ?? '', setLoading, setTags, '/indicators/edit/', navigate)}
-          />
-        )}
+                    <FieldTextareaEditor
+                        isReadOnly={isReadOnly}
+                        label={i18n('Описание')}
+                        defaultValue={data.entity.short_description}
+                        valueSubmitted={(val) => {
+                          updateIndicatorField('short_description', val ?? '');
+                        }}
+                      />
 
-        <FieldAutocompleteEditor
-          className={styles.long_input}
-          label={i18n('Тип')}
-          isReadOnly={isReadOnly}
-          defaultValue={data.entity.indicator_type_id}
-          valueSubmitted={(identity) => updateIndicatorField('indicator_type_id', identity)}
-          getDisplayValue={getIndicatorTypeDisplayValue}
-          getObjects={getIndicatorTypeObj}
-          isRequired
-          showValidation={showValidation}
-        />
+                    <div data-uitest="indicator_tag" className={styles.tags_block}>
+                      <div className={styles.label}>{i18n('Теги')}</div>
+                      <Tags
+                        key={'tags-' + indicatorId + '-' + indicatorVersionId + '-' + uuid()}
+                        isReadOnly={isReadOnly}
+                        tags={tags}
+                        tagPrefix='#'
+                        onTagAdded={(tagName: string) => tagAddedHandler(tagName, indicatorId, 'indicator', data.metadata.state ?? '', tags, setLoading, setTags, '/indicators/edit/', navigate)}
+                        onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, indicatorId, 'indicator', data.metadata.state ?? '', setLoading, setTags, '/indicators/edit/', navigate)}
+                      />
+                    </div>
+                  </div>
+                  <div className={classNames(styles.col, styles.scrollable)}>
+                    <h2>Дополнительные параметры</h2>
 
-        {!isCreateMode && (
-          <div className={styles.data_row}>
-            <FieldEditor
-              isReadOnly={isReadOnly}
-              layout="separated"
-              labelPrefix={`${i18n('Код')}`}
-              defaultValue={data.entity.calc_code}
-              className={styles.editor}
-              valueSubmitted={(val) => {
-                updateIndicatorField('calc_code', val.toString());
-              }}
-            />
-          </div>
-        )}
-        
-          <div className={styles.description}>
-              <FieldVisualEditor
-                isReadOnly={isReadOnly}
-                labelPrefix={`${i18n('Описание')}`}
-                isRequired
-                showValidation={showValidation}
-                defaultValue={data.entity.description}
-                className={styles.editor}
-                valueSubmitted={(val) => {
-                  updateIndicatorField('description', val.toString());
-                }}
-              />
-          </div>
-        
+                    <FieldTextEditor
+                      isReadOnly={isReadOnly}
+                      label={i18n('Код')}
+                      defaultValue={data.entity.calc_code}
+                      valueSubmitted={(val) => {
+                        updateIndicatorField('calc_code', val);
+                      }}
+                    />
 
-          <div className={styles.domain}>
-            <FieldAutocompleteEditor
-              className={styles.long_input}
-              label={`${i18n('Домен')}`}
-              allowClear
-              defaultValue={data.entity.domain_id}
-              valueSubmitted={(i) => updateIndicatorField('domain_id', i)}
-              getDisplayValue={getDomainDisplayValue}
-              getObjects={getDomainAutocompleteObjects}
-              isRequired
-              showValidation={showValidation}
-              artifactType="domain"
-              isReadOnly={isReadOnly}
-            />
-          </div>
+                    <FieldTextEditor
+                      isReadOnly={isReadOnly}
+                      label={i18n('Примеры значений')}
+                      defaultValue={data.entity.examples}
+                      valueSubmitted={(val) => {
+                        updateIndicatorField('examples', val);
+                      }}
+                    />
 
-        {!isCreateMode && (
-          <div className={styles.data_row}>
-            <FieldEditor
-              isReadOnly={isReadOnly}
-              layout="separated"
-              labelPrefix={`${i18n('Примеры значений')} `}
-              defaultValue={data.entity.examples}
-              className={styles.editor}
-              valueSubmitted={(val) => {
-                updateIndicatorField('examples', val.toString());
-              }}
-            />
-          </div>
-        )}
-        {!isCreateMode && (
-          <div className={styles.data_row}>
-            <FieldEditor
-              isReadOnly={isReadOnly}
-              layout="separated"
-              labelPrefix={`${i18n('Ссылка на справочник')} `}
-              defaultValue={data.entity.link}
-              className={styles.editor}
-              valueSubmitted={(val) => {
-                updateIndicatorField('link', val.toString());
-              }}
-            />
-          </div>
-        )}
-        {!isCreateMode && (
-          <div className={styles.data_row}>
-            <FieldAutocompleteEditor
-              className={styles.editor}
-              label={i18n('Тип данных')}
-              defaultValue={data.entity.datatype_id}
-              valueSubmitted={(i) => updateIndicatorField('datatype_id', i)}
-              getDisplayValue={getDataTypeDisplayValue}
-              getObjects={getDataTypeAutocompleteObjects}
-              showValidation={showValidation}
-              artifactType="datatype"
-              isReadOnly={isReadOnly}
-              allowClear
-            />
-          </div>
-          )}
-          {!isCreateMode && (
-            <div className={styles.data_row}>
-              <FieldEditor
-                isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${i18n('Законодательные ограничения')} `}
-                defaultValue={data.entity.limits}
-                className={styles.editor}
-                valueSubmitted={(val) => {
-                  updateIndicatorField('limits', val.toString());
-                }}
-              />
-            </div>
-          )}
-          {!isCreateMode && (
-            <div className={styles.data_row}>
-              <FieldEditor
-                isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${i18n('Внутренние ограничения')} `}
-                defaultValue={data.entity.limits_internal}
-                className={styles.editor}
-                valueSubmitted={(val) => {
-                  updateIndicatorField('limits_internal', val.toString());
-                }}
-              />
-            </div>
-          )}
-          {!isCreateMode && (
-            <div className={styles.data_row}>
-              <FieldEditor
-                isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${i18n('Ключевые роли процесса')} `}
-                defaultValue={data.entity.roles}
-                className={styles.editor}
-                valueSubmitted={(val) => {
-                  updateIndicatorField('roles', val.toString());
-                }}
-              />
-            </div>
-          )}
-          {!isCreateMode && (
-            <div className={classNames(styles.data_row, styles.synonyms_row)}>
-              <div className={styles.synonyms_head}>
-                <label>{`${i18n('Ссылки на другие Термины')}`}</label>
-                {!isReadOnly && (<PlusInCircle onClick={addTermLink} />)}
-              </div>
-              {(data.entity.term_link_ids ?? []).map((sId, k) => (
-                <div key={`si22${k}-${sId}`} className={styles.synonym_item}>
-                  <FieldAutocompleteEditor
-                    key={`se22${k}`}
-                    className={styles.long_input}
-                    isReadOnly={isReadOnly}
-                    label=""
-                    defaultValue={sId}
-                    valueSubmitted={(identity) => updateTermLink(k, identity)}
-                    getDisplayValue={getBusinessEntityDisplayValue}
-                    getObjects={getTermLinkObjects}
-                  />
-                  {!isReadOnly && (<Close key={`ds22${k}`} onClick={() => delTermLink(k)} />)}
+                    <FieldTextEditor
+                      isReadOnly={isReadOnly}
+                      label={i18n('Ссылка на справочник')}
+                      defaultValue={data.entity.link}
+                      className={styles.editor}
+                      valueSubmitted={(val) => {
+                        updateIndicatorField('link', val);
+                      }}
+                    />
+
+                    <FieldAutocompleteEditor
+                      label={i18n('Тип данных')}
+                      defaultValue={data.entity.datatype_id}
+                      valueSubmitted={(i) => updateIndicatorField('datatype_id', i)}
+                      getDisplayValue={getDataTypeDisplayValue}
+                      getObjects={getDataTypeAutocompleteObjects}
+                      showValidation={showValidation}
+                      artifactType="datatype"
+                      isReadOnly={isReadOnly}
+                      allowClear
+                    />
+
+                    <FieldTextEditor
+                      isReadOnly={isReadOnly}
+                      label={i18n('Законодательные ограничения')}
+                      defaultValue={data.entity.limits}
+                      className={styles.editor}
+                      valueSubmitted={(val) => {
+                        updateIndicatorField('limits', val);
+                      }}
+                    />
+
+                    <FieldTextEditor
+                      isReadOnly={isReadOnly}
+                      label={i18n('Внутренние ограничения')}
+                      defaultValue={data.entity.limits_internal}
+                      valueSubmitted={(val) => {
+                        updateIndicatorField('limits_internal', val);
+                      }}
+                    />
+
+                    <FieldTextEditor
+                      isReadOnly={isReadOnly}
+                      label={i18n('Ключевые роли процесса')}
+                      defaultValue={data.entity.roles}
+                      valueSubmitted={(val) => {
+                        updateIndicatorField('roles', val);
+                      }}
+                    />
+
+                    <FieldArrayEditor
+                        key={`ed-terms-${indicatorId}`}
+                        getOptions={getTermLinkOptions}
+                        isReadOnly={isReadOnly}
+                        label={i18n('Ссылки на другие Термины')}
+                        defaultValue={selectedTermLinkNames}
+                        inputPlaceholder={i18n('Выберите глоссарий')}
+                        addBtnText={i18n('Добавить')}
+                        valueSubmitted={() => { updateIndicatorField('term_link_ids', data.entity.term_link_ids); }}
+                        onValueIdAdded={(id: string, name: string) => {
+                          setData((prev) => ({ ...prev, entity: { ...prev.entity, term_link_ids: [...prev.entity.term_link_ids, id] } }));
+                        }}
+                        onValueIdRemoved={(id: string) => {
+                          const arr = [...data.entity.term_link_ids];
+                          arr.splice(parseInt(id), 1);
+                          setData((prev) => ({ ...prev, entity: { ...prev.entity, term_link_ids: arr } }));
+                        }}
+                      />
+
+                    <FieldArrayEditor
+                      isReadOnly={isReadOnly}
+                      label={i18n('Проверка')}
+                      defaultValue={data.entity.dq_checks}
+                      valueSubmitted={(val) => {
+                        updateIndicatorField('dq_checks', val);
+                      }}
+                      isRequired
+                      showValidation={showValidation}
+                      addBtnText={i18n('Добавить проверку')}
+                      inputPlaceholder={i18n('Введите проверку')}
+                    />
+
+                    <FieldArrayEditor
+                      key={`ed-dass-${indicatorId}`}
+                      getOptions={getDataAssetOptions}
+                      isReadOnly={isReadOnly}
+                      label={i18n('Активы')}
+                      defaultValue={selectedDataAssetNames}
+                      inputPlaceholder={i18n('Выберите актив')}
+                      addBtnText={i18n('Добавить')}
+                      valueSubmitted={() => { updateIndicatorField('data_asset_ids', data.entity.data_asset_ids); }}
+                      onValueIdAdded={(id: string, name: string) => {
+                        setData((prev) => ({ ...prev, entity: { ...prev.entity, data_asset_ids: [...prev.entity.data_asset_ids, id] } }));
+                      }}
+                      onValueIdRemoved={(id: string) => {
+                        const arr = [...data.entity.data_asset_ids];
+                        arr.splice(parseInt(id), 1);
+                        setData((prev) => ({ ...prev, entity: { ...prev.entity, data_asset_ids: arr } }));
+                      }}
+                    />
+
+                    <FieldTextEditor key={`feFormula${data.metadata.id ?? ''}`} isReadOnly={isReadOnly} 
+                      label={i18n("Формула")} isDraftJS mentionParameter={indicatorId} 
+                      defaultValue={data.entity.formula} valueSubmitted={(v) => { setNewFormula(v); setDataModified(true); }} 
+                    />
+
+                    
+                  </div>
                 </div>
-              ))}
-            </div>
+              },
+              {
+                key: 'tab-related',
+                title: i18n('Связи'),
+                content: <div className={styles.tab_white}>
+                  
 
-        )}
-
-        {!isCreateMode && (
-          <div className={styles.data_row}>
-            <FieldArrayEditor
-              isReadOnly={isReadOnly}
-              layout="separated"
-              labelPrefix={`${i18n('Проверка')}`}
-              defaultValue={data.entity.dq_checks}
-              className={styles.editor}
-              valueSubmitted={(val) => {
-                updateIndicatorField('dq_checks', val);
-              }}
-              isRequired
-              showValidation={showValidation}
-              addBtnText={i18n('Добавить проверку')}
-              inputPlaceholder={i18n('Введите проверку')}
-            />
-          </div>
-        )}
-        {!isCreateMode && (
-          <div className={styles.data_row} data-uitest="da_asset">
-            <FieldArrayEditor
-              key={`ed-dass-${indicatorId}`}
-              getOptions={getDataAssetOptions}
-              isReadOnly={isReadOnly}
-              layout="separated"
-              labelPrefix={`${i18n('Активы')}`}
-              className={styles.long_input}
-              defaultValue={selectedDataAssetNames}
-              inputPlaceholder={i18n('Выберите актив')}
-              addBtnText={i18n('Добавить')}
-              valueSubmitted={() => { updateIndicatorField('data_asset_ids', data.entity.data_asset_ids); }}
-              onValueIdAdded={(id: string, name: string) => {
-                setData((prev) => ({ ...prev, entity: { ...prev.entity, data_asset_ids: [...prev.entity.data_asset_ids, id] } }));
-              }}
-              onValueIdRemoved={(id: string) => {
-                const arr = [...data.entity.data_asset_ids];
-                arr.splice(parseInt(id), 1);
-                setData((prev) => ({ ...prev, entity: { ...prev.entity, data_asset_ids: arr } }));
-              }}
-            />
-          </div>
-        )}
-        {!isCreateMode && (
-          <div className={styles.date_row} data-uitest="formula">
-            <FieldEditor key={`feFormula${data.metadata.id ?? ''}`} isReadOnly={isReadOnly} layout="separated" labelPrefix="Формула" isDraftJS mentionParameter={indicatorId} className="" defaultValue={data.entity.formula} valueSubmitted={(v) => { updateIndicatorField('formula', v); }} />
-          </div>
-        )}
-
-        {!isCreateMode && (
-          <div className={styles.dqrule_wrap}>
-            <div className={styles.dqrule_head}>
-              <label>{`${i18n('Правила проверки качества')}`}</label>
-              {!isReadOnly && (<PlusInCircle onClick={addDQRule} />)}
-            </div>
-            {data.entity.dq_rules && data.entity.dq_rules.map((v, index) => (
-              <div key={`d${(v as TData).metadata.id}`} className={styles.dqrule_item}>
-                <FieldAutocompleteEditor
-                  key={`se${(v as TData).metadata.id}`}
-                  className={styles.long_input}
-                  isReadOnly={isReadOnly}
-                  label=""
-                  defaultValue={(v as TData).entity.dq_rule_id}
-                  valueSubmitted={(val) => updateDQRuleField(index, (v as TData).metadata.id, 'dq_rule_id', val)}
-                  getDisplayValue={getDQRuleDisplayValue}
-                  getObjects={getDQRuleAutocompleteObjects}
-                  artifactType="dq_rule"
-                />
-                <FieldEditor
-                  key={`fe${(v as TData).metadata.id}`}
-                  isReadOnly={isReadOnly}
-                  labelPrefix={`${i18n('Настройки')}: `}
-                  defaultValue={(v as TData).entity.settings}
-                  className={styles.long_input}
-                  valueSubmitted={(val) => {
-                    updateDQRuleField(index, (v as TData).metadata.id, 'settings', (val as string));
-                  }}
-                  isRequired
-                  isMultiline
-                  onBlur={(val) => {
-                    updateDQRuleField(index, (v as TData).metadata.id, 'settings', (val as string));
-                  }}
-                  showValidation={showValidation}
-                />
-                <FieldCheckboxEditor
-                  key={`ce1${(v as TData).metadata.id}`}
-                  isReadOnly={isReadOnly}
-                  labelPrefix={i18n('Выключена')}
-                  defaultValue={Boolean((v as TData).entity.disabled)}
-                  className=""
-                  layout="separated"
-                  valueSubmitted={(val) => {
-                    updateDQRuleField(index, (v as TData).metadata.id, 'disabled', String(val));
-                  }}
-                  isRequired
-                  showValidation={showValidation}
-                />
-                <FieldCheckboxEditor
-                  key={`ce2${(v as TData).metadata.id}`}
-                  isReadOnly={isReadOnly}
-                  labelPrefix={i18n('Рассылать уведомления об ошибках')}
-                  defaultValue={Boolean((v as TData).entity.send_mail)}
-                  className=""
-                  layout="separated"
-                  valueSubmitted={(val) => {
-                    updateDQRuleField(index, (v as TData).metadata.id, 'send_mail', String(val));
-                  }}
-                  isRequired
-                  showValidation={showValidation}
-                />
-                <div key={`d${(v as TData).metadata.id}`} className={styles.dqrule_close}>
-                  <CloseIcon key={`fec${(v as TData).metadata.id}`} onClick={() => delDQRule(index, (v as TData).metadata.id)} />
+                  <RelatedObjectsControl artifactId={indicatorId} artifactType='indicator'></RelatedObjectsControl>
                 </div>
-              </div>
-            ))}
+              },
+              {
+                key: 'tab-dq',
+                title: i18n('Настройки качества'),
+                content: (
+                  <div className={classNames(styles.dqrule_wrap, styles.tab_white)}>
+                      <div className={styles.dqrule_head}>
+                        <label>{`${i18n('Правила проверки качества')}`}</label>
+                        {!isReadOnly && (<PlusInCircle onClick={addDQRule} />)}
+                      </div>
+                      {data.entity.dq_rules && data.entity.dq_rules.map((v, index) => (
+                        <div key={`d${(v as TData).metadata.id ? (v as TData).metadata.id : uuid()}`} className={styles.dqrule_item}>
+                          <FieldAutocompleteEditor
+                            key={`se${(v as TData).metadata.id}`}
+                            isReadOnly={isReadOnly}
+                            label={i18n('Правило')}
+                            className={styles.col1}
+                            defaultValue={(v as TData).entity.dq_rule_id}
+                            valueSubmitted={(val) => updateDQRuleField(index, (v as TData).metadata.id, 'dq_rule_id', val)}
+                            getDisplayValue={getDQRuleDisplayValue}
+                            getObjects={getDQRuleAutocompleteObjects}
+                            artifactType="dq_rule"
+                          />
+                          <FieldTextEditor
+                            key={`fe${(v as TData).metadata.id}`}
+                            isReadOnly={isReadOnly}
+                            label={i18n('Настройки')}
+                            className={styles.col2}
+                            defaultValue={(v as TData).entity.settings}
+                            valueSubmitted={(val) => {
+                              updateDQRuleField(index, (v as TData).metadata.id, 'settings', (val as string));
+                            }}
+                            isRequired
+                            showValidation={showValidation}
+                          />
+                          <FieldCheckboxEditor
+                            key={`ce1${(v as TData).metadata.id}`}
+                            isReadOnly={isReadOnly}
+                            label={i18n('Выключена')}
+                            defaultValue={Boolean((v as TData).entity.disabled)}
+                            className={styles.col3}
+                            valueSubmitted={(val) => {
+                              updateDQRuleField(index, (v as TData).metadata.id, 'disabled', String(val));
+                            }}
+                            isRequired
+                            showValidation={showValidation}
+                          />
+                          <FieldCheckboxEditor
+                            key={`ce2${(v as TData).metadata.id}`}
+                            isReadOnly={isReadOnly}
+                            label={i18n('Рассылать уведомления об ошибках')}
+                            defaultValue={Boolean((v as TData).entity.send_mail)}
+                            className={styles.col4}
+                            valueSubmitted={(val) => {
+                              updateDQRuleField(index, (v as TData).metadata.id, 'send_mail', String(val));
+                            }}
+                            isRequired
+                            showValidation={showValidation}
+                          />
+                          {!isReadOnly && (
+                            <div key={`d${(v as TData).metadata.id}`} className={styles.dqrule_close}>
+                              <CloseIcon key={`fec${(v as TData).metadata.id}`} onClick={() => delDQRule(index, (v as TData).metadata.id)} />
+                            </div>
+                          )}
+                        </div>
+                      ))}
 
-          </div>
-        )}
+                    </div>
+                )
+              },
+              {
+                key: 'tab-desc',
+                title: i18n('Расширенное описание'),
+                content: <div className={styles.tab_transparent}>
 
-        <RelatedObjectsControl artifactId={indicatorId} artifactType='indicator'></RelatedObjectsControl>
-      </div>
-      {!isCreateMode && (
-        <div className={styles.rightBar}>
-          {(data.metadata.state == 'PUBLISHED' || data.metadata.state == 'ARCHIVED') && (
-            <Versions
-              rating={ratingData.rating}
-              ownRating={ownRating}
-              version_id={indicatorVersionId || data.metadata.version_id}
-              versions={versions}
-              version_url_pattern={`/indicators/${encodeURIComponent(indicatorId)}/version/{version_id}`}
-              root_object_url={`/indicators/edit/${encodeURIComponent(indicatorId)}`}
-              onRateClick={r => rateClickedHandler(r, indicatorId, 'indicator', setOwnRating, setRatingData)}
-            />
-          )}
-          {data.metadata.state === 'PUBLISHED' && (
-            <Responsibles domain_id={(data && data.entity && data.entity.domain_id) ? data.entity.domain_id : null}></Responsibles>
-          )}
-        </div>
-      )}
+                  <FieldVisualEditor
+                      isReadOnly={isReadOnly}
+                      defaultValue={data.entity.description}
+                      className=''
+                      valueSubmitted={(val) => {
+                        updateIndicatorField('description', val);
+                      }}
+                    />  
+                
+                </div>
+              }
+            ]} />
+      
 
       <Modal
         show={showAddEntityDlg}
@@ -776,38 +547,6 @@ export function Indicator() {
           </Button>
         </Modal.Footer>
       </Modal>
-
-      <Modal
-        show={showDelIndicatorDlg}
-        backdrop={false}
-        onHide={handleDelEntityDlgClose}
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>
-            Вы действительно хотите удалить
-            {' '}
-            {delIndicatorData.name}
-            ?
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body />
-        <Modal.Footer>
-          <Button
-            variant="primary"
-            onClick={() => delEntityDlgSubmit(delIndicatorData.id)}
-          >
-            Удалить
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={handleDelEntityDlgClose}
-          >
-            Отмена
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      <DeleteObjectModal show={showDelDlg} objectTitle={delObjectData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />
-    </div>
+    </>
   );
 }

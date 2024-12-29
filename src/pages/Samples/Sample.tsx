@@ -13,50 +13,46 @@ import useUrlState from '@ahooksjs/use-url-state';
 import { v4 } from 'uuid';
 import styles from './Samples.module.scss';
 import { ReactComponent as CloseIcon } from '../../assets/icons/close.svg';
-import { ReactComponent as PlusInCircle } from '../../assets/icons/plus-in-circle.svg';
+import { ReactComponent as PlusInCircle } from '../../assets/icons/plus-blue.svg';
 import {
-  doNavigate, getCookie, getDQRuleAutocompleteObjects, getDQRuleDisplayValue, getDQRuleSettings, handleHttpError, handleHttpResponse, i18n, setDataModified, updateArtifactsCount, uuid,
+  doNavigate, getCookie, getDQRuleAutocompleteObjects, getDQRuleDisplayValue, getDQRuleSettings, getEntityAutocompleteObjects, getEntityDisplayValue, getQueryAutocompleteObjects, getQueryDisplayValue, getSystemAutocompleteObjects, getSystemDisplayValue, handleHttpError, handleHttpResponse, i18n, setDataModified, tagAddedHandler, tagDeletedHandler, updateArtifactsCount, uuid,
 } from '../../utils';
 import { optionsGet, URL } from '../../services/requst_templates';
-import { getRatingData, getOwnRatingData, setRating } from '../../services/pages/rating';
-import { addTag, deleteTag } from '../../services/pages/tags';
 import { Tags, TagProp } from '../../components/Tags';
-import { VersionData } from '../../components/Versions';
-import { Tabs } from '../../components/Tabs';
-import { FieldEditor } from '../../components/FieldEditor';
 
 import {
-  createSample,
   deleteSampleProperty,
   getSample,
   getSampleBody,
-  getSampleProperties,
-  getSampleVersions,
   updateSample,
   updateSampleProperty,
   updateSampleDQRule,
   deleteSampleDQRule,
   createSampleDQRule,
+  deleteSample,
+  getSampleProperties,
 } from '../../services/pages/samples';
 import { Autocomplete } from '../../components/Autocomplete';
-import { getEntities, getEntity, getEntityAttributes } from '../../services/pages/dataEntities';
+import { getEntityAttributes } from '../../services/pages/dataEntities';
 import { FieldAutocompleteEditor } from '../../components/FieldAutocompleteEditor';
-import { getSystem, getSystems } from '../../services/pages/systems';
-import { getEntityQueries, getEntityQuery } from '../../services/pages/entityQueries';
 import { fetchWithRefresh } from '../../services/auth';
 import { FieldCheckboxEditor } from '../../components/FieldCheckboxEditor';
-import { setRecentView } from '../../services/pages/recentviews';
 import { TData, TDQRule } from '../../types/data';
 import { getUserByLogin } from '../../services/pages/users';
 import { FieldVisualEditor } from '../../components/FieldVisualEditor';
+import { searchMetaColumns } from '../../services/pages/metadata';
+import { EditPage } from '../../components/EditPage';
+import classNames from 'classnames';
+import { FieldTextEditor } from '../../components/FieldTextEditor';
+import { RelatedObjectsControl } from '../../components/RelatedObjectsControl';
 
 export function Sample() {
   const navigate = useNavigate();
-
+  const [, setLoading] = useState(true);
+  const [isLoaded, setLoaded] = useState(false);
   const [state, setState] = useUrlState({
     t: '1',
   }, { navigateMode: 'replace' });
-  const [, setLoading] = useState(true);
   const [data, setData] = useState({
     entity: {
       name: '',
@@ -71,18 +67,15 @@ export function Sample() {
     },
     metadata: { version_id: '', tags: [] },
   });
-  const [ratingData, setRatingData] = useState({ rating: 0, total_rates: 0 });
-  const [ownRating, setOwnRating] = useState(0);
-  const [versions, setVersions] = useState<VersionData[]>([]);
   const [tags, setTags] = useState<TagProp[]>([]);
   const [showDelPropDlg, setShowDelPropDlg] = useState(false);
   const [delPropData, setDelPropData] = useState({ id: '', name: '' });
   const [sampleBody, setSampleBody] = useState<any>('');
   const [sampleProperties, setSampleProperties] = useState<any[]>([]);
   const [entityAttributes, setEntityAttributes] = useState([]);
-  const [isCreateMode, setCreateMode] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
   const [sampleId, setSampleId] = useState<string>('');
+  const [isReadOnly, setReadOnly] = useState(true);
 
   const handleDelPropDlgClose = () => {
     setShowDelPropDlg(false);
@@ -106,6 +99,12 @@ export function Sample() {
     if (!sampleId && id) setSampleId(id);
     setDataModified(false);
   }, [id]);
+
+  const getMetaColumnObjects = async (search: string) => {
+    return await searchMetaColumns({ sort: 'name+', global_query: '', limit: 1000, offset: 0, filters: [{ column: 'tbl1.system_id', value: data.entity.system_id, operator: 'EQUAL' }, { column: '(tbl1.schema_name || \'.\' || tbl1.meta_object_name || \'.\' || tbl1.name)', value: search, operator: 'LIKE' }], filters_for_join: [] }).then(json => {
+      return json.items.map((itm:any) => ({ id: itm.id, name: itm.schema_name + '.' + itm.meta_object_name + '.' + itm.name + ' (версия ' + itm.version_id + ')' }));
+    })
+  }
 
   const getEntityAttrObjects = async (search: string) => entityAttributes
     .map((attr: any) => ({ id: attr.metadata.id, name: attr.entity.name }))
@@ -163,15 +162,15 @@ export function Sample() {
       setData((prev: any) => ({ ...prev, entity: { ...prev.entity, dq_rules: data.entity.dq_rules } }));
       createSampleDQRule(sampleId, (data.entity.dq_rules[index] as TData).entity);
     }
-    setDataModified(false);
+    setDataModified(true);
   };
 
   const tabs = [
     {
       key: 'tab-data',
-      title: i18n('ДАННЫЕ'),
+      title: i18n('Данные'),
       content: (
-        <div className={styles.tab_data}>
+        <div className={classNames(styles.tab_data, styles.tab_white)}>
           <form
             id="formSampleUpload"
             target="_blank"
@@ -259,7 +258,7 @@ export function Sample() {
                       {sampleBody.records.map((rec: any) => (
                         <tr key={uuid()}>
                           {rec.map((x: string) => (
-                            <td>{x}</td>
+                            <td key={uuid()}>{x}</td>
                           ))}
                         </tr>
                       ))}
@@ -283,20 +282,22 @@ export function Sample() {
     },
     {
       key: 'tab-props',
-      title: i18n('МЭППИНГ С ЛОГИЧЕСКОЙ СИСТЕМОЙ'),
+      title: i18n('Мэппинг'),
       content: (
-        <table className={styles.tbl_mappings}>
+        <table className={classNames(styles.tbl_mappings, styles.tab_white)}>
           <thead>
             <tr>
               <th>Свойство сэмпла</th>
-              <th>Свойство логического объекта</th>
+              <th>Свойство модели</th>
+              <th>&nbsp;</th>
+              <th style={{width:'500px'}}>Метаданные</th>
               <th>&nbsp;</th>
             </tr>
           </thead>
           <tbody>
             {sampleProperties.map((prop: any) => (
               <tr
-                key={`row_prop_${prop.id}`}
+                key={`row_prop_${prop.id}_${(prop.mapped_attribute_ids ?? []).length}_${uuid()}`}
                 className={styles.row_property}
               >
                 <td className={styles.name}>{prop.name}</td>
@@ -307,7 +308,8 @@ export function Sample() {
                       name: attr.entity.name,
                     }))}
                     getOptions={getEntityAttrObjects}
-                    inputValue={prop.entity_attribute_name}
+                    defaultInputValue={prop.entity_attribute_name}
+                    
                     onChanged={(d: any) => {
                       updateSampleProperty(prop.id, {
                         entity_sample_id: sampleId,
@@ -352,6 +354,53 @@ export function Sample() {
                     }}
                   />
                 </td>
+
+                <td className={styles.val}>
+                  <Autocomplete 
+                    getOptions={getMetaColumnObjects}
+                    inputValue={prop.meta_column_name}
+                    onChanged={(d: any) => {
+                      updateSampleProperty(prop.id, { entity_sample_id: sampleId, mapped_meta_column_id: d.id, }).then(() => {
+                        setSampleProperties(
+                          sampleProperties.map((p: any) => {
+                            if (p.id === prop.id) {
+                              return {
+                                ...p,
+                                //mapped_attribute_ids: [d.id],
+                                meta_column_id: d.id,
+                                meta_column_name: d.name
+                              };
+                            }
+                            return p;
+                          }),
+                        );
+                      });
+                    }}
+                  />
+                </td>
+                <td className={styles.actions}>
+                  <CloseIcon
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => {
+                      updateSampleProperty(prop.id, { entity_sample_id: sampleId, mapped_meta_column_id: '' }).then((json) => {
+                        if (json && json.metadata && json.metadata.id) {
+                          setSampleProperties(
+                            sampleProperties.map((p: any) => {
+                              if (p.id === prop.id) {
+                                return {
+                                  ...p,
+                                  meta_column_id: '',
+                                  meta_column_name: '',
+                                };
+                              }
+                              return p;
+                            }),
+                          );
+                        }
+                      });
+                    }}
+                  />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -360,49 +409,46 @@ export function Sample() {
     },
     {
       key: 'tab-dq',
-      title: i18n('НАСТРОЙКИ КАЧЕСТВА'),
+      title: i18n('Настройки качества'),
       content: (
-        <div className={styles.dqrule_wrap}>
+        <div className={classNames(styles.dqrule_wrap, styles.tab_white)}>
           <div className={styles.dqrule_head}>
             <label>{`${i18n('Правила проверки качества')}:`}</label>
-            <PlusInCircle onClick={addDQRule} />
+            {!isReadOnly && (
+              <PlusInCircle onClick={addDQRule} />
+            )}
           </div>
           {data.entity.dq_rules && data.entity.dq_rules.map((v, index) => (
-            <div key={`d${(v as TData).metadata.id}`} className={styles.dqrule_item}>
+            <div key={`d${(v as TData).metadata.id ? (v as TData).metadata.id : uuid()}`} className={styles.dqrule_item}>
               <FieldAutocompleteEditor
                 key={`se${(v as TData).metadata.id}`}
-                className={styles.long_input}
-                isReadOnly={false}
-                label=""
+                className={styles.col1}
+                isReadOnly={isReadOnly}
+                label={i18n('Правило')}
                 defaultValue={(v as TData).entity.dq_rule_id}
                 valueSubmitted={(val) => updateDQRuleField(index, (v as TData).metadata.id, 'dq_rule_id', val)}
                 getDisplayValue={getDQRuleDisplayValue}
                 getObjects={getDQRuleAutocompleteObjects}
                 artifactType="dq_rule"
               />
-              <FieldEditor
+              <FieldTextEditor
                 key={`fe${(v as TData).metadata.id}`}
-                isReadOnly={false}
-                labelPrefix={`${i18n('Настройки')}: `}
+                isReadOnly={isReadOnly}
+                label={i18n('Настройки')}
                 defaultValue={(v as TData).entity.settings}
-                className={styles.long_input}
+                className={styles.col2}
                 valueSubmitted={(val) => {
                   updateDQRuleField(index, (v as TData).metadata.id, 'settings', (val as string));
                 }}
                 isRequired
-                isMultiline
-                onBlur={(val) => {
-                  updateDQRuleField(index, (v as TData).metadata.id, 'settings', (val as string));
-                }}
                 showValidation={showValidation}
               />
               <FieldCheckboxEditor
                 key={`ce1${(v as TData).metadata.id}`}
-                isReadOnly={false}
-                labelPrefix={i18n('Выключена')}
+                isReadOnly={isReadOnly}
+                label={i18n('Выключена')}
                 defaultValue={Boolean((v as TData).entity.disabled)}
-                className=""
-                layout="separated"
+                className={styles.col3}
                 valueSubmitted={(val) => {
                   updateDQRuleField(index, (v as TData).metadata.id, 'disabled', String(val));
                 }}
@@ -411,11 +457,10 @@ export function Sample() {
               />
               <FieldCheckboxEditor
                 key={`ce2${(v as TData).metadata.id}`}
-                isReadOnly={false}
-                labelPrefix={i18n('Рассылать уведомления об ошибках')}
+                isReadOnly={isReadOnly}
+                label={i18n('Рассылать уведомления об ошибках')}
                 defaultValue={Boolean((v as TData).entity.send_mail)}
-                className=""
-                layout="separated"
+                className={styles.col4}
                 valueSubmitted={(val) => {
                   updateDQRuleField(index, (v as TData).metadata.id, 'send_mail', String(val));
                 }}
@@ -423,9 +468,11 @@ export function Sample() {
                 showValidation={showValidation}
               />
 
-              <div key={`dc${(v as TData).metadata.id}`} className={styles.dqrule_close}>
-                <CloseIcon key={`fec${(v as TData).metadata.id}`} onClick={() => delDQRule(index, (v as TData).metadata.id)} />
-              </div>
+              {!isReadOnly && (
+                <div key={`dc${(v as TData).metadata.id}`} className={styles.dqrule_close}>
+                  <CloseIcon key={`fec${(v as TData).metadata.id}`} onClick={() => delDQRule(index, (v as TData).metadata.id)} />
+                </div>
+              )}
             </div>
           ))}
 
@@ -435,100 +482,6 @@ export function Sample() {
   ];
 
   useEffect(() => {
-    setCreateMode(sampleId === '');
-
-    if (sampleId) {
-      setRecentView('entity_sample', sampleId);
-      getSample(sampleId).then((json: any) => {
-        setData(json);
-        setDataModified(false);
-        if (document.getElementById(`crumb_${sampleId}`) !== null) {
-          document.getElementById(`crumb_${sampleId}`)!.innerText = json.entity.name;
-        }
-        setTags(json.metadata.tags ? json.metadata.tags.map((x: any) => ({ value: x.name })) : []);
-
-        getSampleBody(sampleId)
-          .then((text) => {
-            if (json.entity.sample_type === 'table') setSampleBody(JSON.parse(text));
-            else if (typeof text === 'string') setSampleBody(text);
-            else setSampleBody(text.toString());
-          })
-          .catch(handleHttpError);
-
-        setLoading(false);
-      });
-
-      getRatingData(sampleId)
-        .then((json) => {
-          setRatingData(json);
-        })
-        .catch(handleHttpError);
-
-      getOwnRatingData(sampleId)
-        .then((rating) => {
-          setOwnRating(rating);
-        })
-        .catch(handleHttpError);
-
-      getSampleVersions(sampleId)
-        .then((json) => {
-          setVersions(
-            json.resources.map((x: any) => ({
-              name: x.entity.name,
-              description: x.entity.description,
-              version_id: x.metadata.version_id,
-              created_at: new Date(x.metadata.created_at).toLocaleString(),
-            })),
-          );
-        })
-        .catch(handleHttpError);
-
-      getSampleProperties({
-        sort: 'name+',
-        offset: 0,
-        limit: 999,
-        filters: [{ column: 'entity_sample_id', value: sampleId, operator: 'EQUAL' }],
-        filters_for_join: [],
-      }).then((json) => {
-        setSampleProperties(json.items);
-      });
-    }
-  }, [sampleId]);
-
-  useEffect(() => {
-    if (isCreateMode) {
-      if (
-        data.entity.name
-        && data.entity.entity_id
-        && data.entity.system_id
-        && data.entity.entity_query_id
-      ) {
-        createSample({
-          name: data.entity.name,
-          description: data.entity.description,
-          entity_id: data.entity.entity_id,
-          system_id: data.entity.system_id,
-          entity_query_id: data.entity.entity_query_id,
-          sample_type: 'json',
-        })
-          .then((json) => {
-            setDataModified(false);
-            updateArtifactsCount();
-            if (json.metadata.id) {
-              setSampleId(json.metadata.id);
-              window.history.pushState(
-                {},
-                '',
-                `/samples/edit/${encodeURIComponent(json.metadata.id)}`,
-              );
-            }
-          })
-          .catch(handleHttpError);
-      }
-    }
-  }, [data]);
-
-  useEffect(() => {
     if (data.entity.entity_id) {
       getEntityAttributes(data.entity.entity_id).then((json) => {
         setEntityAttributes(json.resources);
@@ -536,210 +489,144 @@ export function Sample() {
     }
   }, [data.entity.entity_id]);
 
-  const tagAdded = (tagName: string) => {
-    if (sampleId) {
-      setLoading(true);
-      addTag(sampleId, 'entity_sample', tagName)
-        .then(() => {
-          setLoading(false);
-          setTags((prevTags) => [...prevTags, { value: tagName }]);
-        })
-        .catch(handleHttpError);
-    }
+  const updateSampleField = (field: string, value: string | string[] | undefined) => {
+    setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } }));
+    setDataModified(true);
   };
-
-  const tagDeleted = (tagName: string) => {
-    if (sampleId) {
-      setLoading(true);
-      deleteTag(sampleId, 'entity_sample', tagName)
-        .then(() => {
-          setLoading(false);
-          setTags((prevTags) => prevTags.filter((x) => x.value !== tagName));
-        })
-        .catch(handleHttpError);
-    }
-  };
-
-  const updateSampleField = (field: string, value: string | JSON | [] | TDQRule[]) => {
-    if (sampleId) {
-      updateSample(sampleId, { [field]: value })
-        .then(() => { setDataModified(false); })
-        .catch(handleHttpError);
-    } else {
-      setShowValidation(true);
-      setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } }));
-      setDataModified(false);
-    }
-  };
-
-  const getEntityDisplayValue = async (identity: string) => {
-    if (!identity) return '';
-    return getEntity(identity)
-      .then((json) => {
-        if (json && json.entity) return json.entity.name;
-        return undefined;
-      })
-      .catch((e) => {
-        handleHttpError(e);
-        return '';
-      });
-  };
-
-  const getSystemDisplayValue = async (identity: string) => {
-    if (!identity) return '';
-    return getSystem(identity)
-      .then((json) => {
-        if (json && json.entity) return json.entity.name;
-        return undefined;
-      })
-      .catch((e) => {
-        handleHttpError(e);
-        return '';
-      });
-  };
-
-  const getEntityQueryDisplayValue = async (identity: string) => {
-    if (!identity) return '';
-    return getEntityQuery(identity)
-      .then((json) => {
-        if (json && json.entity) return json.entity.name;
-        return undefined;
-      })
-      .catch((e) => {
-        handleHttpError(e);
-        return '';
-      });
-  };
-
-  const getEntityObjects = async (search: string) => getEntities({
-    sort: 'name+',
-    global_query: search,
-    limit: 1000,
-    offset: 0,
-    filters: [],
-    filters_for_join: [],
-  }).then((json) => json.items);
-
-  const getSystemObjects = async (search: string) => getSystems({
-    sort: 'name+',
-    global_query: search,
-    limit: 1000,
-    offset: 0,
-    filters: [],
-    filters_for_join: [],
-  }).then((json) => json.items);
-
-  const getEntityQueryObjects = async (search: string) => getEntityQueries({
-    sort: 'name+',
-    global_query: search,
-    limit: 1000,
-    offset: 0,
-    filters: [],
-    filters_for_join: [],
-  }).then((json) => json.items);
 
   return (
-    <div className={`${styles.page} ${styles.samplePage}`}>
-      <div className={styles.mainContent}>
-        <div className={styles.title}>
-          <FieldEditor
-            isReadOnly={false}
-            labelPrefix={`${i18n('СЭМПЛ')}: `}
-            defaultValue={data.entity.name}
-            className={styles.title}
-            valueSubmitted={(val) => {
-              updateSampleField('name', val.toString());
-            }}
-            isRequired
-            showValidation={showValidation}
-          />
-        </div>
-        {!isCreateMode && (
-          <button className={styles.btn_scheme} onClick={() => { doNavigate('/samples-model/' + encodeURIComponent(sampleId), navigate); }}>{i18n('Схема')}</button>
-        )}
-        {!isCreateMode && (
-          <Tags
-            key={'tags-' + sampleId + '-' + uuid()}
-            tags={tags}
-            onTagAdded={tagAdded}
-            onTagDeleted={tagDeleted}
-          />
-        )}
+    
+    <>
 
-        <div className={styles.general_data}>
-          <div className={styles.data_row_desc}>
-              <FieldVisualEditor
-                isReadOnly={false}
-                labelPrefix={`${i18n('Описание')}`}
-                isRequired
-                showValidation={showValidation}
-                defaultValue={data.entity.description}
-                className={styles.editor}
-                valueSubmitted={(val) => {
-                  updateSampleField('description', val.toString());
-                }}
-              />
-          </div>
-          <div className={styles.data_row}>
-            <FieldEditor
-              isReadOnly={false}
-              layout="separated"
-              labelPrefix={`${i18n('Ключевые роли процесса')} `}
-              defaultValue={data.entity.roles}
-              className={styles.editor}
-              valueSubmitted={(val) => {
-                updateSampleField('roles', val.toString());
-              }}
-            />
-          </div>
-          <div className={styles.data_row}>
-            <FieldAutocompleteEditor
-              className=""
-              label={i18n('Логический объект')}
-              defaultValue={data.entity.entity_id}
-              valueSubmitted={(identity) => {
-                updateSampleField('entity_id', identity);
-              }}
-              getDisplayValue={getEntityDisplayValue}
-              getObjects={getEntityObjects}
-              isRequired
-              showValidation={showValidation}
-              artifactType="entity"
-            />
-            <FieldAutocompleteEditor
-              className=""
-              label={i18n('Система')}
-              defaultValue={data.entity.system_id}
-              valueSubmitted={(identity) => {
-                updateSampleField('system_id', identity);
-              }}
-              getDisplayValue={getSystemDisplayValue}
-              getObjects={getSystemObjects}
-              isRequired
-              showValidation={showValidation}
-              artifactType="system"
-            />
-            <FieldAutocompleteEditor
-              className=""
-              label={i18n('Запрос')}
-              defaultValue={data.entity.entity_query_id}
-              valueSubmitted={(identity) => {
-                updateSampleField('entity_query_id', identity);
-              }}
-              getDisplayValue={getEntityQueryDisplayValue}
-              getObjects={getEntityQueryObjects}
-              isRequired
-              showValidation={showValidation}
-              artifactType="entity_query"
-            />
-            {!isCreateMode && (
-              <></>
-            )}
-          </div>
-        </div>
+      <EditPage objectId={sampleId} objectVersionId={''} data={data} urlSlug='samples' setData={setData} isReadOnly={isReadOnly} setReadOnly={setReadOnly}
+              artifactType='entity_sample' setTags={setTags} getObject={getSample} deleteObject={deleteSample}
+              updateObject={updateSample} tabs={[
+                {
+                  key: 'tab-gen',
+                  title: i18n('Сведения'),
+                  content: <div className={styles.tab_2col}>
+                    <div className={classNames(styles.col, styles.scrollable)}>
+                      <h2>Общая информация</h2>
+                      <div>
+                        <button className={styles.btn_scheme} onClick={() => { doNavigate(`/samples-model/${encodeURIComponent(sampleId)}`, navigate); }}>{i18n('Смотреть схему')}</button>
+                      </div>
 
-        {!isCreateMode && <Tabs tabs={tabs} tabNumber={state.t} onTabChange={(tab: number) => { setState(() => ({ t: tab })); }} />}
-      </div>
+                      <FieldTextEditor
+                        isReadOnly={isReadOnly}
+                        label={i18n('Название')}
+                        defaultValue={data.entity.name}
+                        className={styles.title}
+                        valueSubmitted={(val) => {
+                          updateSampleField('name', val);
+                        }}
+                        isRequired
+                        showValidation={showValidation}
+                      />
+
+                      <div className={styles.tags_block}>
+                        <div className={styles.label}>{i18n('Теги')}</div>
+                        <Tags
+                          key={'tags-' + sampleId + '-' + uuid()}
+                          isReadOnly={isReadOnly}
+                          tags={tags}
+                          tagPrefix='#'
+                          onTagAdded={(tagName: string) => tagAddedHandler(tagName, sampleId, 'entity_sample', 'PUBLISHED', tags, setLoading, setTags, '/samples/edit/', navigate)}
+                          onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, sampleId, 'entity_sample', 'PUBLISHED', setLoading, setTags, '/samples/edit/', navigate)}
+                        />
+                      </div>
+
+                      <FieldAutocompleteEditor
+                        label={i18n('Модель')}
+                        defaultValue={data.entity.entity_id}
+                        valueSubmitted={(identity) => {
+                          updateSampleField('entity_id', identity);
+                        }}
+                        getDisplayValue={getEntityDisplayValue}
+                        getObjects={getEntityAutocompleteObjects}
+                        isRequired isReadOnly={isReadOnly}
+                        showValidation={showValidation}
+                        artifactType="entity"
+                      />
+                      <FieldAutocompleteEditor
+                        label={i18n('Система')}
+                        defaultValue={data.entity.system_id}
+                        valueSubmitted={(identity) => {
+                          updateSampleField('system_id', identity);
+                        }}
+                        getDisplayValue={getSystemDisplayValue}
+                        getObjects={getSystemAutocompleteObjects}
+                        isRequired isReadOnly={isReadOnly}
+                        showValidation={showValidation}
+                        artifactType="system"
+                      />
+                      <FieldAutocompleteEditor
+                        label={i18n('Запрос')}
+                        defaultValue={data.entity.entity_query_id}
+                        valueSubmitted={(identity) => {
+                          updateSampleField('entity_query_id', identity);
+                        }}
+                        getDisplayValue={getQueryDisplayValue}
+                        getObjects={getQueryAutocompleteObjects}
+                        isRequired isReadOnly={isReadOnly}
+                        showValidation={showValidation}
+                        artifactType="entity_query"
+                      />
+                    </div>
+                    <div className={classNames(styles.col, styles.scrollable)}>
+                      <h2>Дополнительные параметры</h2>
+
+                      <FieldTextEditor
+                        isReadOnly={isReadOnly}
+                        label={i18n('Ключевые роли процесса')}
+                        defaultValue={data.entity.roles}
+                        className={styles.editor}
+                        valueSubmitted={(val) => {
+                          updateSampleField('roles', val);
+                        }}
+                      />
+                    </div>
+                    
+
+
+                  </div>
+                },
+                ...tabs,
+                {
+                  key: 'tab-desc',
+                  title: i18n('Расширенное описание'),
+                  content: <div className={styles.tab_transparent}>
+        
+                    <FieldVisualEditor
+                        isReadOnly={isReadOnly}
+                        defaultValue={data.entity.description}
+                        className=''
+                        valueSubmitted={(val) => {
+                          updateSampleField('description', val);
+                        }}
+                      />  
+                  
+                  </div>
+                }
+              ]} onLoadDataComplete={(json) => {
+                getSampleBody(sampleId)
+                .then((text) => {
+                  if (json.entity.sample_type === 'table') setSampleBody(JSON.parse(text));
+                  else if (typeof text === 'string') setSampleBody(text);
+                  else setSampleBody(text.toString());
+                })
+                .catch(handleHttpError);
+
+                getSampleProperties({
+                  sort: 'name+',
+                  offset: 0,
+                  limit: 999,
+                  filters: [{ column: 'entity_sample_id', value: sampleId, operator: 'EQUAL' }],
+                  filters_for_join: [],
+                }).then((json) => {
+                  setSampleProperties(json.items);
+                });
+          
+              }} />
 
       <Modal
         show={showDelPropDlg}
@@ -769,6 +656,6 @@ export function Sample() {
           </Button>
         </Modal.Footer>
       </Modal>
-    </div>
+    </>
   );
 }

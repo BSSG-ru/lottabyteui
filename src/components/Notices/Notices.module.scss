@@ -11,17 +11,21 @@
     margin-top: 10px;
     position: relative;
     padding: 10px;
-    border-radius: 3px;
+    border-radius: 8px;
 
     &.error {
         background: #fcc;
         border: 1px solid #f99;
-        
+    }
+
+    &.info {
+        background: #D9E9DF;
+        border: 1px solid #1BA049;
     }
 
     svg {
         position: absolute;
-        top: 3px;
-        right: 3px;
+        top: 6px;
+        right: 6px;
     }
 }

@@ -1,0 +1,21 @@
+@import '../../assets/css/common.scss';
+
+.field_editor {
+    width: 100%;
+}
+
+.input {
+    width: 100%;
+    border-radius: 6px;
+    padding: 0px 15px;
+    border: 1px solid #9BA0AA;
+    transition: border 0.3s linear;
+    font-size: 14px;
+    line-height: 30px;
+    background: url(../../assets/icons/calendar.svg) no-repeat right 5px center;
+    background-size: 20px 20px;
+
+    &:hover {
+        border: 1px solid rgba(151, 165, 235, 0.7);
+    }
+}

@@ -1,0 +1,15 @@
+.search_crumbs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    .part {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    a, .text {
+        color: var(--gray100);
+    }
+}

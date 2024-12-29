@@ -1,17 +1,11 @@
 /* eslint-disable react/function-component-definition */
 import classNames from 'classnames';
 import React, { FC, useState, useEffect } from 'react';
-import { NavLink, useLocation, useRoutes, useNavigate, redirect } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Tooltip } from 'react-tooltip';
-import { ReactComponent as Users } from '../../assets/icons/users-icon.svg';
-import { ReactComponent as Roles } from '../../assets/icons/roles-icon.svg';
-import { ReactComponent as Groups } from '../../assets/icons/groups-icon.svg';
-import { ReactComponent as Tags } from '../../assets/icons/tags-icon.svg';
-import { ReactComponent as Connections } from '../../assets/icons/connections-icon.svg';
-import { ReactComponent as Logs } from '../../assets/icons/logs-icon.svg';
-import { ReactComponent as Stewards } from '../../assets/icons/stewards-icon.svg';
 
 import { ReactComponent as Domains } from '../../assets/icons/domains-icon.svg';
+import { ReactComponent as Drafts } from '../../assets/icons/drafts-icon.svg';
 import { ReactComponent as Systems } from '../../assets/icons/systems-icon.svg';
 import { ReactComponent as LogicObjects } from '../../assets/icons/lo-icon.svg';
 import { ReactComponent as Queries } from '../../assets/icons/requests-icon.svg';
@@ -23,17 +17,20 @@ import { ReactComponent as Products } from '../../assets/icons/products-icon.svg
 import { ReactComponent as Tasks } from '../../assets/icons/tasks-icon.svg';
 import { ReactComponent as Eye } from '../../assets/icons/eye.svg';
 import { ReactComponent as Settings } from '../../assets/icons/settings.svg';
+import { ReactComponent as Minimize } from '../../assets/icons/aside-minimize.svg';
+import { ReactComponent as Maximize } from '../../assets/icons/aside-maximize.svg';
 import { ReactComponent as DQRules } from '../../assets/icons/dq-rule.svg';
 
 import styles from './Aside.module.scss';
 import { urls } from '../../mocks/urls';
-import { doNavigate, getArtifactUrl, handleHttpError, hasPermission, i18n } from '../../utils';
+import { doNavigate, getArtifactUrl, getCookie, handleHttpError, i18n, setCookie } from '../../utils';
 import { getArtifactsCount } from '../../services/pages/artifacts';
 import { getRecentViews, setRecentView } from '../../services/pages/recentviews';
 import { userInfoRequest } from '../../services/auth';
 
 export const Aside: FC = () => {
   const navigate = useNavigate();
+  const [isMinimized, setMinimized] = useState(getCookie('side-min') === 'true');
   const [recentViews, setRecentViews] = useState<any[]>([]);
 
   const [count, setCount] = useState({
@@ -49,6 +46,7 @@ export const Aside: FC = () => {
     product: '',
     dq_rule: '',
     draft: '',
+    meta_database: '',
   });
 
   const nav = useLocation();
@@ -65,7 +63,7 @@ export const Aside: FC = () => {
     });
   };
 
-  const [showDrafts, setShowDrafts] = useState(false);
+  const [isAdvancedMode, setAdvancedMode] = useState((window as any).dashboardSwitch ? (window as any).dashboardSwitch.getShowAdvanced() : true);
   const [currPath, setCurrPath] = useState('/');
   const [links, setLinks] = useState<any[]>([]);
   useEffect(() => {
@@ -84,6 +82,12 @@ export const Aside: FC = () => {
   }, [nav.pathname]);
 
   useEffect(() => {
+    window.addEventListener('dashboardModeChanged', function (e) {
+      setAdvancedMode((e as any).showAdvanced);
+    })
+  }, []);
+
+  useEffect(() => {
     userInfoRequest().then(resp => {
       resp.json().then(data => {
         var arr = [
@@ -98,30 +102,35 @@ export const Aside: FC = () => {
             title: urls[1].systems,
             href: 'systems',
             count: count.system,
+            advanced: true
           },
           {
             icon: <Tasks />,
             title: urls[1].tasks,
             href: 'tasks',
             count: count.task,
+            advanced: true
           },
           {
             icon: <LogicObjects />,
             title: urls[1]['logic-objects'],
             href: 'logic-objects',
             count: count.entity,
+            advanced: true
           },
           {
             icon: <Queries />,
             title: urls[1].queries,
             href: 'queries',
             count: count.entity_query,
+            advanced: true
           },
           {
             icon: <Samples />,
             title: urls[1].samples,
             href: 'samples',
             count: count.entity_sample,
+            advanced: true
           },
           {
             icon: <Assets />,
@@ -152,12 +161,20 @@ export const Aside: FC = () => {
             title: urls[1].dq_rule,
             href: 'dq_rule',
             count: count.dq_rule,
+            advanced: true
+          },
+          {
+            icon: <LogicObjects />,
+            title: urls[1].metadata,
+            href: 'metadata',
+            count: count.meta_database,
+            advanced: true
           }
         ];
       
         if (data.permissions.filter((x:String) => x == 'task_r').length > 0)
           arr.push({
-            icon: <Domains />,
+            icon: <Drafts />,
             title: urls[1].draft,
             href: 'drafts',
             count: count.draft
@@ -168,151 +185,15 @@ export const Aside: FC = () => {
     })
   }, [ count ]);
 
-  const linksSettings = [
-    {
-      icon: <Users />,
-      title: urls[2].users,
-      href: 'settings/users',
-      count: 0,
-    },
-    {
-      icon: <Connections />,
-      title: urls[2].connections,
-      href: 'settings/connections',
-      count: 0,
-    },
-    {
-      icon: <Roles />,
-      title: urls[2].roles,
-      href: 'settings/roles',
-      count: 0,
-    },
-    {
-      icon: <Groups />,
-      title: urls[2].groups,
-      href: 'settings/groups',
-      count: 0,
-    },
-    {
-      icon: <Stewards />,
-      title: urls[2].stewards,
-      href: 'settings/stewards',
-      count: 0,
-    },
-    {
-      icon: <Connections />,
-      title: urls[2].workflows,
-      href: 'settings/workflows',
-      count: ''
-    }
-  ];
-
+  
   
 
-  const menu = useRoutes([
-    {
-      path: '/settings/*',
-      element: (
-        <ul>
-          {linksSettings.map((link) => (
-            <li key={link.href}>
-              <a
-                id={`icon${link.href}`}
-                data-tooltip-content={i18n(link.title)}
-                href=""
-                className={classNames(styles.link, {
-                  [styles.link_active]: link.href === currPath,
-                })}
-                onClick={(e) => { e.preventDefault(); doNavigate(`/${link.href}`, navigate); return false; }}
-              >
-                <span className={styles.icon}>{link.icon}</span>
-                <span className={styles.title}>{i18n(link.title)}</span>
-              </a>
-              <Tooltip anchorId={`icon${link.href}`} noArrow className="tooltip mob-only" place="right" />
-            </li>
-          ))}
-        </ul>
-      ),
-    },
-    {
-      path: '/*',
-      element: (
-        <ul>
-          {links.map((link) => (
-
-            <li key={link.href}>
-              <a
-                id={`icon${link.href}`}
-                data-tooltip-content={i18n(link.title)}
-                href=""
-                className={classNames(styles.link, {
-                  [styles.link_active]: link.href === currPath,
-                })}
-                onClick={(e) => { e.preventDefault(); doNavigate(`/${link.href}`, navigate); return false; }}
-              >
-                <span className={styles.icon}>{link.icon}</span>
-                <span className={styles.title}>{i18n(link.title)}</span>
-                <span className={styles.count}>{link.count}</span>
-
-              </a>
-              <Tooltip anchorId={`icon${link.href}`} noArrow className="tooltip mob-only" place="right" />
-            </li>
-
-          ))}
-          {recentViews.length > 0 && (
-            <>
-              <li className={styles.recent_header}>
-                <div className={styles.link}>
-                  <span className={styles.icon}>
-                    <Eye />
-                  </span>
-                  <span className={styles.title}>{i18n('Недавно просмотренные')}</span>
-                </div>
-              </li>
-              {recentViews.map((item: any) => (
-                <li
-                  key={`recent_${item.artifactId}`}
-                  className={styles.recent}
-                >
-                  <NavLink
-                    to="#"
-                    className={styles.link}
-                    id={`link-recent-${item.artifactId}`}
-                    onClick={async () => {
-                      await setRecentView(item.artifactType, item.artifactId).then(() => {
-                        doNavigate(getArtifactUrl(item.artifactId, item.artifactType), navigate);
-                      });
-                    }}
-                  >
-                    <span className={styles.title}>{item.name.length > 20 ? `${item.name.substring(0, 20)}...` : item.name}</span>
-                  </NavLink>
-                  {item.name.length > 20 && (
-                    <Tooltip anchorId={`link-recent-${item.artifactId}`} noArrow className="tooltip" place="right" content={item.name} delayShow={200} positionStrategy="absolute" />
-                  )}
-                </li>
-              ))}
-            </>
-          )}
-          <li key="/settings">
-            <NavLink
-              id="iconsettings"
-              data-tooltip-content={i18n('Настройки')}
-              to="/settings"
-              className={classNames(styles.link, styles.settings_link, {
-                [styles.link_active]: currPath === '/settings',
-              })}
-            >
-              <span className={styles.icon}>
-                <Settings />
-              </span>
-              <span className={styles.title}>{i18n('Настройки')}</span>
-            </NavLink>
-            <Tooltip anchorId="iconsettings" noArrow className="tooltip mob-only" place="right" />
-          </li>
-        </ul>
-      ),
-    },
-  ]);
+  useEffect(() => {
+    var e2 = document.createEvent('HTMLEvents');
+    e2.initEvent('asideResized', true, true);
+    (e2 as any).eventName = 'asideResized';
+    window.dispatchEvent(e2);
+  }, [ isMinimized ])
 
   useEffect(() => {
     getRecentViews()
@@ -323,8 +204,101 @@ export const Aside: FC = () => {
   }, [nav]);
 
   return (
-    <div className={styles.aside}>
-      <nav>{menu}</nav>
+    <div className={classNames(styles.aside, { [styles.minimized]: isMinimized })}>
+      <nav>
+        <ul>
+            {links.filter(lnk => !lnk.advanced || isAdvancedMode).map((link) => (
+                <li key={link.href + '-' + isAdvancedMode}>
+                  <a
+                    id={`icon${link.href}`}
+                    data-tooltip-content={i18n(link.title)}
+                    href=""
+                    className={classNames(styles.link, {
+                      [styles.link_active]: link.href === currPath,
+                    })}
+                    onClick={(e) => { e.preventDefault(); doNavigate(`/${link.href}`, navigate); return false; }}
+                  >
+                    <span className={styles.icon}>{link.icon}</span>
+                    {!isMinimized && (<span className={styles.title}>{i18n(link.title)}</span>)}
+                    {!isMinimized && (<span className={styles.count}>{link.count}</span>)}
+
+                  </a>
+                  <Tooltip anchorId={`icon${link.href}`} noArrow className="tooltip mob-only" place="right" />
+                </li>
+            ))}
+            {recentViews.length > 0 && !isMinimized && (
+              <>
+                <li className={styles.recent_header}>
+                  <div className={styles.link}>
+                    <span className={styles.icon}>
+                      <Eye />
+                    </span>
+                    <span className={styles.title}>{i18n('Просмотрено')}</span>
+                  </div>
+                </li>
+                {recentViews.map((item: any) => (
+                  <li
+                    key={`recent_${item.artifactId}`}
+                    className={styles.recent}
+                  >
+                    <NavLink
+                      to="#"
+                      className={styles.link}
+                      id={`link-recent-${item.artifactId}`}
+                      onClick={async () => {
+                        await setRecentView(item.artifactType, item.artifactId).then(() => {
+                          doNavigate(getArtifactUrl(item.artifactId, item.artifactType), navigate);
+                        });
+                      }}
+                    >
+                      <span className={styles.title}>{item.name.length > 18 ? `${item.name.substring(0, 18)}...` : item.name}</span>
+                    </NavLink>
+                    {item.name.length > 20 && (
+                      <Tooltip anchorId={`link-recent-${item.artifactId}`} noArrow className="tooltip" place="right" content={item.name} delayShow={200} positionStrategy="absolute" />
+                    )}
+                  </li>
+                ))}
+              </>
+            )}
+            {isAdvancedMode && (
+              <li key="/settings">
+                <NavLink
+                  id="iconsettings"
+                  data-tooltip-content={i18n('Настройки')}
+                  to="/settings"
+                  className={classNames(styles.link, styles.settings_link, {
+                    [styles.link_active]: currPath === '/settings',
+                  })}
+                >
+                  <span className={styles.icon}>
+                    <Settings />
+                  </span>
+                  {!isMinimized && (<span className={styles.title}>{i18n('Настройки')}</span>)}
+                </NavLink>
+                <Tooltip anchorId="iconsettings" noArrow className="tooltip mob-only" place="right" />
+              </li>
+            )}
+            {!isMinimized && (
+            <li key="/minimize">
+              <a href='#' onClick={(e) => { e.preventDefault(); setMinimized(true); setCookie('side-min', 'true') }} className={classNames(styles.link, styles.minimize_link)}>
+                <span className={styles.icon}>
+                  <Minimize />
+                </span>
+                {!isMinimized && (<span className={styles.title}>{i18n('Свернуть')}</span>)}
+              </a>
+            </li>
+            )}
+            {isMinimized && (
+            <li key="/maximize">
+              <a href='#' onClick={(e) => { e.preventDefault(); setMinimized(false); setCookie('side-min', 'false'); }} className={classNames(styles.link, styles.maximize_link)}>
+                <span className={styles.icon}>
+                  <Maximize />
+                </span>
+              </a>
+            </li>
+            )}
+          </ul>
+      </nav>
 
     </div>
   );

@@ -111,7 +111,7 @@ export const HeaderCell: FC<HeaderCellProps> = ({
   });
 
   return (
-    <th>
+    <th style={{ width: column.width ?? 'auto' }}>
       <div className={classNames(styles.header, { [styles.header_withsort]: sort })}>
         <span
           className={styles.header_name}
@@ -125,7 +125,7 @@ export const HeaderCell: FC<HeaderCellProps> = ({
               {returnSortIcon(sort, column.filter_property ?? column.property)}
             </span>
           ) : (
-            ''
+            <span className={styles.header_sep}></span>
           )}
           {column.header}
         </span>

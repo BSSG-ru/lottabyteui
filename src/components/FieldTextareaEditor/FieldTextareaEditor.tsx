@@ -6,115 +6,49 @@ import React, {
   ChangeEvent, FC, useEffect, useState,
 } from 'react';
 import styles from './FieldTextareaEditor.module.scss';
-import { ReactComponent as PencilIcon } from '../../assets/icons/pencil.svg';
-import { ReactComponent as OrangePencilIcon } from '../../assets/icons/pencil_org.svg';
-import { Input } from '../Input';
 
 import { Textarea } from '../Textarea';
-import { setDataModified } from '../../utils';
+import classNames from 'classnames';
 
 export type FieldTextareaEditorProps = {
-  className: string;
+  className?: string;
   isReadOnly?: boolean;
   isRequired?: boolean;
-  isMultiline?: boolean;
   showValidation?: boolean;
-  labelPrefix: string;
-  defaultValue: string | null;
-  valueSubmitted: (value: string) => void;
+  label?: string;
+  defaultValue: string | undefined;
+  valueSubmitted: (value: string | undefined) => void;
 };
 
 export const FieldTextareaEditor: FC<FieldTextareaEditorProps> = ({
-  className,
+  className = '',
   isReadOnly,
-  labelPrefix,
+  label,
   defaultValue,
-  isMultiline,
   isRequired,
   showValidation,
   valueSubmitted,
 }) => {
-  const [isEditMode, setEditMode] = useState<boolean>(false);
   const [value, setValue] = useState('');
-  const [storedValue, setStoredValue] = useState('');
 
   useEffect(() => {
     setValue(defaultValue ?? '');
-    setStoredValue(defaultValue ?? '');
   }, [defaultValue]);
-
-  const editClicked = () => {
-    setEditMode(!isEditMode);
-  };
-
-  const saveClicked = () => {
-    setStoredValue(value ?? '');
-    valueSubmitted(value);
-
-    setEditMode(false);
-  };
-
-  const inputChanged = (e: ChangeEvent<HTMLInputElement>) => {
-    setValue(e.target.value);
-    setDataModified(true);
-  };
 
   const textareaChanged = (e: ChangeEvent<HTMLTextAreaElement>) => {
     setValue(e.target.value);
-    setDataModified(true);
+    if (valueSubmitted)
+      valueSubmitted(e.target.value);
   };
 
   return (
-    <div
-      className={`${styles.field_editor} ${className}${
-        showValidation && isRequired && !storedValue ? ` ${styles.error}` : ''
-      }`}
-    >
-      <div className={styles.row_value}>
-        
-            <div className={styles.label}>{labelPrefix}</div>
-            <div className={styles.sep}></div>
-            
-            {isReadOnly ? (
-              ''
-            ) : (
-              <a
-                className={styles.btn_edit}
-                onClick={editClicked}
-              >
-                <PencilIcon />
-              </a>
+    <div className={classNames(styles.field_editor, className, { [styles.error]: isRequired && showValidation && !value })}>
+      {label && (<div className={styles.label}>{label}{isRequired && (<span className={styles.req}>*</span>)}</div>)}
+      <div className={styles.value}>
+            {isReadOnly ? (<pre>{value ? value : '—'}</pre>) : (
+                <Textarea className={styles.input} value={value ?? ''} onChange={textareaChanged} />
             )}
-        
-      </div>
-      {!isEditMode && (
-        <div className={styles.display_value}>
-          <div className={styles.textarea} dangerouslySetInnerHTML={{ __html: (storedValue ?? '').replaceAll("\n", "<br/>") }}></div>
         </div>
-      )}
-
-      <div className={`${styles.row_edit} ${isEditMode ? styles.show : ''}`}>
-        {isMultiline ? (
-          <Textarea
-            className={styles.input_value}
-            value={value ?? ''}
-            onChange={textareaChanged}
-            
-          />
-        ) : (
-          <Input
-            className={styles.input_value}
-            value={value}
-            onChange={inputChanged}
-          />
-        )}
-        <a
-          className={styles.btn_save}
-          onClick={saveClicked}
-        >
-          <OrangePencilIcon />
-        </a>
-      </div>
     </div>
   );
 };

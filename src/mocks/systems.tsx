@@ -13,6 +13,7 @@ export const systemsTableColumns = [
     header: i18n('Koд'),
     sortDisabled: true,
     filterDisabled: true,
+    width: '55px'
   },
   {
     property: 'name',
@@ -35,7 +36,7 @@ export const systemsTableColumns = [
     ),
   },
   {
-    property: 'description',
+    property: 'short_description',
     header: i18n('Описание'),
   },
   {
@@ -52,6 +53,7 @@ export const queriesTableColumns = [
     header: i18n('Koд'),
     sortDisabled: true,
     filterDisabled: true,
+    width: '55px'
   },
   {
     property: 'name',
@@ -74,7 +76,7 @@ export const queriesTableColumns = [
     ),
   },
   {
-    property: 'description',
+    property: 'short_description',
     header: i18n('Описание'),
   },
   {
@@ -91,6 +93,7 @@ export const productsTableColumns = [
     header: i18n('Koд'),
     sortDisabled: true,
     filterDisabled: true,
+    width: '55px'
   },
   {
     property: 'name',
@@ -132,6 +135,7 @@ export const entitiesTableColumns = [
     header: i18n('Koд'),
     sortDisabled: true,
     filterDisabled: true,
+    width: '55px'
   },
   {
     property: 'name',
@@ -154,7 +158,7 @@ export const entitiesTableColumns = [
     ),
   },
   {
-    property: 'description',
+    property: 'short_description',
     header: i18n('Описание'),
   },
   {
@@ -172,6 +176,7 @@ export const indicatorsTableColumns = [
     header: i18n('Koд'),
     sortDisabled: true,
     filterDisabled: true,
+    width: '55px'
   },
   {
     property: 'name',
@@ -193,7 +198,7 @@ export const indicatorsTableColumns = [
     header: i18n('Теги'),
     filterDisabled: false,
     sortDisabled: true,
-    render: (row: any) => row.tags.join(', '),
+    render: (row: any) => <div className={styles.pills}>{row.tags.map((tag:any, i:number) => <span key={`tag-pill-${row.id}-${i}`} className={styles.pill}>#{tag}</span>)}</div>,
   }
 ];
 
@@ -204,6 +209,7 @@ export const beTableColumns = [
     header: i18n('Koд'),
     sortDisabled: true,
     filterDisabled: true,
+    width: '55px'
   },
   {
     property: 'name',
@@ -243,7 +249,7 @@ export const beTableColumns = [
     header: i18n('Теги'),
     filterDisabled: false,
     sortDisabled: true,
-    render: (row: any) => row.tags.join(', '),
+    render: (row: any) => <div className={styles.pills}>{row.tags.map((tag:any, i:number) => <span key={`r-be-tag-pill-${row.id}-${i}`} className={styles.pill}>#{tag}</span>)}</div>,
   }
 ];
 
@@ -254,6 +260,7 @@ export const prodTableColumns = [
     header: i18n('Koд'),
     sortDisabled: true,
     filterDisabled: true,
+    width: '55px'
   },
   {
     property: 'name',
@@ -278,7 +285,7 @@ export const prodTableColumns = [
     header: i18n('Теги'),
     filterDisabled: false,
     sortDisabled: true,
-    render: (row: any) => row.tags.join(', '),
+    render: (row: any) => <div className={styles.pills}>{row.tags.map((tag:any, i:number) => <span key={`r-prod-pill-${row.id}-${i}`} className={styles.pill}>#{tag}</span>)}</div>,
   }
 ];
 
@@ -289,6 +296,7 @@ export const samplesTableColumns = [
     header: i18n('Koд'),
     sortDisabled: true,
     filterDisabled: true,
+    width: '55px'
   },
   {
     property: 'name',
@@ -311,7 +319,7 @@ export const samplesTableColumns = [
     ),
   },
   {
-    property: 'description',
+    property: 'short_description',
     header: i18n('Описание'),
   },
   {
@@ -328,6 +336,7 @@ export const assetsTableColumns = [
     header: i18n('Koд'),
     sortDisabled: true,
     filterDisabled: true,
+    width: '55px'
   },
   {
     property: 'name',
@@ -350,7 +359,7 @@ export const assetsTableColumns = [
     ),
   },
   {
-    property: 'description',
+    property: 'short_description',
     header: i18n('Описание'),
   },
   {

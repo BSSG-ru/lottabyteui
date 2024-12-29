@@ -1,1 +1,0 @@
-export { SettingsUsers } from './SettingsUsers';

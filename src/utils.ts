@@ -4,16 +4,21 @@ import ru from './lang/ru.json';
 import en from './lang/en.json';
 import { getDomain, getDomains } from './services/pages/domains';
 import { getSystem, getSystems } from './services/pages/systems';
-import { getEntity } from './services/pages/dataEntities';
+import { getEntities, getEntity } from './services/pages/dataEntities';
 import { getBusinessEntities, getBusinessEntity } from './services/pages/businessEntities';
-import { getDQRule, searchDQRules } from './services/pages/dqRules';
+import { getDQRule, getRuleType, getRuleTypes, searchDQRules } from './services/pages/dqRules';
 import { getDataType, getDataTypes } from './services/pages/datatypes';
 import { getOwnRatingData, getRatingData, setRating } from './services/pages/rating';
 import { addTag, createDraft, deleteTag } from './services/pages/tags';
 import { getEntityQueries, getEntityQuery } from './services/pages/entityQueries';
-import { getWorkflowTask } from './services/pages/workflow';
+import { getProcessDefinitions, getWorkflowTask } from './services/pages/workflow';
+import { getSystemConnection, getSystemConnections } from './services/pages/systemConnections';
+import { getIndicatorType, getIndicatorTypes } from './services/pages/indicators';
+import { getUser, getUsers } from './services/pages/users';
+import { getArtifactActions, getArtifactType, getWorkflowableArtifactTypes } from './services/pages/artifacts';
 
 export const regexExp = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/gi;
+export const regexNum = /^[0-9]+$/gi;
 
 export function i18n(phrase: string) {
   const language = 'ru'; // navigator.languages[0]
@@ -84,6 +89,7 @@ export function parseGetParams(params: { [key: string]: string | number }) {
     .join('&')}`;
 }
 export function handleHttpError(err: Exception) {
+  console.log('err', err);
   if (err.name != 'AbortError') // cancelled ajax request
   { (window as any).notices.addNotice('error', err.message); }
 }
@@ -134,6 +140,35 @@ export function handleHttpResponse(resp: Response, asText?: boolean) {
   }
 }
 
+export function getArtifactListUrl(artifactType: string) {
+  switch (artifactType) {
+    case 'entity':
+      return `/logic-objects/`;
+    case 'entity_query':
+      return `/queries/`;
+    case 'entity_sample':
+      return `/samples/`;
+    case 'business_entity':
+      return `/business-entities/`;
+    case 'dq_rule':
+      return `/dq_rule/`;
+    case 'meta_database':
+      return `/metadata/`;
+    case 'meta_object': case 'meta_table':
+      return `/metadata/`;
+    case 'meta_view':
+      return `/metadata/`;
+    case 'meta_schema':
+      return `/metadata/`;
+    case 'meta_column':
+      return `/metadata/`;
+    case 'system_connection':
+      return `/settings/connections/`;
+    default:
+      return `/${artifactType}s/`;
+  }
+}
+
 export function getArtifactUrl(artifactId: string, artifactType: string) {
   switch (artifactType) {
     case 'entity':
@@ -146,41 +181,100 @@ export function getArtifactUrl(artifactId: string, artifactType: string) {
       return `/business-entities/edit/${artifactId}`;
     case 'dq_rule':
       return `/dq_rule/edit/${artifactId}`;
+    case 'meta_database':
+      return `/metadata/${artifactId}`;
+    case 'meta_object': case 'meta_table':
+      return `/metadata/${artifactId}?t=2`;
+    case 'meta_view':
+      return `/metadata/${artifactId}?t=3`;
+    case 'meta_schema':
+      return `/metadata/${artifactId}?t=1`;
+    case 'meta_column':
+      return `/metadata/${artifactId}?t=4`;
+    case 'system_connection':
+      return `/settings/connections/edit/${artifactId}`;
     default:
       return `/${artifactType}s/edit/${artifactId}`;
   }
 }
 
-export const getArtifactTypeDisplayName = (artifact_type: string) => {
+export const getArtifactTypeDisplayName = (artifact_type: string, plural?: boolean) => {
   switch (artifact_type) {
     case 'domain':
-      return i18n('Домен');
+      return plural ? i18n('Домены') : i18n('Домен');
     case 'system':
-      return i18n('Система');
+      return plural ? i18n('Системы') : i18n('Система');
     case 'entity':
-      return i18n('Логический объект');
+      return plural ? i18n('Модели') : i18n('Модель');
     case 'entity_query':
-      return i18n('Запрос');
+      return plural ? i18n('Запросы') : i18n('Запрос');
     case 'entity_sample':
-      return i18n('Сэмпл');
+      return plural ? i18n('Сэмплы') : i18n('Сэмпл');
     case 'data_asset':
-      return i18n('Актив');
+      return plural ? i18n('Активы') : i18n('Актив');
     case 'indicator':
-      return i18n('Показатель');
+      return plural ? i18n('Показатели') : i18n('Показатель');
     case 'business_entity':
-      return i18n('Бизнес-сущность');
+      return plural ? i18n('Глоссарии') : i18n('Глоссарий');
     case 'product':
-      return i18n('Продукт');
+      return plural ? i18n('Продукты') : i18n('Продукт');
     case 'task':
-      return i18n('Задача');
+      return plural ? i18n('Задачи') : i18n('Задача');
     case 'dq_rule':
-      return i18n('Правило проверки качества');
+      return plural ? i18n('Качество') : i18n('Правило проверки качества');
     case 'entity_attribute':
-      return i18n('Атрибут ЛО');
+      return plural ? i18n('Атрибуты модели') : i18n('Атрибут модели');
+    case 'metadata':
+      return i18n('Метаданные');
+    case 'meta_database':
+      return i18n('Метаданные: база данных');
+    case 'meta_object':
+      return i18n('Метаданные: таблица/представление');
+    case 'meta_column':
+      return i18n('Метаданные: колонка');
     default:
       return artifact_type;
   }
 };
+
+export const getRuleTypeDisplayValue = async (i: string) => {
+  if (!i) return '';
+
+  return getRuleType(i).then((json: any) => {
+    if (json && json.name) return json.name;
+    return '';
+  }).catch(handleHttpError);
+};
+
+export const getRuleTypeAutocompleteObjects = async (search: string) => getRuleTypes().then((json) => {
+  const res = [];
+  const map = new Map();
+  for (let i = 0; i < json.length; i += 1) {
+    res.push({ id: json[i].id, name: json[i].name });
+    map.set(json[i].id, json[i].name);
+  }
+  //setRuleTypes(map);
+  return res.filter((x) => x.name.toLowerCase().indexOf(search.toLowerCase()) !== -1);
+});
+
+export const getIndicatorTypeDisplayValue = async (i: string) => {
+  if (!i) return '';
+
+  return getIndicatorType(i).then((json: any) => {
+    if (json && json.name) return json.name;
+    return '';
+  }).catch(handleHttpError);
+};
+
+export const getIndicatorTypeAutocompleteObjects = async (search: string) => getIndicatorTypes().then((json) => {
+  const res = [];
+  const map = new Map();
+  for (let i = 0; i < json.length; i += 1) {
+    res.push({ id: json[i].id, name: json[i].name });
+    map.set(json[i].id, json[i].name);
+  }
+  return res.filter((x) => x.name.toLowerCase().indexOf(search.toLowerCase()) !== -1);
+});
 
 export const getDomainDisplayValue = async (identity: string) => {
   if (!identity) return '';
@@ -220,6 +314,85 @@ const getDQRuleLocal = async (identity: string) => {
       return '';
     });
 };
+
+export const getPDAutocompleteObjects = async (search: string) => getProcessDefinitions().then((json) => {
+  const res = [];
+  for (var k in json)
+    res.push({ id: k, name: json[k] });
+  return res.filter((x) => x.name.toLowerCase().indexOf(search.toLowerCase()) !== -1);
+});
+
+export const getPDDisplayValue = async (i: string) => {
+  if (!i)
+    return '';
+
+  return getProcessDefinitions().then((json) => {
+    if (json[i])
+      return json[i];
+    return '';
+  }).catch(handleHttpError);
+};
+
+export const getArtifactActionDisplayValue = async (i: string) => {
+  return i;
+};
+
+export const getArtifactActionAutocompleteObjects = async (search: string) => getArtifactActions().then((json) => {
+  const res = [];
+  
+  for (let i = 0; i < json.length; i += 1) {
+    res.push({ id: json[i], name: json[i] });
+  }
+  
+  return res.filter((x) => x.name.toLowerCase().indexOf(search.toLowerCase()) !== -1);
+});
+
+export const getArtifactTypeDisplayValue = async (i: string) => {
+  if (!i) return '';
+
+  return getArtifactType(i).then((name: string) => {
+    if (name) return name;
+    return '';
+  }).catch(handleHttpError);
+};
+
+export const getArtifactTypeAutocompleteObjects = async (search: string) => getWorkflowableArtifactTypes().then((json) => {
+  const res = [];
+  for (var k in json) {
+    res.push({ id: k, name: json[k] });
+  }
+  
+  return res.filter((x) => x.name.toLowerCase().indexOf(search.toLowerCase()) !== -1);
+});
+
+export const getUserDisplayValue = async (identity: string) => {
+  if (!identity) return '';
+  return getUser(identity)
+    .then((json) => {
+      if (json) return json.username;
+      return undefined;
+    })
+    .catch((e) => {
+      handleHttpError(e);
+      return '';
+    });
+};
+
+export const getUserAutocompleteObjects = async (search: string) => getUsers({
+  sort: 'username+',
+  global_query: search,
+  limit: 1000,
+  offset: 0,
+  filters: [],
+  filters_for_join: [],
+}).then((json) => {
+  const res = [];
+  for (let i = 0; i < json.items.length; i += 1) {
+    res.push({ id: json.items[i].id, name: json.items[i].username, description: json.items[i].display_name });
+  }
+  return res;
+});
+
 export const getDQRuleDisplayValue = async (identity: string) => getDQRuleLocal(identity).then((json) => json.name);
 export const getDQRuleSettings = async (identity: string) => {
   const res = await getDQRuleLocal(identity);
@@ -255,6 +428,19 @@ export const getBusinessEntityDisplayValue = async (identity: string) => {
 export const getQueryDisplayValue = async (identity: string) => {
   if (!identity) return '';
   return getEntityQuery(identity)
+    .then((json) => {
+      if (json && json.entity) return json.entity.name;
+      return undefined;
+    })
+    .catch((e) => {
+      handleHttpError(e);
+      return '';
+    });
+};
+
+export const getSystemConnectionDisplayValue = async (identity: string) => {
+  if (!identity) return '';
+  return getSystemConnection(identity)
     .then((json) => {
       if (json && json.entity) return json.entity.name;
       return undefined;
@@ -305,6 +491,15 @@ export const getEntityQueryAutocompleteObjects = async (search: string) => getEn
   filters_for_join: [],
 }).then((json) => json.items);
 
+export const getEntityAutocompleteObjects = async (search: string) => getEntities({
+  sort: 'name+',
+  global_query: search,
+  limit: 1000,
+  offset: 0,
+  filters: [],
+  filters_for_join: [],
+}).then((json) => json.items);
+
 export const getDataTypeAutocompleteObjects = async (search: string) => getDataTypes({
   sort: 'name+',
   global_query: search,
@@ -341,13 +536,22 @@ export const getQueryAutocompleteObjects = async (search: string) => getEntityQu
   filters_for_join: [],
 }).then((json) => json.items);
 
+export const getSystemConnectionAutocompleteObjects = async (search: string) => getSystemConnections({
+  sort: 'name+',
+  global_query: search,
+  limit: 1000,
+  offset: 0,
+  filters: [],
+  filters_for_join: [],
+}).then((json) => json.items);
+
 export const updateArtifactsCount = () => {
   const event = new CustomEvent('countUpdateNeeded');
   document.dispatchEvent(event);
 };
 
 export const setDataModified = (v: boolean) => {
-  if (window.location.href.indexOf('/settings/') != -1) { (window as any).lbDataModified = false; } else { (window as any).lbDataModified = v; }
+  (window as any).lbDataModified = v;
 };
 
 export const getDataModified = () => (window as any).lbDataModified ?? false;
@@ -369,11 +573,11 @@ export const setTablePageSize = (v: number, suffix?: string) => {
   setCookie('table-page-size' + (suffix ? ('-' + suffix) : ''), v.toString());
 };
 
-export const loadEditPageData = (id: string, versionId: string, setData: (data: any) => void, setTags: (tags: any) => void,
+export const loadEditPageData = (id: string, versionId: string, setData: (data: any) => void, setTags: ((tags: any) => void) | undefined,
   setLoading: (v: boolean) => void, setLoaded: (v: boolean) => void,
-  getVersion: (id: string, versionId: string) => Promise<any>, loadData: (id: string) => Promise<any>,
-  setRatingData: (v: any) => void, setOwnRating: (v: any) => void, getVersions: (id: string) => Promise<any>,
-  setVersions: (v: any) => void, setReadOnly: (v: boolean) => void, complete: () => void = () => { }
+  getVersion: ((id: string, versionId: string) => Promise<any>) | undefined, loadData: (id: string) => Promise<any>,
+  setRatingData: null|((v: any) => void), setOwnRating: null|((v: any) => void), getVersions: ((id: string) => Promise<any>) | undefined,
+  setVersions: ((v: any) => void) | undefined, setReadOnly: (v: boolean) => void, complete: (json:any) => void = (json) => { }
 ) => {
   const handleData = (json: any) => {
     setData(json);
@@ -382,50 +586,59 @@ export const loadEditPageData = (id: string, versionId: string, setData: (data: 
     if (elem !== null) {
       elem.innerText = json.entity.name;
     }
-    setTags(
-      json.metadata.tags ? json.metadata.tags.map((x: any) => ({ value: x.name })) : [],
-    );
+    if (setTags)
+      setTags(
+        json.metadata.tags ? json.metadata.tags.map((x: any) => ({ value: x.name })) : [],
+      );
 
     updateEditPageReadOnly(json, setReadOnly, () => { setLoading(false); setLoaded(true); })
 
+    if (complete)
+      complete(json);
   };
 
-  if (versionId) {
+  if (versionId && getVersion) {
     getVersion(id, versionId).then(handleData).catch(handleHttpError);
   } else {
     loadData(id).then(handleData).catch(handleHttpError);
   }
 
-  getRatingData(id)
-    .then((json) => {
-      setRatingData(json);
-    })
-    .catch(handleHttpError);
+  if (setRatingData) {
+    getRatingData(id)
+      .then((json) => {
+        setRatingData(json);
+      })
+      .catch(handleHttpError);
+  }
 
-  getOwnRatingData(id)
-    .then((rating) => {
-      setOwnRating(rating);
-    })
-    .catch(handleHttpError);
+  if (setOwnRating) {
+    getOwnRatingData(id)
+      .then((rating) => {
+        setOwnRating(rating);
+      })
+      .catch(handleHttpError);
+  }
 
-  getVersions(id)
-    .then((json) => {
-      setVersions(
-        json.resources.map((x: any) => ({
-          name: x.entity.name,
-          description: x.entity.description,
-          version_id: x.metadata.version_id,
-          created_at: new Date(x.metadata.modified_at).toLocaleString(),
-          modifier_display_name: x.metadata.modifier_display_name,
-          modifier_email: x.metadata.modifier_email,
-          modifier_description: x.metadata.modifier_description,
-        })),
-      );
-    })
-    .catch(handleHttpError);
+    if (getVersions && setVersions) {
+      getVersions(id)
+        .then((json) => {
+          const list = json.resources ?? json;
+          setVersions(
+            list.map((x: any) => ({
+              name: x.entity.name,
+              description: x.entity.description,
+              version_id: x.metadata.version_id,
+              created_at: new Date(x.metadata.modified_at).toLocaleString(),
+              modifier_display_name: x.metadata.modifier_display_name,
+              modifier_email: x.metadata.modifier_email,
+              modifier_description: x.metadata.modifier_description,
+            })),
+          );
+        })
+        .catch(handleHttpError);
+  }
 
-  if (complete)
-    complete();
+  
 };
 
 export const tagAddedHandler = (tagName: string, artifactId: string, artifactType: string, artifactState: string, tags: any[], setLoading: (v: boolean) => void,
@@ -435,7 +648,7 @@ export const tagAddedHandler = (tagName: string, artifactId: string, artifactTyp
     if (!tags.some((item) => item.value === tagName)) {
       setLoading(true);
 
-      if (artifactState === 'PUBLISHED') {
+      if (artifactState === 'PUBLISHED' && artifactType != 'meta_database') {
         createDraft(artifactId, artifactType).then((json) => {
           if (json.metadata.id) {
             addTag(json.metadata.id, artifactType, tagName).then(() => {
@@ -462,7 +675,7 @@ export const tagDeletedHandler = (tagName: string, artifactId: string, artifactT
   if (artifactId) {
     setLoading(true);
 
-    if (artifactState === 'PUBLISHED') {
+    if (artifactState === 'PUBLISHED' && artifactType != 'meta_database') {
       createDraft(artifactId, artifactType).then((json) => {
         if (json.metadata.id) {
           deleteTag(json.metadata.id, artifactType, tagName).then(() => {
@@ -511,7 +724,7 @@ export const updateEditPageReadOnly = (json: any, setReadOnly: (v: boolean) => v
       done();
     });
   } else {
-    setReadOnly(json.metadata.state === 'PUBLISHED' || json.metadata.state === 'ARCHIVED');
+    setReadOnly(json.metadata.state === 'PUBLISHED' || json.metadata.state === 'ARCHIVED' || json.metadata.artifact_type == 'entity_sample');
     done();
   }
 };

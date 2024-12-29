@@ -1,21 +1,21 @@
 .tabcontrol {
-    
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
     padding: 0;
-    .tabContent {
-        padding: 0;
-        padding-top: 30px;
-        //overflow: auto;
-    }
 }
 
 .tabsList {
     display: flex;
     flex-wrap: wrap;
+    gap: 16px;
     border-bottom: 1px solid var(--gray-100);
+    padding: 0;
 
     .tab {
 
-        padding: 10px 20px;
+        padding: 10px 0;
         font-size: 14px;
         font-weight: 400;
         
@@ -24,6 +24,30 @@
         &.active {
             font-weight: 700;
             color: var(--blue-100);
+            border-bottom: 2px solid var(--primary60);
         }
+
+        > div > span {
+            display: inline-block;
+            line-height: 16px;
+            font-weight: 400;
+            background: #E5E7EB;
+            border-radius: 8px;
+            padding: 0 4px;
+            margin-left: 12px;
+        }
+    }
+}
+
+.tabContent {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+
+    &.unscrollable {
+        overflow: hidden;
     }
 }

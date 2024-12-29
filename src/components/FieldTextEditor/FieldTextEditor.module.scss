@@ -1,0 +1,38 @@
+@import '../../assets/css/common.scss';
+
+.m_suggestions_popup {
+    background: #fff;
+    padding: 4px;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0px 3.2px 9px 0px #00000029;
+    box-shadow: 0px 0.6px 1.8px 0px #0000001A;
+    box-shadow: 0px -1.5px 6px 0px #0000000F;
+    overflow: auto;
+    z-index: 9999;
+    max-height: 300px;
+    overflow: auto;
+}
+
+.m_suggestions_entry {
+    border-radius: 4px;
+    padding: 5px;
+    cursor: pointer;
+}
+
+.m_suggestions_entry_focused {
+    border-radius: 4px;
+    padding: 5px;
+    background: var(--primary60);
+    color: #fff;
+    cursor: pointer;
+
+    * {
+        color: #fff;
+    }
+}
+
+.m_mention {
+    background: var(--primary10);
+    padding: 1px 3px;
+}

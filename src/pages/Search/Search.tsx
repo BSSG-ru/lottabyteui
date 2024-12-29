@@ -6,36 +6,30 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import styles from './Search.module.scss';
 import { searchPost } from '../../services/pages/search';
-import { doNavigate, getArtifactTypeDisplayName, getArtifactUrl, getTablePageSize, handleHttpError, i18n, setCookie } from '../../utils';
+import { doNavigate, getArtifactTypeDisplayName, getArtifactUrl, getTablePageSize, handleHttpError, i18n, setCookie, setTablePageSize } from '../../utils';
 import { Pagination } from '../../components/Pagination';
-import { ReactComponent as Domains } from '../../assets/icons/domains-icon.svg';
-import { ReactComponent as Systems } from '../../assets/icons/systems-icon.svg';
-import { ReactComponent as LogicObjects } from '../../assets/icons/lo-icon.svg';
-import { ReactComponent as Queries } from '../../assets/icons/requests-icon.svg';
-import { ReactComponent as Samples } from '../../assets/icons/samples-icon.svg';
-import { ReactComponent as Assets } from '../../assets/icons/assets-icon.svg';
-import { ReactComponent as Indicators } from '../../assets/icons/indicators-icon.svg';
-import { ReactComponent as BusinessEntities } from '../../assets/icons/business-ent-icon.svg';
-import { ReactComponent as Products } from '../../assets/icons/products-icon.svg';
-import { ReactComponent as Tasks } from '../../assets/icons/tasks-icon.svg';
 
-import { Button } from '../../components/Button';
 import classNames from 'classnames';
-import { getUserRequest, userInfoRequest } from '../../services/auth';
-import { ReactComponent as DQRules } from '../../assets/icons/dq-rule.svg';
+import { userInfoRequest } from '../../services/auth';
 import Cookies from 'js-cookie';
+import { Autocomplete2 } from '../../components/Autocomplete2';
+import { ArtifactInfo } from '../../components/ArtifactInfo';
+import { SearchCrumbs } from '../../components/SearchCrumbs';
 
 
 export function Search() {
   const [hits, setHits] = useState([]);
   const [totalHits, setTotalHits] = useState(0);
+  const [totalPhrase, setTotalPhrase] = useState<string>('');
+  const [searchLoading, setSearchLoading] = useState(false);
   const navigate = useNavigate();
 
   const [searchParams] = useSearchParams();
   const [searchRequest, setSearchRequest] = useState<any>(null);
 
   const ck_fat = Cookies.get('search-filters');
-  const [filterArtifactTypes, setFilterArtifactTypes] = useState<any>(ck_fat ? JSON.parse(ck_fat) : {
+
+  const [filterArtifactTypes, setFilterArtifactTypes] = useState<any>((ck_fat && ck_fat.indexOf('metadata') != -1) ? JSON.parse(ck_fat) : {
     domain: true,
     system: true,
     task: true,
@@ -47,7 +41,8 @@ export function Search() {
     business_entity: true,
     product: true,
     dq_rule: true,
-    entity_attribute: true
+    entity_attribute: true,
+    metadata: true
   });
 
   useEffect(() => {
@@ -57,11 +52,11 @@ export function Search() {
   const buildSearchRequest = (q: string, filterArtifactTypes: any, userDomains: any, from: number, size: number) => {
 
     let parts = q.toLowerCase().split(' ').filter(s => s);
-    let tags_parts = parts.filter(s => s.indexOf('@') === 0);
+    let tags_parts = parts.filter(s => s.indexOf('#') === 0);
 
     let inner_q:any = {
       'query_string': {
-        'query': `${parts.filter(s => s.indexOf('@') !== 0).map(s => ('*' + s + '*')).join(' ')}`,
+        'query': `${parts.filter(s => s.indexOf('#') !== 0).map(s => ('*' + s + '*')).join(' ')}`,
         'default_operator': 'AND'
       }
     };
@@ -90,10 +85,16 @@ export function Search() {
 
     var filter_by_at:any[] = [];
     Object.keys(filterArtifactTypes).filter(x => filterArtifactTypes[x]).forEach(at => {
-      filter_by_at.push({ match: { artifact_type: at }});
+      if (at == 'metadata') {
+        filter_by_at.push({ match: { artifact_type: 'meta_database' }});
+        filter_by_at.push({ match: { artifact_type: 'meta_object' }});
+        filter_by_at.push({ match: { artifact_type: 'meta_column' }});
+      } else
+        filter_by_at.push({ match: { artifact_type: at }});
     });
     if (filter_by_at.length == 0) {
       Object.keys(filterArtifactTypes).forEach(at => {
+        
         filter_by_at.push({ match: { artifact_type: true }});
       });
     }
@@ -118,7 +119,7 @@ export function Search() {
     return {
       size,
       from,
-      _source: ['artifact_type', 'id', 'artifact_id', 'name', 'description', 'domains', 'entity_id', 'tech_name', 'artifact_state'],
+      _source: ['artifact_type', 'id', 'artifact_id', 'name', 'short_description', 'domains', 'entity_id', 'tech_name', 'artifact_state', 'meta_database_id', 'meta_object_type'],
       query: {
         bool: {
           must: must,
@@ -132,7 +133,6 @@ export function Search() {
     if (q) {
       userInfoRequest().then(resp => {
         resp.json().then(data => {
-          //console.log('set userp', data.permissions);
           setCookie('userp', data.permissions.join(','), { path: '/' });
           setSearchRequest(buildSearchRequest(q, filterArtifactTypes, data.user_domains, 0, getTablePageSize()));
         });
@@ -141,29 +141,28 @@ export function Search() {
     }
   }, [searchParams, filterArtifactTypes]);
 
-  const getTotalText = (n: number) => {
-    const rest = n % 10;
-    let txt = 'объектов';
-    if (n < 10 || n > 20) {
-      switch (rest) {
-        case 1:
-          txt = 'объект';
-          break;
-        case 2:
-        case 3:
-        case 4:
-          txt = 'объекта';
-          break;
-      }
-    }
+  useEffect(() => {
+    var f = i18n('найдено');
+    var o = i18n('объектов');
+    var d = (totalHits - (totalHits / 10));
+    var d2 = (totalHits / 10 - (totalHits / 100));
+    if (d == 1)
+      f = i18n('найден');
+    
+    if (d == 1)
+      o = i18n('объект');
+    else if (d2 != 1 && (d == 2 || d == 3 || d == 4))
+      o = i18n('объекта');
 
-    return `${n} ${txt}`;
-  };
+    setTotalPhrase(f + ' ' + totalHits + ' ' + o);
+  }, [ totalHits ]);
 
   useEffect(() => {
     if (searchRequest) {
+      setSearchLoading(true);
       searchPost(searchRequest)
         .then((json) => {
+          setSearchLoading(false);
           if (json && json.length > 1) {
             setTotalHits(json[0].size);
             setHits(json.splice(1));
@@ -177,10 +176,17 @@ export function Search() {
   }, [searchRequest]);
 
   const getHitUrl = (hit: any) => {
-    console.log('hit', hit);
     if (hit._source.id && hit._source.artifact_type) {
       if (hit._source.artifact_type == 'entity_attribute' && hit._source.entity_id)
         return getArtifactUrl(hit._source.entity_id, 'entity');
+      else if (hit._source.artifact_type == 'meta_object' && hit._source.meta_object_type == 'SCHEMA' && hit._source.meta_database_id)
+        return getArtifactUrl(hit._source.meta_database_id, 'meta_schema');
+      else if (hit._source.artifact_type == 'meta_object' && hit._source.meta_object_type == 'TABLE' && hit._source.meta_database_id)
+        return getArtifactUrl(hit._source.meta_database_id, 'meta_table');
+      else if (hit._source.artifact_type == 'meta_object' && hit._source.meta_object_type == 'VIEW' && hit._source.meta_database_id)
+        return getArtifactUrl(hit._source.meta_database_id, 'meta_view');
+      else if (hit._source.artifact_type == 'meta_column' && hit._source.meta_database_id)
+        return getArtifactUrl(hit._source.meta_database_id, hit._source.artifact_type);
       else
         return getArtifactUrl(hit._source.id, hit._source.artifact_type);
     }
@@ -188,96 +194,64 @@ export function Search() {
     return null;
   };
 
-  const getArtifactTypeIcon = (artifact_type: string) => {
-    switch (artifact_type) {
-      case 'domain':
-        return <Domains />;
-      case 'system':
-        return <Systems />;
-      case 'entity':
-        return <LogicObjects />;
-      case 'entity_attribute':
-        return <LogicObjects />;
-        case 'entity_query':
-        return <Queries />;
-      case 'entity_sample':
-        return <Samples />;
-      case 'data_asset':
-        return <Assets />;
-      case 'indicator':
-        return <Indicators />;
-      case 'business_entity':
-        return <BusinessEntities />;
-      case 'product':
-        return <Products />;
-      case 'task':
-        return <Tasks />;
-      case 'dq_rule':
-        return <DQRules />;
-      default:
-        return '';
-    }
-  };
-
   return (
     <div className={styles.search_page}>
+      <div className={styles.left}>
+        <div className={styles.total_msg}>По запросу <span className={styles.q}>{searchParams.get('q')}</span> {totalPhrase}.</div>
+        <Autocomplete2 className={styles.select} defaultInputValue={Object.keys(filterArtifactTypes).filter(x => filterArtifactTypes[x]).length != 1 ? 'Все типы объектов' : getArtifactTypeDisplayName(Object.keys(filterArtifactTypes).filter(x => filterArtifactTypes[x])[0])} getOptions={async (s) => { return [{id: '', name: 'Все типы объектов'}, ...Object.keys(filterArtifactTypes).map((k:string) => ({id: k, name: getArtifactTypeDisplayName(k)}))].filter(x => x.name.toLowerCase().indexOf(s.toLowerCase()) !== -1) }} 
+          defaultOptions onChanged={(data: any) => {
+            var obj:any = {};
+            for (var k in filterArtifactTypes)
+              obj[k] = data.id ? false : true;
 
-      <div className={styles.search_filters}>
-        {Object.keys(filterArtifactTypes).map((at, index) => {
-          return <Button className={classNames(styles.btn_filter_at, { [styles.active]: filterArtifactTypes[at] })} onClick={() => { setFilterArtifactTypes((prev:any) => ({...prev, [at]: !filterArtifactTypes[at]})) }}>{getArtifactTypeDisplayName(at)}</Button>
-        })}
-        
+            if (data.id)
+              obj[data.id] = true;
+            setFilterArtifactTypes(obj);
+          }} />
       </div>
-
-      <div className={styles.total_msg}>
-        По вашему запросу найдено&nbsp;
-        {getTotalText(totalHits)}.
-      </div>
-
-      {hits.map((hit: any) => {
-        const url = getHitUrl(hit);
-        return (
-          <div
-            key={`sr_${hit._source.id}`}
-            className={classNames(styles.search_result, {[styles.archive]: hit._source.artifact_state == 'ARCHIVED'})}
-          >
-            <div className={styles.search_header}>
-              {getArtifactTypeIcon(hit._source.artifact_type)}
-              <div className={styles.at}>{getArtifactTypeDisplayName(hit._source.artifact_type) + (hit._source.artifact_state == 'ARCHIVED' ? (' (' + i18n('Архив') + ')') : '')}</div>
+      <div className={classNames(styles.right, { [styles.loading]: searchLoading })}>
+        {hits.map((hit: any) => {
+          const url = getHitUrl(hit);
+          return (
+            <div key={`sr_${hit._source.id}`} className={classNames(styles.search_result, {[styles.archive]: hit._source.artifact_state == 'ARCHIVED'})}>
+              <SearchCrumbs artifact_id={hit._source.id} artifact_type={hit._source.artifact_type} artifact_name={hit._source.name} />
+              <a
+                href={url ?? '#'}
+                className={classNames(styles.search_result_link)}
+                onClick={() => { if (url) doNavigate(url, navigate); return false; }}
+              >
+                <h3 className={styles.name}>{hit._source.name}</h3>
+              </a>
+              <div className={styles.description}><pre>{hit._source.short_description ? hit._source.short_description.replace(/<[^<>]*>/g, '') : ''}</pre></div>
+              <ArtifactInfo artifactType={hit._source.artifact_type} state={hit._source.artifact_state} domain_ids={Array.from(new Set(hit._source.domains))} artifactId={hit._source.id} favControl />
             </div>
-            <a href={url ?? '###'} className={styles.name} onClick={() => { if (url) doNavigate(url, navigate); return false; }}>{hit._source.name}</a>
-            <div className={styles.description}>{hit._source.description}</div>
-            
-          </div>
-        );
-      })}
+          );
+        })}
 
-      {searchRequest && (
-        <Pagination
-          label={`${i18n('Показано с')} ${searchRequest.from + 1} ${i18n('по')} ${
-            searchRequest.from + searchRequest.size > totalHits
-              ? totalHits
-              : searchRequest.from + searchRequest.size
-          } 
-            ${i18n(' из ')} ${totalHits}`}
-          page={searchRequest.from / searchRequest.size + 1}
-          pageSize={searchRequest.size}
-          inTotal={Math.ceil(totalHits / searchRequest.size)}
-          setPage={(payload: number) => {
-            setSearchRequest((prev: any) => ({
-              ...prev,
-              from: prev.size * (payload - 1),
-            }));
-          }}
-          setPageSize={(size:number) => {
-            setSearchRequest((prev: any) => ({
-              ...prev,
-              size: size
-            }));
-          }}
-          className={styles.pagination_wrapper}
-        />
-      )}
+        {searchRequest && (
+          <Pagination
+            page={searchRequest.from / searchRequest.size + 1}
+            pageSize={searchRequest.size}
+            inTotal={Math.ceil(totalHits / searchRequest.size)}
+            setPage={(payload: number) => {
+              setSearchRequest((prev: any) => ({
+                ...prev,
+                from: prev.size * (payload - 1),
+              }));
+            }}
+            setPageSize={(size:number) => {
+              setSearchRequest((prev: any) => ({
+                ...prev,
+                size: size
+              }));
+              setTablePageSize(size);
+            }}
+            className={styles.pagination_wrapper}
+          />
+        )}
+      </div>
+
+      
     </div>
   );
 }

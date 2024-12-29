@@ -9,7 +9,7 @@ import { i18n } from '../../utils';
 import { Button } from '../Button';
 import { Input } from '../Input';
 import { useNavigate } from 'react-router';
-import { getTags, searchTags } from '../../services/pages/tags';
+import { searchTags } from '../../services/pages/tags';
 
 
 type SearchProps = {
@@ -33,7 +33,7 @@ export const Search: FC<SearchProps> = ({ query }) => {
   useEffect(() => {
     if (tagSearch) {
       searchTags(tagSearch).then(json => {
-        console.log('tags', json);
+        
         setTags(json);
         if (json.length > 0)
           setTagIndex(0);
@@ -49,7 +49,6 @@ export const Search: FC<SearchProps> = ({ query }) => {
   const tagsPopup = (target: HTMLInputElement) => {
 
     var s = target.value;
-    //console.log('s', s);
     var pos = target.selectionStart;
     if (pos) {
       var start = pos - 1;
@@ -60,10 +59,7 @@ export const Search: FC<SearchProps> = ({ query }) => {
       while (end < s.length && s.at(end) != ' ')
         end++;
 
-      //console.log('start', start);
-      //console.log('end', end);
-
-      if (s.at(start+1) == '@' && end - start > 2) {
+      if (s.at(start+1) == '#' && end - start > 2) {
         setMode('select-tag');
         setTagSearch(s.substring(start + 2, end));
         setTagStartPos(start+ 2);
@@ -96,7 +92,7 @@ export const Search: FC<SearchProps> = ({ query }) => {
           className={styles.search_input}
           id="search-input"
           placeholder={i18n('Search')}
-          value={value}
+          value={value} name="s"
           onChange={(e) => setValue(e.target.value)}
           enterKeyBlursInput={false}
           customKeyUpHandler={(e: KeyboardEvent) => {
@@ -145,7 +141,7 @@ export const Search: FC<SearchProps> = ({ query }) => {
         />
         <Button
           disabled={!value}
-          background="blue"
+          background="none"
           onClick={() => {
             if (value) navigate(`/search/?q=${encodeURIComponent(value)}`);
           }}

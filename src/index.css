@@ -41,10 +41,18 @@ table{border-collapse:collapse;border-spacing:0}
 td,th{padding:0}
 ul {list-style: none;padding-inline-start: 0px;margin-block-start: 0;margin-block-end: 0;}
 
+*:focus-visible {
+    outline: none !important;
+}
+
+pre {
+    padding: 1px;
+}
+
 *,
 *::after,
 *::before {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Mulish', sans-serif;
     font-size: 14px;
     line-height: 16px;
     letter-spacing: 0.08px;
@@ -64,7 +72,7 @@ ul {list-style: none;padding-inline-start: 0px;margin-block-start: 0;margin-bloc
     --blue-50: rgba(85, 112, 241, 0.5);
     --blue-30: rgba(85, 112, 241, 0.3);
 
-    --blue-main: #97A5EB;
+    --blue-main: #E6E1FF;
 
     --disabled: #CBC8C8;
 
@@ -78,16 +86,30 @@ ul {list-style: none;padding-inline-start: 0px;margin-block-start: 0;margin-bloc
 
     --red: #aa0000;
     --red10: #ffeeee;
+    --error60: #D92020;
+
+    --primary60: #676EF8;
+    --primary10: #E6E1FF;
+    --neutral10: #E5E7EB;
+    --neutral50: #717681;
+    --neutral05: #F1F3F6;
+    --neutral90: #23262D;
+
+    --warning10: #FFF1E5;
+    --warning50: #FF5C22;
 }
 
 body {
     position: relative;
     height: 100vh;
+    background: #F1F3F6;
 }
 #root {
     height: 100vh;
     display: flex;
     flex-direction: column;
+    align-items: center;
+    min-width: 1280px;
 }
 div.centrify {
     position: absolute;
@@ -98,36 +120,72 @@ div.centrify {
 
 /* typography */
 @font-face {
-    font-family: 'Inter';
-    src: url(/src/assets/fonts/Inter/Inter-300.ttf);
-    font-weight: 300;
+    font-family: 'Mulish';
+    src: url(/src/assets/fonts/Mulish/Mulish-VariableFont_wght.ttf);
     font-display: auto;
+    font-style: normal;
 }
 
 @font-face {
-    font-family: 'Inter';
-    src: url(/src/assets/fonts/Inter/Inter-400.ttf);
-    font-weight: 400;
+    font-family: 'Mulish';
+    src: url(/src/assets/fonts/Mulish/Mulish-Italic-VariableFont_wght.ttf);
     font-display: auto;
+    font-style: italic;
 }
 
-@font-face {
-    font-family: 'Inter';
-    src: url(/src/assets/fonts/Inter/Inter-500.ttf);
-    font-weight: 500;
-    font-display: auto;
+:root {
+    -bs-body-bg: #F1F3F6 !important;
+    
 }
 
-@font-face {
-    font-family: 'Inter';
-    src: url(/src/assets/fonts/Inter/Inter-700.ttf);
-    font-weight: 700;
-    font-display: auto;
+.btn {
+    --bs-btn-bg: var(--primary60) !important;
+    --bs-btn-hover-bg: var(--primary60) !important;
+    --bs-btn-active-bg: var(--primary60) !important;
+    --bs-btn-border-width: 0 !important;
 }
 
-@font-face {
-    font-family: 'Inter';
-    src: url(/src/assets/fonts/Inter/Inter-900.ttf);
-    font-weight: 900;
-    font-display: auto;
+.dropdown-menu {
+    --bs-dropdown-border-width: 0 !important;
+    --bs-dropdown-border-radius: 8px !important;
+    --bs-dropdown-padding-x: 4px !important;
+
+    box-shadow: 0px 3.2px 9px 0px #00000029;
+}
+
+.dropdown-item {
+    --bs-dropdown-item-padding-y: 8px !important;
+    --bs-dropdown-link-hover-bg: #F2F2F2 !important;
+    --bs-dropdown-link-active-bg: #F2F2F2 !important;
+    --bs-dropdown-link-active-color: #000 !important;
+    border-radius: 6px;
+}
+
+.dropdown-toggle::after {
+    content: ' ';
+    background: url(assets/icons/dropdown-w.svg) no-repeat center center;
+    background-size: 15px 10px;
+    width: 15px;
+    height: 10px;
+    border: none !important;
+    vertical-align: middle !important;
+    margin-left: 12px !important;
+}
+
+.react-datepicker-wrapper {
+    width: 100%;
+}
+
+.DraftEditor-root {
+    width: 100%;
+    border-radius: 6px;
+    padding: 0px 15px;
+    border: 1px solid #9BA0AA;
+    transition: border 0.3s linear;
+    line-height: 30px;
+    outline: none !important;
+}
+
+.DraftEditor-editorContainer {
+    padding: 7px 0;
 }

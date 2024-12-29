@@ -1,29 +1,33 @@
 .crumbs {
     height: 40px;
-    background-color: var(--gray-70);
+    background-color: transparent;
     display: flex;
     align-items: center;
-    padding: 12px 24px;
-    gap: 20px;
+    padding: 16px 0;
+    gap: 5px;
 }
 .link {
     font-size: 12px;
     text-decoration: none;
-    color: var(--gray-10);
+    color: #747782;
     position: relative;
+
+    max-width: 230px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+
     &_active {
-        color: var(--white);
+        color: #747782;
         font-weight: 700;
     }
     &:not(.link_active):hover {
         text-decoration: underline;
     }
-    &:not(:first-child) {
-        &::before {
-            content: '/';
-            position: absolute;
-            left: -12px;
-            top: 0;
-        }
-    }
+}
+
+.df {
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }

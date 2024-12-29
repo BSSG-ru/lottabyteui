@@ -2,14 +2,19 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 18px 28px 18px 24px;
-    height: 80px;
-    
+    padding: 0px 28px 0px 24px;
+    height: 52px;
+    border-bottom: 2px solid #E3E5EA;
+    width: 100%;
 }
 .actions {
-    button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    button:not(.btn_icon) {
         height: 38px;
-        margin-left: 10px;
+        
     }
 }
 
@@ -23,4 +28,24 @@
 .search {
     display: flex;
     align-items: center;
+    flex-grow: 1;
+    justify-content: flex-end;
+}
+
+.sitetitle {
+    margin: 0;
+    padding: 0;
+    font-weight: 800;
+    font-size: 24.5px;
+    color: #23262D;
+}
+
+.logo_link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+button.btn_icon {
+    padding: 0;
 }

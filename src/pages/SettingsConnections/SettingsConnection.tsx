@@ -2,24 +2,26 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import styles from './SettingsConnections.module.scss';
-import { handleHttpError, i18n } from '../../utils';
-import { FieldEditor } from '../../components/FieldEditor';
-
+import { getSystemAutocompleteObjects, getSystemDisplayValue, handleHttpError, i18n, setDataModified } from '../../utils';
 import {
   createSystemConnection,
   getSystemConnection,
   updateSystemConnection,
 } from '../../services/pages/systemConnections';
 import { FieldAutocompleteEditor } from '../../components/FieldAutocompleteEditor';
-import { getSystems, getSystem } from '../../services/pages/systems';
-import { Button } from '../../components/Button';
 import { TaskParamsControl } from '../../components/TaskParamsControl/TaskParamsControl';
 import { getConnector } from '../../services/pages/connectors';
+import useUrlState from '@ahooksjs/use-url-state';
+import classNames from 'classnames';
+import { FieldTextEditor } from '../../components/FieldTextEditor';
+import { EditPage } from '../../components/EditPage';
 
 export function SettingsConnection() {
   const navigate = useNavigate();
 
   const [, setLoading] = useState(true);
+  const [isLoaded, setLoaded] = useState(false);
+  const [state, setState] = useUrlState({ sc: 1 }, { navigateMode: 'replace' });
   const [data, setData] = useState({
     entity: {
       name: '',
@@ -28,7 +30,7 @@ export function SettingsConnection() {
     },
     metadata: { id: null },
   });
-  const [isCreateMode, setCreateMode] = useState(false);
+  
   const [showValidation, setShowValidation] = useState(false);
   const [connectionId, setConnectionId] = useState<string>('');
   const [newConnectionData, setNewConnectionData] = useState({});
@@ -39,8 +41,7 @@ export function SettingsConnection() {
     if (!connectionId && id) setConnectionId(id);
   }, [id]);
 
-  useEffect(() => {
-    setCreateMode(connectionId === '');
+  const loadData = () => {
     if (connectionId) {
       getSystemConnection(connectionId)
         .then((json: any) => {
@@ -56,156 +57,93 @@ export function SettingsConnection() {
           const el = document.getElementById(`crumb_${connectionId}`);
           if (el) el.innerText = json.entity.name;
           setLoading(false);
+          setLoaded(true);
         })
         .catch(handleHttpError);
     }
-  }, [connectionId]);
+  }
 
   useEffect(() => {
-    if (isCreateMode) {
-      if (data.entity.name && data.entity.system_id && data.entity.connector_id) {
-        createSystemConnection({ ...data.entity, enabled: true })
-          .then((json) => {
-            if (json && json.metadata && json.metadata.id) {
-              setConnectionId(json.metadata.id);
-              window.history.pushState(
-                {},
-                '',
-                `/settings/connections/edit/${encodeURIComponent(json.metadata.id)}`,
-              );
-            }
-          })
-          .catch(handleHttpError);
-      }
-    }
-  }, [data]);
+    loadData();
+  }, [connectionId]);
 
   const updateConnectionField = (field: string, value: any) => {
+    setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } }));
+    setDataModified(true);
+  };
+
+  const saveData = () => {
+    
+    /*updateSystemConnection(connectionId, data).then(json => {
+      if (json && json.metadata.id && json.metadata.id !== connectionId) {
+        navigate(`/settings/connections/edit/${encodeURIComponent(json.metadata.id)}`);
+      }
+    }).catch(handleHttpError);*/
+
     if (connectionId) {
-      const d: any = {};
-      d[field] = value;
-      updateSystemConnection(connectionId, d)
-        .then(() => {})
-        .catch(handleHttpError);
-      setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } }));
+      updateSystemConnection(connectionId, {
+        ...data.entity,
+        ...newConnectionData,
+      }).catch(handleHttpError);
     } else {
-      setShowValidation(true);
-      setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } }));
-    }
-  };
-
-  const getSystemObjects = async (search: string) => getSystems({
-    sort: 'name+',
-    global_query: search,
-    limit: 1000,
-    offset: 0,
-    filters: [],
-    filters_for_join: [],
-  }).then((json) => json.items);
-
-  const getSystemDisplayValue = async (identity: string) => {
-    if (!identity) return '';
-    return getSystem(identity)
-      .then((json) => {
-        if (json && json.entity) return json.entity.name;
-        return undefined;
+      createSystemConnection({
+        ...data.entity,
+        ...newConnectionData,
+        enabled: true,
       })
-      .catch((e) => {
-        handleHttpError(e);
-        return '';
-      });
-  };
+        .then((json) => {
+          if (json && json.metadata && json.metadata.id) {
+            navigate(`/settings/connections/edit/${encodeURIComponent(json.metadata.id)}`);
+          }
+        })
+        .catch(handleHttpError);
+    }
+  }
 
   return (
-    <div className={`${styles.page} ${styles.connectionPage}`}>
-      <div className={styles.mainContent}>
-        <div className={styles.general_data}>
-          <div className={styles.data_row}>
-            <FieldEditor
-              className=""
-              layout="separated"
-              labelPrefix={i18n('Название')}
-              isMultiline={false}
-              isReadOnly={false}
-              defaultValue={data.entity.name}
-              valueSubmitted={(value) => updateConnectionField('name', value)}
-              isRequired
-              showValidation={showValidation}
-            />
-          </div>
-          <div className={styles.data_row}>
-            <FieldAutocompleteEditor
-              className=""
-              label={i18n('Система')}
-              defaultValue={data.entity.system_id}
-              valueSubmitted={(identity) => updateConnectionField('system_id', identity)}
-              getDisplayValue={getSystemDisplayValue}
-              getObjects={getSystemObjects}
-              isRequired
-              showValidation={showValidation}
-            />
-          </div>
-        </div>
+    <>
+      <EditPage noRecentViews noRating data={data} objectId={connectionId} objectVersionId='' urlSlug='settings/connections' setData={setData} isReadOnly={false} setReadOnly={() => {}} artifactType='system_connection' 
+        updateObject={updateSystemConnection}
+        getObject={getSystemConnection} tabs={[
+        {
+          key: 'tab-gen',
+          title: i18n('Сведения'),
+          content: <div className={styles.tab_white}>
+            
+              <h2>Общая информация</h2>
 
-        <div className={styles.general_data}>
-          <div className={styles.data_row}>
-            <table className={styles.task_params}>
-              <tbody>
-                <TaskParamsControl
-                  onChangedConnection={(connData) => {
-                    setNewConnectionData(connData);
-                  }}
-                  defaultConnectionData={data.entity}
-                  useScheduler={false}
-                />
-              </tbody>
-            </table>
+              <FieldTextEditor
+                label={i18n('Название')}
+                isReadOnly={false}
+                defaultValue={data.entity.name}
+                valueSubmitted={(value) => updateConnectionField('name', value)}
+                isRequired
+                showValidation={showValidation}
+              />
 
-            <div className={styles.buttons}>
-              <Button
-                className={styles.btn}
-                background="orange"
-                onClick={() => {
-                  if (connectionId) {
-                    updateSystemConnection(connectionId, {
-                      ...data.entity,
-                      ...newConnectionData,
-                    }).catch(handleHttpError);
-                  } else {
-                    createSystemConnection({
-                      ...data.entity,
-                      ...newConnectionData,
-                      enabled: true,
-                    })
-                      .then((json) => {
-                        if (json && json.metadata && json.metadata.id) {
-                          setConnectionId(json.metadata.id);
-                          window.history.pushState(
-                            {},
-                            '',
-                            `/settings/connections/edit/${encodeURIComponent(json.metadata.id)}`,
-                          );
-                        }
-                      })
-                      .catch(handleHttpError);
-                  }
+              <FieldAutocompleteEditor
+                label={i18n('Система')}
+                defaultValue={data.entity.system_id}
+                valueSubmitted={(identity) => updateConnectionField('system_id', identity)}
+                getDisplayValue={getSystemDisplayValue}
+                getObjects={getSystemAutocompleteObjects}
+                isRequired
+                showValidation={showValidation}
+              />
+            
+              <TaskParamsControl
+                onChangedConnection={(connData) => {
+                  setNewConnectionData(connData);
                 }}
-              >
-                {i18n('Сохранить')}
-              </Button>
-              <Button
-                className={styles.btn}
-                background="outlined-orange"
-                onClick={() => {
-                  navigate('/settings/connections');
-                }}
-              >
-                {i18n('Отмена')}
-              </Button>
-            </div>
+                defaultConnectionData={data.entity}
+                useScheduler={false}
+              />
+
+              
           </div>
-        </div>
-      </div>
-    </div>
+        }
+      ]} />
+      
+    </>
   );
 }

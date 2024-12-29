@@ -1,4 +1,4 @@
-import React, { FC, KeyboardEvent, useEffect, useState } from 'react';
+import React, { FC } from 'react';
 import { Tooltip } from 'react-tooltip';
 import { getCookie, handleHttpError, i18n, setCookie } from '../../utils';
 import styles from './DashboardSwitch.module.scss';

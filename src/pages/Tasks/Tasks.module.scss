@@ -1,44 +1,7 @@
-.page {
-    padding: 70px 50px 0px;
+@import '../../assets/css/common.scss';
 
-    &.taskPage {
-        display: flex;
-        align-items: flex-start;
-
-        .mainContent {
-            flex-grow: 1;
-            min-width: 300px;
-        }
-
-        .rightBar {
-            flex: 0 0 253px;
-            padding: 0;
-            margin-left: 30px;
-        }
-    }
-}
-
-.title {
-    text-transform: uppercase;
-    font-weight: 700;
-    font-size: 16px;
+.page .title {
     margin-bottom: 30px;
-    max-width: 750px;
-}
-
-.input {
-    width: 322px;
-    margin-bottom: 20px;
-}
-.long_input {
-    max-width: 750px;
-    margin-bottom: 20px;
-}
-
-.button {
-    margin-bottom: 20px;
-    gap: 10px;
-    padding: 10px 20px;
 }
 
 .table {
@@ -87,6 +50,7 @@
 .buttons {
     display: flex;
     gap: 5px;
+    margin-top: 20px;
 
     .btn {
         padding: 8px 11px;
@@ -168,13 +132,6 @@
     }
 }
 
-.fields, .params {
-    input[type="text"], input[type="number"] {
-        border: 1px solid #B2B2B2;
-        box-shadow: none;
-    }
-}
-
 .show_add_task {
     .add_task_dlg {
         display: block;
@@ -193,21 +150,6 @@
     margin-top: 10px;
     > span {
         display: block;
-    }
-}
-
-.general_data {
-    max-width: 750px;
-    border: 1px solid #d9d9d9;
-    padding: 0 8px;
-    margin-bottom: 20px;
-
-    .data_row {
-        padding: 16px 8px;
-        
-        &:not(:last-child) {
-            border-bottom: 1px solid #d9d9d988;
-        }
     }
 }
 
@@ -237,14 +179,62 @@
     }
 }
 
-.btn_scheme {
-    padding: 9px 19px;
-    margin-bottom: 20px;
-    line-height: 23px;
-    
-    line-height: 23px;
-    background-color: var(--white);
-    color: var(--blue-100);
-    border: 1px solid var(--blue-100);
-    border-radius: 4px;
+.btn_run {
+    display: inline-block;
+}
+
+.dlg_create {
+    .fields {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+}
+
+.btn_add_schedule {
+    min-width: 0;
+    width: 130px;
+    text-align: left;
+    padding: 0;
+    justify-content: flex-start;
+}
+
+.schedules {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    .schedule_item {
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--neutral50);
+        table {
+            width: 100%;
+
+            th, td {
+                width: 50%;
+            }
+        }
+    }
+
+    th, td {
+        padding: 4px 0;
+        font-weight: 400;
+    }
+}
+
+.btns {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.pill.status_ {
+    display: none;
+}
+
+.pill.status_failed, .pill.status_ошибка {
+    background-color: var(--red10);
+}
+
+.pill.status_finished, .pill.status_выполнена {
+    background-color: var(--primary10);
 }

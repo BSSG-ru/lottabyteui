@@ -1,6 +1,5 @@
 import React, { FC, KeyboardEvent, useEffect, useState } from 'react';
 import { Tooltip } from 'react-tooltip';
-import { getRole } from '../../services/pages/roles';
 import { getUserByLogin } from '../../services/pages/users';
 import { getCookie, handleHttpError, i18n, setCookie } from '../../utils';
 import styles from './LimitStewardSwitch.module.scss';
@@ -36,8 +35,6 @@ export class LimitStewardSwitch extends React.Component<{ cookieKey: string }, {
                     (e as any).limitSteward = !oldLimitSteward;
                     (e as any).isSteward = this.state.isSteward;
 
-                    console.log('ls event', e);
-                    
                     window.dispatchEvent(e);
                 }
             });
@@ -67,7 +64,6 @@ export class LimitStewardSwitch extends React.Component<{ cookieKey: string }, {
                     (e as any).eventName = 'limitStewardChanged';
                     (e as any).limitSteward = v;
                     (e as any).isSteward = this.state.isSteward;
-                    console.log('ls event', e);
                     window.dispatchEvent(e);
                 }}>
                     <div id="steward-switch-handler" className={styles.switch_handler}></div>

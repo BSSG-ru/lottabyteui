@@ -10,4 +10,23 @@ export type ArtifactMetaData = {
     draft_id?: string;
     tags?: any[];
     ancestor_draft_id?: string;
+    created_by?: string;
 };
+
+export type DashboardEntity = {
+    id: string;
+    name: string;
+    description?: string;
+    weight: number;
+    rating?: number;
+    artifactType: string;
+    createdBy?: string;
+    isInFav?: boolean;
+};
+
+export type UserFavData = {
+    id: string;
+    artifact_id: string;
+    artifact_type: string;
+    artifact_name: string;
+}

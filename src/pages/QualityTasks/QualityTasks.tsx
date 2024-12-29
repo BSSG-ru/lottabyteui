@@ -2,7 +2,6 @@
 /* eslint-disable jsx-a11y/anchor-has-content */
 import React, { useEffect, useState } from 'react';
 import Modal from 'react-bootstrap/Modal';
-import Button from 'react-bootstrap/Button';
 
 import useUrlState from '@ahooksjs/use-url-state';
 import { useNavigate } from 'react-router-dom';
@@ -27,6 +26,8 @@ import styles from './QualityTasks.module.scss';
 import 'reactflow/dist/style.css';
 import { getQualityTasksAssertionByRunId, getQualityTasksByRunId } from '../../services/pages/qualityTasks';
 import './CustomNode.module.css';
+import classNames from 'classnames';
+import { Button } from '../../components/Button';
 
 type ElementType = {
   entity: {
@@ -44,8 +45,10 @@ type DateiledElementType = {
 };
 
 export function QualityTasks() {
+  const navigate = useNavigate();
   const [state, setState] = useUrlState({ p: '1', q: undefined }, { navigateMode: 'replace' });
   const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(true);
   const [data] = useState([]);
   const [detailData, setDetailData] = useState([]);
   const [showDiagramDetail, setShowDiagramDetail] = useState(false);
@@ -114,11 +117,11 @@ export function QualityTasks() {
 
   const getNodeStyle = (state_id: string) => {
     if (state_id === '0') {
-      return '#d7baba';
+      return '#ffeeee';
     } if (state_id === '1') {
-      return '#d7d6ba';
+      return '#FFF1E5';
     }
-    return '#bad7bb';
+    return '#E6E1FF';
   };
 
   const [nodes, setNodes] = useState<Node<CustomNodeData>[]>([]);
@@ -291,15 +294,20 @@ export function QualityTasks() {
     return false;
   };
   return (
-    <div className={styles.page}>
-      {loading ? (
+    <div className={classNames(styles.page, styles.scrollable, { [styles.loaded]: loaded })}>
+      {!loaded ? (
         <Loader className="centrify" />
       ) : (
         <>
-          <div className={styles.title}>{`${i18n('Мониторинг качества')}`}</div>
+          <div className={styles.title}>{`${i18n('Мониторинг качества')}`}
+            <div className={styles.btns}>
+              <Button background="outlined-blue" className={styles.button2} onClick={() => doNavigate('/dq_rule/quality-tasks', navigate)}>{i18n('Мониторинг DQ')}</Button>
+              <Button background="outlined-blue" className={styles.button2} onClick={() => doNavigate('/dq_rule/quality-schedule-tasks', navigate)}>{i18n('Задачи DQ')}</Button>
+            </div>
+          </div>
   
           {showDiagram ? (
-            <div style={{ width: '100%', height: '300px' }}>
+            <div style={{ width: '100%', height: '300px', flex: '0 0 300px' }}>
               <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -389,7 +397,7 @@ export function QualityTasks() {
         <Modal.Footer>
 
           <Button
-            variant="secondary"
+            background='outlined-blue'
             onClick={handleClose}
           >
             Закрыть

@@ -1,69 +1,12 @@
-.field_cb_editor {
+@import '../../assets/css/common.scss';
 
-    padding: 8px;
-    border-radius: 4px;
+.value {
+    display: flex;
+    align-items: center;
+}
 
-    &.error {
-        background: var(--red10);
-    }
-
-    .row_value {
-        display: flex;
-        align-items: center;
-
-        .value {
-            flex-grow: 1;
-        }
-
-        .label {
-            font-weight: 700;
-            font-size: 15px;
-            flex: 0 0 30%;
-        }
-    
-        .display_value {
-            flex-grow: 1;
-            font-size: 15px;     
-            
-            label:before {
-                border-color: transparent;
-            }
-        }
-
-        .btn_edit {
-            cursor: pointer;
-        }
-    }
-
-    .row_edit {
-        margin-top: 15px;
-        display: none;
-        align-items: center;
-        justify-content: flex-start;
-
-        .spacer {
-            flex: 0 0 30%;
-        }
-
-        .cb_wrap {
-            flex-grow: 1;
-        }
-
-        &.show {
-            display: flex;
-        }
-
-        .input_value {
-            flex-grow: 1;
-        }
-
-        textarea {
-            height: 300px;
-        }
-
-        .btn_save {
-            cursor: pointer;
-            margin-left: 15px;
-        }
+.field_editor {
+    .label {
+        margin-bottom: 0;
     }
 }

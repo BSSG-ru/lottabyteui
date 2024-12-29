@@ -1,83 +1,116 @@
-import { FC, useEffect, useState } from 'react';
+import { FC, useCallback, useEffect, useRef, useState } from 'react';
 
 import styles from './Dashboard.module.scss';
 import React from 'react';
-import { IItemClickEventArgs, TreeMapComponent } from '@syncfusion/ej2-react-treemap';
-import { getDashboard } from "../../services/pages/artifacts";
-import { doNavigate, handleHttpError } from "../../utils";
-import { useNavigate } from "react-router";
-
+import { getDashboardFavorites, getDashboardPopular, getDashboardRecommended } from "../../services/pages/artifacts";
+import { getArtifactUrl, handleHttpError, i18n, uuid } from "../../utils";
+import { ArtifactInfo } from '../ArtifactInfo';
+import { ReactComponent as SliderDot } from '../../assets/icons/slider-dot.svg';
+import { ReactComponent as SliderDotActive } from '../../assets/icons/slider-dot-active.svg';
+import { ReactComponent as SliderRight } from '../../assets/icons/slider-right.svg';
+import { ReactComponent as Star } from '../../assets/icons/star-y.svg';
+import classNames from 'classnames';
+import Carousel, { ArrowProps, ButtonGroupProps } from 'react-multi-carousel';
+import 'react-multi-carousel/lib/styles.css';
+import { RatingBlock } from '../RatingBlock';
+import { ArtifactAuthor } from '../ArtifactAuthor';
+import { FavsList } from '../FavsList/FavsList';
+import { DashboardEntity } from '../../types/artifact';
 
 
 
 export type DashboardProps = {};
-type DashboardEntity = {
-    id: string;
-    name: string;
-    weight: number;
-    artifactType: string;
+
+
+type CustomDotProps = {
+    onClick?: any;
+    onMove?: boolean;
+    index?: number;
+    active?: boolean;
+    carouselState?: any;
 };
 
-export const Dashboard: FC<DashboardProps> = ({}) => {
-    const [productData, setProductData] = useState<DashboardEntity[]>([]);
-    const [indicatorData, setIndicatorData] = useState<DashboardEntity[]>([]);
-    const [beData, setBEData] = useState<DashboardEntity[]>([]);
-    const [domainData, setDomainData] = useState<DashboardEntity[]>([]);
+const CustomDot = (props: CustomDotProps) => {
+    // onMove means if dragging or swiping in progress.
+    // active is provided by this lib for checking if the item is active or not.
+    return (
+      <button
+        className={styles.dot}
+        onClick={() => props.onClick()}
+      >
+        {props.active ? (<SliderDotActive />) : (<SliderDot />)}
+      </button>
+    );
+  };
 
-    const navigate = useNavigate();
+const CustomArrows = (props: ButtonGroupProps) => {
+    return <div className={styles.custom_arrows}>
+        <button className={styles.left} onClick={props.previous}><SliderRight /></button>
+        <button className={styles.right} onClick={props.next}><SliderRight /></button>
+    </div>
+}
+
+export const Dashboard: FC<DashboardProps> = ({}) => {
+    const [recommendedItems, setRecommendedItems] = useState<DashboardEntity[]>([]);
+    const [popularItems, setPopularItems] = useState<DashboardEntity[]>([]);
+    const [favItems, setFavItems] = useState<DashboardEntity[]>([]);
+    const [key1, setKey1] = useState(uuid());
+    const [key2, setKey2] = useState(uuid());
 
     useEffect(() => {
         
-        getDashboard().then(json => {
-            let products = json.filter((x:DashboardEntity) => x.artifactType == 'product');
-            products.push({ id: '', name: 'показать все...', weight: 100, artifactType: 'product' });
-            setProductData(products);
+        getDashboardRecommended().then(json => {
+            setRecommendedItems(json.slice(0, 10));
+        }).catch(handleHttpError);
 
-            let indicators = json.filter((x:DashboardEntity) => x.artifactType == 'indicator');
-            indicators.push({ id: '', name: 'показать все...', weight: 100, artifactType: 'indicator' });
-            setIndicatorData(indicators);
+        getDashboardPopular().then(json => {
+            setPopularItems(json);
+        }).catch(handleHttpError);
 
-            let bes = json.filter((x:DashboardEntity) => x.artifactType == 'business_entity');
-            bes.push({ id: '', name: 'показать все...', weight: 100, artifactType: 'business_entity' });
-            setBEData(bes);
-
-            let domains = json.filter((x:DashboardEntity) => x.artifactType == 'domain');
-            domains.push({ id: '', name: 'показать все...', weight: 100, artifactType: 'domain' });
-            setDomainData(domains);
+        getDashboardFavorites().then(json => {
+            setFavItems(json);
         }).catch(handleHttpError);
         
+        window.addEventListener('asideResized', (e) => {
+            setKey1(uuid());
+            setKey2(uuid());
+        });
     }, []);
 
-    const itemClick = (e:IItemClickEventArgs) => {
-        var url = '/';
-        var item = e.item as any;
-        switch (item.data.artifactType) {
-            case 'product': url += 'products'; break;
-            case 'domain': url += 'domains'; break;
-            case 'indicator': url += 'indicators'; break;
-            case 'business_entity': url += 'business-entities'; break;
-        }
-        if (item.data.id)
-            url += '/edit/' + item.data.id;
-        doNavigate(url, navigate);
-    };
-
     return <div className={styles.dashboard}>
-        <div className={styles.tree_products}>
-            <div className={styles.title}>Продукты</div>
-            <TreeMapComponent margin={{left: 0, right: 0, top: 0, bottom: 0}} height='800px' width="100%" dataSource={productData} weightValuePath='weight' leafItemSettings={{ fill: '#BCD8EE', labelPath: 'name', labelPosition: 'BottomLeft', gap: 2, labelStyle: { color: '#323E5E' } }} itemClick={itemClick}></TreeMapComponent>
+        <div className={styles.col1}>
+            <div className={classNames(styles.block, styles.popular)}>
+                <h2>{i18n('Популярное')}</h2>
+                <Carousel key={key1} responsive={{ desktop: { breakpoint: { max: 5000, min: 0 }, items: 1, slidesToSlide: 1 }}} className={styles.carousel} swipeable draggable showDots arrows={false} customDot={<CustomDot />} autoPlay autoPlaySpeed={8000}>
+                    {popularItems.map(item => <div key={'pop-' + item.id} className={styles.popular_item}>
+                        <a href={getArtifactUrl(item.id, item.artifactType)} className={styles.lnk}>
+                            <h3>{item.name}</h3>
+                            {item.description && (<div className={styles.desc}>{item.description}</div>)}
+                            <div className={styles.info}>
+                                <ArtifactInfo artifactType={item.artifactType} />
+                                <RatingBlock rating={item.rating ?? 0} showRating />
+                                <ArtifactAuthor userId={item.createdBy} />
+                            </div>
+                        </a>
+                    </div>)}
+                </Carousel>
+            </div>
+            <div className={classNames(styles.block, styles.recommended)}>
+                <h2>{i18n('Рекомендации')}</h2>
+                <Carousel key={key2} responsive={{ desktop: { breakpoint: { max: 5000, min: 0 }, items: 6, slidesToSlide: 1 }}} className={styles.carousel} swipeable draggable arrows={false} customButtonGroup={<CustomArrows />} renderButtonGroupOutside>
+                    {recommendedItems.map(item => <a key={'rec-' + item.id} href={getArtifactUrl(item.id, item.artifactType)} className={styles.rec_item}>
+                        <div className={styles.top}>
+                            <ArtifactInfo artifactType={item.artifactType} type='transparent' />
+                            {item.isInFav && (<Star />)}
+                        </div>
+                        <div className={styles.head}>
+                            {item.name}
+                        </div>
+                        
+                    </a>)}
+                </Carousel>
+            </div>
         </div>
-        <div className={styles.tree_indicators}>
-            <div className={styles.title}>Показатели</div>
-            <TreeMapComponent margin={{left: 0, right: 0, top: 0, bottom: 0}} height='800px' width="100%" dataSource={indicatorData} weightValuePath='weight' leafItemSettings={{ fill: '#C2D4EC', labelPath: 'name', labelPosition: 'BottomLeft', gap: 2, labelStyle: { color: '#323E5E' } }} itemClick={itemClick}></TreeMapComponent>
-        </div>
-        <div className={styles.tree_bes}>
-            <div className={styles.title}>Бизнес-сущности</div>
-            <TreeMapComponent margin={{left: 0, right: 0, top: 0, bottom: 0}} height='500px' width="100%" dataSource={beData} weightValuePath='weight' leafItemSettings={{ fill: '#ACBCEB', labelPath: 'name', labelPosition: 'BottomLeft', gap: 2, labelStyle: { color: '#323E5E' } }} itemClick={itemClick}></TreeMapComponent>
-        </div>
-        <div className={styles.tree_domains}>
-            <div className={styles.title}>Домены</div>
-            <TreeMapComponent margin={{left: 0, right: 0, top: 0, bottom: 0}} height='300px' width="100%" dataSource={domainData} weightValuePath='weight' leafItemSettings={{ fill: '#94A4EA', labelPath: 'name', labelPosition: 'BottomLeft', gap: 2, labelStyle: { color: '#323E5E' } }} itemClick={itemClick}></TreeMapComponent>
-        </div>
+        <FavsList className={classNames(styles.col2, styles.block)} title={i18n('Избранное')} />
     </div>;
 };

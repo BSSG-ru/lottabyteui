@@ -26,3 +26,4 @@ export const deleteTask = async (taskId: string) => fetchWithRefresh(`${URL}/v1/
 );
 
 export const runTask = async (taskId: string) => fetchWithRefresh(`${URL}/v1/tasks/run/test/${encodeURIComponent(taskId)}`, optionsGet()).then((resp) => handleHttpResponse(resp, true));
+export const runTaskSchedule = async (taskScheduleId: string) => fetchWithRefresh(`${URL}/v1/tasks/schedules/run/${encodeURIComponent(taskScheduleId)}`, optionsPost()).then((resp) => handleHttpResponse(resp, true));

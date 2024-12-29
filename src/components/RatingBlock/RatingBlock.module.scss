@@ -1,0 +1,35 @@
+.rate_block {
+    background: #fff;
+    border-radius: 8px;
+    padding: 0 8px;
+    font-size: 12px;
+    display: flex;
+    gap: 8px;
+    height: 24px;
+    align-items: center;
+}
+
+.stars {
+    
+    display: flex;
+}
+
+.star {
+    /*svg {
+        fill: var(--gray-70);
+    }*/
+    &_hover, &:hover {
+        cursor: pointer;
+        /*svg {
+            fill: #FFCC00;
+        }*/
+    }
+    &_active, &:active {
+        /*svg {
+            fill: #FFCC00;
+        }*/
+    }
+    &:not(:first-child) {
+        padding-left: 2px;
+    }
+}

@@ -1,0 +1,1 @@
+export { StaticNoticesArea } from './StaticNoticesArea';

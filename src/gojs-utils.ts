@@ -82,6 +82,7 @@ export function initEntitiesDiagram() {
             { 
             parameter1: 10, fill: "white", stroke: '#aa97d5', strokeWidth: 1, strokeDashArray: [2, 2] },
             new go.Binding("parameter2", "isSelected", function (v) { return v ? 0 : 10; }).ofObject()),
+            new go.Binding("fill", "isHighlighted", function (v) { return v ? '#C2CBF5' : 'white' }),
         gjs(go.Panel, "Vertical",  // position header above the subgraph
             { //portId: '', fromLinkable: true, toLinkable: true,
                 defaultAlignment: go.Spot.Left, padding: 0, margin: 0, minSize: new go.Size(170, 30) },
@@ -95,28 +96,29 @@ export function initEntitiesDiagram() {
                     cursor: 'pointer',
                     //click: function(e:any, obj:any) { if (obj.part.data) window.open(getArtifactUrl(obj.part.data.id, obj.part.data.artifactType), '_blank'); }
                 },
-                new go.Binding('stroke', 'color'),
-                new go.Binding('fill', 'color')),
+                new go.Binding('stroke', 'isHighlighted', function (v) { return v ? "#889BF5" : 'black' }),
+                new go.Binding('fill', 'isHighlighted', function (v) { return v ? "#889BF5" : 'black' })),
             gjs(go.Panel, "Auto",  // the header
                 { defaultAlignment: go.Spot.TopLeft, stretch: go.GraphObject.Fill },
                 new go.Binding('stroke', 'color'),
                 new go.Binding('strokeWidth', '0'),
                 gjs(go.Shape, "Rectangle", {  },
-                    new go.Binding('fill', 'color'),
-                    new go.Binding('stroke', 'color')
+                    new go.Binding('fill', 'isHighlighted', function (v) { return v ? "#889BF5" : 'black' }),
+                    new go.Binding('stroke', 'isHighlighted', function (v) { return v ? "#889BF5" : 'black' }),
+                    
                 ),
                 gjs(go.Panel, "Vertical",
                     { defaultAlignment: go.Spot.TopLeft },
                     gjs(go.TextBlock, // group title near top, next to button
-                        { font: "12px Inter", margin: new go.Margin(0, 10, 6, 10), stroke: '#ffffff', cursor: 'pointer', click: function(e:any, obj:any) { if (obj.part.data) window.open(getArtifactUrl(obj.part.data.id, obj.part.data.artifactType), '_blank'); } },
+                        { font: "14px Mulish", margin: new go.Margin(0, 10, 6, 10), stroke: '#ffffff', cursor: 'pointer', click: function(e:any, obj:any) { if (obj.part.data) window.open(getArtifactUrl(obj.part.data.id, obj.part.data.artifactType), '_blank'); } },
                         new go.Binding("text", "artifactType", function (at) {
                             switch (at) {
-                                case 'entity': return 'Лог. объект';
+                                case 'entity': return 'Модель';
                                 case 'entity_sample': return 'Сэмпл';
                                 case 'domain': return 'Домен';
                                 case 'system': return 'Система';
                                 case 'product': return 'Продукт';
-                                case 'business_entity': return 'Бизнес-сущность';
+                                case 'business_entity': return 'Глоссарий';
                                 case 'entity_query': return 'Запрос';
                                 case 'indicator': return 'Показатель';
                                 case 'data_asset': return 'Актив';
@@ -125,8 +127,9 @@ export function initEntitiesDiagram() {
                         })),
                     gjs(go.TextBlock, // group title near top, next to button
                         { 
-                            font: "bold 12px Inter", margin: new go.Margin(0, 10, 6, 10), stroke: '#ffffff', cursor: 'pointer', click: function(e:any, obj:any) { if (obj.part.data) window.open(getArtifactUrl(obj.part.data.id, obj.part.data.artifactType), '_blank'); } },
-                        new go.Binding("text", "text"))
+                            font: "bold 14px Mulish", margin: new go.Margin(0, 10, 6, 10), stroke: '#ffffff', cursor: 'pointer', click: function(e:any, obj:any) { if (obj.part.data) window.open(getArtifactUrl(obj.part.data.id, obj.part.data.artifactType), '_blank'); } },
+                        new go.Binding("text", "text")
+                    )
                 )
             ),
             gjs(go.Placeholder,     // represents area for all member parts
@@ -162,6 +165,7 @@ export function initEntitiesDiagram() {
                     toLinkableSelfNode: true,
                     
                 },
+                
 
                 /*gjs("Button",
                     {
@@ -194,8 +198,9 @@ export function initEntitiesDiagram() {
                     new go.Binding("visible", "isKey", function (v) { return !v; }),
                     new go.Binding("source", "datatype", function (v) { return '/img/datatypes/' + v + '.svg' })),*/
                 gjs(go.TextBlock, 
-                    { font: '9pt Verdana, sans-serif' },
-                    new go.Binding("text", "text", function (t) { return t; })
+                    { font: '14px Mulish, sans-serif' },
+                        new go.Binding('stroke', 'isHighlighted', function (v) { return v ? "#889BF5" : 'black' }),
+                        new go.Binding("text", "text", function (t) { return t; })
                     )
 
             ),  // end Horizontal Panel
@@ -238,7 +243,7 @@ export function initEntitiesDiagram() {
                 new go.Binding("visible", "", function (data) { return typeof data.properties === 'undefined' || typeof data.properties.hasChildren === 'undefined' || data.properties.hasChildren != 'true'; })
             ),
             gjs(go.TextBlock,
-                { font: '9pt Verdana, sans-serif', stroke: "#889BF5", click: function(e:any, obj:any) { if (obj.part.data) window.open(obj.part.data.url, '_blank');  } },
+                { font: '14px Mulish, sans-serif', stroke: "#889BF5", click: function(e:any, obj:any) { if (obj.part.data) window.open(obj.part.data.url, '_blank');  } },
                 new go.Binding("text", "text", function (t) { return t; })
                 )
 
@@ -386,7 +391,7 @@ export function initArtifactDiagram() {
                     height: 10,
                     stretch: go.GraphObject.Fill,
                     cursor: 'pointer',
-                    click: function(e:any, obj:any) { if (obj.part.data) window.open(getArtifactUrl(obj.part.data.id, obj.part.data.artifactType), '_blank'); }
+                    click: function(e:any, obj:any) { if (obj.part.data) window.open(getArtifactUrl(obj.part.data.artifactType == 'meta_object' ? obj.part.data.parentId : obj.part.data.id, obj.part.data.artifactType), '_blank'); }
                 },
                 new go.Binding('stroke', 'color'),
                 new go.Binding('fill', 'color')),
@@ -401,24 +406,25 @@ export function initArtifactDiagram() {
                 gjs(go.Panel, "Vertical",
                     { defaultAlignment: go.Spot.TopLeft },
                     gjs(go.TextBlock, // group title near top, next to button
-                        { font: "12px Inter", margin: new go.Margin(0, 10, 6, 10), stroke: '#ffffff', cursor: 'pointer', click: function(e:any, obj:any) { if (obj.part.data) window.open(getArtifactUrl(obj.part.data.id, obj.part.data.artifactType), '_blank'); } },
+                        { font: "14px Mulish", margin: new go.Margin(0, 10, 6, 10), stroke: '#ffffff', cursor: 'pointer', click: function(e:any, obj:any) { if (obj.part.data) window.open(getArtifactUrl(obj.part.data.artifactType == 'meta_object' ? obj.part.data.parentId : obj.part.data.id, obj.part.data.artifactType), '_blank'); } },
                         new go.Binding("text", "artifactType", function (at) {
                             switch (at) {
-                                case 'entity': return 'Лог. объект';
+                                case 'entity': return 'Модель';
                                 case 'entity_sample': return 'Сэмпл';
                                 case 'domain': return 'Домен';
                                 case 'system': return 'Система';
                                 case 'product': return 'Продукт';
-                                case 'business_entity': return 'Бизнес-сущность';
+                                case 'business_entity': return 'Глоссарий';
                                 case 'entity_query': return 'Запрос';
                                 case 'indicator': return 'Показатель';
                                 case 'data_asset': return 'Актив';
+                                case 'meta_object': return 'Метаданные';
                             }
                             return at;
                         })),
                     gjs(go.TextBlock,
                         { 
-                            font: "bold 12px Inter", margin: new go.Margin(0, 10, 6, 10), stroke: '#ffffff', cursor: 'pointer', click: function(e:any, obj:any) { if (obj.part.data) window.open(getArtifactUrl(obj.part.data.id, obj.part.data.artifactType), '_blank'); } },
+                            font: "bold 14px Mulish", margin: new go.Margin(0, 10, 6, 10), stroke: '#ffffff', cursor: 'pointer', click: function(e:any, obj:any) { if (obj.part.data) window.open(getArtifactUrl(obj.part.data.artifactType == 'meta_object' ? obj.part.data.parentId : obj.part.data.id, obj.part.data.artifactType), '_blank'); } },
                         new go.Binding("text", "text"))
                 )
             ),
@@ -483,7 +489,7 @@ export function initArtifactDiagram() {
                     new go.Binding("visible", "isKey", function (v) { return !v; }),
                     new go.Binding("source", "datatype", function (v) { return '/img/datatypes/' + v + '.svg' })),
                 gjs(go.TextBlock, 
-                    { font: '9pt Verdana, sans-serif' },
+                    { font: '14px Mulish, sans-serif' },
                     new go.Binding("text", "text", function (t) { return t; })
                     )
 
@@ -527,7 +533,7 @@ export function initArtifactDiagram() {
                 new go.Binding("visible", "", function (data) { return typeof data.properties === 'undefined' || typeof data.properties.hasChildren === 'undefined' || data.properties.hasChildren != 'true'; })
             ),
             gjs(go.TextBlock,
-                { font: '9pt Verdana, sans-serif', stroke: "#889BF5", click: function(e:any, obj:any) { if (obj.part.data) window.open(obj.part.data.url, '_blank');  } },
+                { font: '14px Mulish, sans-serif', stroke: "#889BF5", click: function(e:any, obj:any) { if (obj.part.data) window.open(obj.part.data.url, '_blank');  } },
                 new go.Binding("text", "text", function (t) { return t; })
                 )
 
@@ -550,10 +556,6 @@ export function initArtifactDiagram() {
                 fromSpot: go.Spot.NotRightSide,
                 toSpot: go.Spot.AllSides,
                 doubleClick: (e, obj) => {
-                    console.log('link dbl', e);
-                    console.log('link dbl obj', e);
-
-
                     var e2 = document.createEvent('HTMLEvents');
                     e2.initEvent('linkDblClick', true, true);
                     (e2 as any).eventName = 'linkDblClick';

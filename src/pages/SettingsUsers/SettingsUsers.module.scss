@@ -1,43 +1,5 @@
-.page {
-    padding: 70px 50px 0px;
+@import '../../assets/css/common.scss';
 
-    &.userPage {
-        display: flex;
-        align-items: flex-start;
-        padding-bottom: 100px;
-
-        .mainContent {
-            flex-grow: 1;
-            min-width: 300px;
-        }
-
-        .rightBar {
-            flex: 0 0 253px;
-            padding: 0;
-            margin-left: 30px;
-        }
-    }
-}
-
-.title {
-    text-transform: uppercase;
-    font-weight: 700;
-    font-size: 16px;
-    margin-bottom: 50px;
-    max-width: 750px;
-    padding-right: 12px;
-}
-
-.input {
-    width: 322px;
-    margin-bottom: 20px;
-}
-
-.button {
-    margin-bottom: 20px;
-    gap: 10px;
-    padding: 10px 20px;
-}
 
 .table {
     width: 100%;
@@ -82,19 +44,6 @@
     margin: 0 5px;
 }
 
-.general_data {
-    max-width: 750px;
-    border: 1px solid #d9d9d9;
-    padding: 0 8px;
-
-    .data_row {
-        padding: 16px 8px;
-        
-        &:not(:last-child) {
-            border-bottom: 1px solid #d9d9d988;
-        }
-    }
-}
 
 .custom_attributes_data {
     margin-top: 50px;
@@ -116,4 +65,61 @@
     font-weight: 700;
     font-size: 15px;
     margin-top: 30px;
+}
+
+.dlg_create {
+    .fields {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+}
+
+.tab_white {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.steward_switch {
+    display: flex;
+    gap: 8px;
+
+    label {
+        font-size: 14px;
+        font-weight: 400;
+    }
+
+    .switch_bg {
+        background: var(--neutral50);
+        position: relative;
+        width: 28px;        
+        height: 16px;
+        border-radius: 8px;
+        cursor: pointer;
+
+        .switch_handler {
+            width: 12px;
+            height: 12px;
+            border-radius: 6px;
+            
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            
+            background-color: #fff;
+
+            transition: all 0.3s ease;
+        }
+    }
+
+    &.checked {
+        .switch_bg {
+            background: var(--primary60);
+        }
+
+        .switch_handler {
+            left: 14px;
+        }
+    }
 }

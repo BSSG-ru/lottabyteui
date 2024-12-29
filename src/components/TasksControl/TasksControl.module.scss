@@ -6,9 +6,7 @@
         display: flex;
         gap: 5px;
 
-        .btn {
-            padding: 8px 11px;
-        }
+        
     }
 
     .add_task_dlg {
@@ -98,7 +96,16 @@
     gap: 5px;
     margin-top: 10px;
 
-    >span {
-        display: block;
-    }
+}
+
+.label {
+    font-size: 14px;
+    color: #717681;
+}
+
+.fields {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 12px;
 }

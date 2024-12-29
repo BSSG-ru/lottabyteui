@@ -16,8 +16,11 @@ export const urls: Urls = {
     products: 'Products',
     dq_rule: 'dq_rule',
     'quality-tasks': 'quality-tasks',
+    'quality-schedule-tasks': 'quality-schedule-tasks',
     settings: 'Settings',
-    draft: 'Drafts'
+    draft: 'Drafts',
+    drafts: 'Drafts',
+    metadata: 'Metadata'
   },
   2: {
     users: 'Users',
@@ -25,7 +28,9 @@ export const urls: Urls = {
     roles: 'Roles',
     stewards: 'Stewards',
     groups: 'Groups',
-    workflows: 'Workflows'
+    workflows: 'Workflows',
+    'quality-tasks': 'quality-tasks',
+    'quality-schedule-tasks': 'quality-schedule-tasks',
   },
 };
 

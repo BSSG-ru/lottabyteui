@@ -1,0 +1,1 @@
+export { ArtifactAuthor } from './ArtifactAuthor';

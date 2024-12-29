@@ -9,8 +9,7 @@ import { useNavigate } from 'react-router';
 import { i18n, uuid, handleHttpError } from '../../utils';
 import styles from './TasksControl.module.scss';
 import { ReactComponent as OrangePencilIcon } from '../../assets/icons/pencil_org.svg';
-import { ReactComponent as PlusInCircle } from '../../assets/icons/plus-in-circle.svg';
-import { Input } from '../Input';
+import { ReactComponent as PlusInCircle } from '../../assets/icons/plus-blue.svg';
 import { Button } from '../Button';
 import { Tag } from '../Tag';
 import {
@@ -25,7 +24,7 @@ import {
 import { getEntityQuery } from '../../services/pages/entityQueries';
 import { TaskScheduleEditor } from '../TaskScheduleEditor/TaskScheduleEditor';
 import { TaskParamsControl } from '../TaskParamsControl/TaskParamsControl';
-import { createDraft } from '../../services/pages/tags';
+import { FieldTextEditor } from '../FieldTextEditor';
 
 export type TasksControlProps = {
   className?: string;
@@ -89,17 +88,19 @@ export const TasksControl: FC<TasksControlProps> = ({ className, isReadOnly, que
   }, [query]);
 
   useEffect(() => {
-    let hiddenItem = 0;
-    if (tasksWrapperRef && tasksWrapperRef.current) {
-      Array.from(tasksWrapperRef.current.children).forEach((child: Element) => {
-        if ((child as HTMLElement).style.display === 'none') {
-          hiddenItem += 1;
-        }
-      });
-    }
-    if (hiddenItem) {
-      setHidden(hiddenItem);
-    }
+    setTimeout(() => {
+      let hiddenItem = 0;
+      if (tasksWrapperRef && tasksWrapperRef.current) {
+        Array.from(tasksWrapperRef.current.children).forEach((child: Element) => {
+          if ((child as HTMLElement).style.display === 'none') {
+            hiddenItem += 1;
+          }
+        });
+      }
+      if (hiddenItem) {
+        setHidden(hiddenItem);
+      }
+    }, 300);
   }, [tasks]);
 
 
@@ -165,11 +166,8 @@ export const TasksControl: FC<TasksControlProps> = ({ className, isReadOnly, que
         createTask({
           system_connection_id: json.metadata.id,
           query_id: qId,
-          enabled: true,
-          schedule_type: newTaskData.schedule_type,
-          schedule_params: newTaskData.schedule_params,
-          name: `${query == null ? '-' : query.entity.name} ${json.entity.name} ${newTaskData.schedule_params
-            }`,
+          name: `${query == null ? '-' : query.entity.name} ${json.entity.name} ${newTaskData.schedule_params}`,
+          schedules: [{ entity: { enabled: true, schedule_type: newTaskData.schedule_type, schedule_params: newTaskData.schedule_params } }]
         })
           .then((jsonInner) => {
             if (jsonInner) {
@@ -195,11 +193,8 @@ export const TasksControl: FC<TasksControlProps> = ({ className, isReadOnly, que
     createTask({
       system_connection_id: newTaskData.system_connection_id,
       query_id: qId,
-      enabled: true,
-      schedule_type: newTaskData.schedule_type,
-      schedule_params: newTaskData.schedule_params,
-      name: `${query == null ? '-' : query.entity.name} ${newTaskData.system_connection_name} ${newTaskData.schedule_params
-        }`,
+      name: `${query == null ? '-' : query.entity.name} ${newTaskData.system_connection_name} ${newTaskData.schedule_params}`,
+      schedules: [{ entity: { enabled: true, schedule_type: newTaskData.schedule_type, schedule_params: newTaskData.schedule_params } }]
     })
       .then((json) => {
         if (json) {
@@ -227,7 +222,7 @@ export const TasksControl: FC<TasksControlProps> = ({ className, isReadOnly, que
         <div className={styles.buttons}>
           <Button
             className={styles.btn}
-            background="outlined-orange"
+            background="outlined-blue"
             onClick={() => {
               setShowAddTaskDlg(!showAddTaskDlg);
               setShowCreateTaskDlg(false);
@@ -238,7 +233,7 @@ export const TasksControl: FC<TasksControlProps> = ({ className, isReadOnly, que
           </Button>
           <Button
             className={styles.btn}
-            background="outlined-orange"
+            background="outlined-blue"
             onClick={() => {
               setShowCreateTaskDlg(!showCreateTaskDlg);
               setShowAddTaskDlg(false);
@@ -277,25 +272,22 @@ export const TasksControl: FC<TasksControlProps> = ({ className, isReadOnly, que
       </div>
 
       <div className={styles.add_task_dlg}>
-        <table className={styles.fields}>
-          <tbody>
-            <tr>
-              <th>{i18n('Подключение')}</th>
-              <td>
-                <Autocomplete
-                  defaultOptions={defaultConnectionObjects}
-                  defaultValue={newTaskData.system_connection_name}
-                  getOptions={getConnectionObjects}
-                  onChanged={(data: any) => {
-                    setNewTaskData((prev: any) => ({
-                      ...prev,
-                      system_connection_id: data.id,
-                      system_connection_name: data.name ?? data.description,
-                    }));
-                  }}
-                />
-              </td>
-            </tr>
+        <div className={styles.fields}>
+            <div>
+              <div className={styles.label}>{i18n('Подключение')}</div>
+              <Autocomplete
+                defaultOptions={defaultConnectionObjects}
+                defaultValue={newTaskData.system_connection_name}
+                getOptions={getConnectionObjects}
+                onChanged={(data: any) => {
+                  setNewTaskData((prev: any) => ({
+                    ...prev,
+                    system_connection_id: data.id,
+                    system_connection_name: data.name ?? data.description,
+                  }));
+                }}
+              />
+            </div>
             <TaskScheduleEditor
               onChanged={(value) => {
                 setNewTaskData((prev: any) => ({
@@ -305,12 +297,11 @@ export const TasksControl: FC<TasksControlProps> = ({ className, isReadOnly, que
                 }));
               }}
             />
-          </tbody>
-        </table>
+        </div>
         <div className={styles.buttons}>
           <Button
             className={styles.btn}
-            background="orange"
+            background="blue"
             onClick={() => {
               addTaskForQuery();
             }}
@@ -319,7 +310,7 @@ export const TasksControl: FC<TasksControlProps> = ({ className, isReadOnly, que
           </Button>
           <Button
             className={styles.btn}
-            background="outlined-orange"
+            background="outlined-blue"
             onClick={() => {
               setShowAddTaskDlg(false);
             }}
@@ -329,37 +320,26 @@ export const TasksControl: FC<TasksControlProps> = ({ className, isReadOnly, que
         </div>
       </div>
       <div className={styles.create_task_dlg}>
-        <table className={styles.fields}>
-          <tbody>
-            <tr>
-              <th>{i18n('Название')}</th>
-              <td>
-                <Input
-                  value={newConnectionData.name}
-                  onChange={(e) => {
-                    setNewConnectionData((prev: any) => ({ ...prev, name: e.target.value }));
+          <div className={styles.fields}>
+            <div>
+              <FieldTextEditor label={i18n('Название')} defaultValue={newConnectionData.name} valueSubmitted={(v) => { setNewConnectionData((prev: any) => ({ ...prev, name: v })); }} />
+            </div>
+            {query == null ? (
+              <div>
+                <div className={styles.label}>{i18n('Система')}</div>
+                <Autocomplete
+                  defaultOptions
+                  getOptions={getSystemObjects}
+                  onChanged={(data: any) => {
+                    setNewConnectionData((prev: any) => ({
+                      ...prev,
+                      system_id: data.id,
+                      system_name: data.name,
+                      connector_id: data.connector_id,
+                    }));
                   }}
                 />
-              </td>
-            </tr>
-            {query == null ? (
-              <tr>
-                <th>{i18n('Система')}</th>
-                <td>
-                  <Autocomplete
-                    defaultOptions
-                    getOptions={getSystemObjects}
-                    onChanged={(data: any) => {
-                      setNewConnectionData((prev: any) => ({
-                        ...prev,
-                        system_id: data.id,
-                        system_name: data.name,
-                        connector_id: data.connector_id,
-                      }));
-                    }}
-                  />
-                </td>
-              </tr>
+              </div>
             ) : (
               ''
             )}
@@ -381,14 +361,14 @@ export const TasksControl: FC<TasksControlProps> = ({ className, isReadOnly, que
               }}
               useScheduler
             />
-          </tbody>
-        </table>
+          </div>
+          
         <div className={styles.separator} />
 
         <div className={styles.buttons}>
           <Button
             className={styles.btn}
-            background="orange"
+            background="blue"
             onClick={() => {
               createTaskForQuery();
             }}
@@ -397,7 +377,7 @@ export const TasksControl: FC<TasksControlProps> = ({ className, isReadOnly, que
           </Button>
           <Button
             className={styles.btn}
-            background="outlined-orange"
+            background="outlined-blue"
             onClick={() => {
               setShowCreateTaskDlg(false);
             }}

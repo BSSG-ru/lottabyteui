@@ -1,52 +1,4 @@
-.page {
-    padding: 70px 50px 0px;
-
-    &.domainPage {
-        display: none;
-        align-items: flex-start;
-        position: relative;
-
-        &.loaded {
-            display: flex;
-        }
-
-        .mainContent {
-            flex-grow: 1;
-            min-width: 300px;
-        }
-
-        .rightBar {
-            flex: 0 0 253px;
-            padding: 0;
-            margin-left: 30px;
-        }
-    }
-}
-
-.title {
-    text-transform: uppercase;
-    font-weight: 700;
-    font-size: 16px;
-    margin-bottom: 30px;
-    max-width: 750px;
-}
-
-.description {
-    max-width: 750px;
-
-    label {
-        font-weight: bold;
-    }
-}
-
-.input {
-    width: 322px;
-    margin-bottom: 20px;
-}
-
-.long_input {
-    margin-bottom: 20px;
-}
+@import '../../assets/css/common.scss';
 
 .button {
     margin-bottom: 20px;
@@ -105,16 +57,4 @@
     .new_system_item {
         margin: 5px 0;
     }
-}
-
-.btn_scheme {
-    padding: 9px 19px;
-    margin-bottom: 20px;
-    line-height: 23px;
-    
-    line-height: 23px;
-    background-color: var(--white);
-    color: var(--blue-100);
-    border: 1px solid var(--blue-100);
-    border-radius: 4px;
 }

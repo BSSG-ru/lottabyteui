@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import classNames from 'classnames';
 import { Button, Modal } from 'react-bootstrap';
 import styles from './Queries.module.scss';
-import { doNavigate, handleHttpError, i18n, loadEditPageData, rateClickedHandler, setBreadcrumbEntityName, setDataModified, tagAddedHandler, tagDeletedHandler, updateArtifactsCount, updateEditPageReadOnly, uuid } from '../../utils';
+import { doNavigate, getEntityAutocompleteObjects, getEntityDisplayValue, getSystemAutocompleteObjects, getSystemDisplayValue, handleHttpError, i18n, loadEditPageData, rateClickedHandler, setBreadcrumbEntityName, setDataModified, tagAddedHandler, tagDeletedHandler, updateArtifactsCount, updateEditPageReadOnly, uuid } from '../../utils';
 import {
   archiveEntityQuery,
   createEntityQuery,
@@ -17,18 +17,15 @@ import {
   updateEntityQuery,
 } from '../../services/pages/entityQueries';
 import { Tags, TagProp } from '../../components/Tags';
-import { Versions, VersionData } from '../../components/Versions';
-import { FieldEditor } from '../../components/FieldEditor';
 import { FieldAutocompleteEditor } from '../../components/FieldAutocompleteEditor';
-import { getSystem, getSystems } from '../../services/pages/systems';
-import { getEntities, getEntity } from '../../services/pages/dataEntities';
 import { TasksControl } from '../../components/TasksControl';
-import { setRecentView } from '../../services/pages/recentviews';
-import { WFItemControl } from '../../components/WFItemControl/WFItemControl';
 import { Input } from '../../components/Input';
 import { Textarea } from '../../components/Textarea';
 import { RelatedObjectsControl } from '../../components/RelatedObjectsControl';
-import { DeleteObjectModal } from '../../components/DeleteObjectModal';
+import { EditPage } from '../../components/EditPage';
+import { FieldTextEditor } from '../../components/FieldTextEditor';
+import { FieldTextareaEditor } from '../../components/FieldTextareaEditor';
+import { FieldVisualEditor } from '../../components/FieldVisualEditor';
 
 export function Query() {
   const navigate = useNavigate();
@@ -41,13 +38,9 @@ export function Query() {
       entity_id: null,
       custom_attributes: [],
     },
-    metadata: { id: '', artifact_type: 'entity_query', version_id: '', tags: [], state: 'PUBLISHED' },
+    metadata: { id: '', artifact_type: 'entity_query', version_id: '', tags: [], state: 'PUBLISHED', created_by: '' },
   });
-  const [ratingData, setRatingData] = useState({ rating: 0, total_rates: 0 });
-  const [ownRating, setOwnRating] = useState(0);
-  const [versions, setVersions] = useState<VersionData[]>([]);
   const [tags, setTags] = useState<TagProp[]>([]);
-  const [isCreateMode, setCreateMode] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
   
   const [isReadOnly, setReadOnly] = useState(true);
@@ -64,18 +57,8 @@ export function Query() {
     description: '',
   });
 
-  const [showDelQueryDlg, setShowDelQueryDlg] = useState(false);
-  const [delQueryData, setDelQueryData] = useState<any>({ id: '', name: '' });
-
-  const [delObjectData, setDelObjectData] = useState<any>({ id: '', name: '' });
-  const [showDelDlg, setShowDelDlg] = useState(false);
-
   const handleAddEntityDlgClose = () => {
     setShowAddQueryDlg(false);
-    return false;
-  };
-  const handleDelEntityDlgClose = () => {
-    setShowDelQueryDlg(false);
     return false;
   };
 
@@ -97,297 +80,126 @@ export function Query() {
     setNewQueryData({ name: '', description: '' });
   };
 
-  const delEntityDlgSubmit = (identity: string) => {
-    setShowDelQueryDlg(false);
-    setLoading(true);
-    deleteEntityQuery(identity)
-      .then(() => {
-        setLoading(false);
-      })
-      .catch(handleHttpError);
-    setDelQueryData({ id: '', name: '' });
-  };
-
   useEffect(() => {
     if (id) setQueryId(id);
     setQueryVersionId(version_id ?? '');
     setDataModified(false);
   }, [id, version_id]);
 
-  useEffect(() => {
-    setCreateMode(queryId === '');
-    if (queryId) {
-      if (!queryVersionId) { setRecentView('entity_query', queryId); }
-
-      loadEditPageData(queryId, queryVersionId, setData, setTags, setLoading, setLoaded, getEntityQueryVersion, getEntityQuery,
-        setRatingData, setOwnRating, getEntityQueryVersions, setVersions, setReadOnly);
-
-    } else {
-      setData((prev: any) => ({ ...prev, metadata: { ...prev.metadata, state: 'DRAFT' } }));
-      setDataModified(false);
-      setReadOnly(false);
-      setLoaded(true);
-    }
-  }, [queryId, queryVersionId]);
-
-  useEffect(() => {
-    if (isCreateMode) {
-      if (
-        data.entity.name
-        && data.entity.entity_id
-        && data.entity.system_id
-        && data.entity.query_text
-      ) {
-        createEntityQuery(data.entity)
-          .then((json) => {
-            setDataModified(false);
-            updateArtifactsCount();
-            if (json.metadata.id) {
-              setQueryId(json.metadata.id);
-              window.history.pushState(
-                {},
-                '',
-                `/queries/edit/${encodeURIComponent(json.metadata.id)}`,
-              );
-            }
-          })
-          .catch(handleHttpError);
-      }
-    }
-  }, [data]);
-
-  const updateEntityQueryField = (field: string, value: string) => {
-    if (queryId) {
-      const d: any = {};
-      d[field] = value;
-      updateEntityQuery(queryId, d)
-        .then((json) => {
-          setDataModified(false);
-          if (json.metadata.id && json.metadata.id !== queryId) {
-            navigate(`/queries/edit/${encodeURIComponent(json.metadata.id)}`);
-          } else { setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } })); }
-        })
-        .catch(handleHttpError);
-    } else {
-      setShowValidation(true);
-      setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } }));
-      setDataModified(false);
-    }
+  const updateQueryField = (field: string, value: string | string[] | undefined) => {
+    setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } }));
+    setDataModified(true);
   };
-
-  const getSystemDisplayValue = async (identity: string) => {
-    if (!identity) return '';
-    return getSystem(identity)
-      .then((json) => {
-        if (json && json.entity) return json.entity.name;
-        return undefined;
-      })
-      .catch((e) => {
-        handleHttpError(e);
-        return '';
-      });
-  };
-
-  const getEntityDisplayValue = async (identity: string) => {
-    if (!identity) return '';
-    return getEntity(identity)
-      .then((json) => {
-        if (json && json.entity) return json.entity.name;
-        return undefined;
-      })
-      .catch((e) => {
-        handleHttpError(e);
-        return '';
-      });
-  };
-
-  const getSystemObjects = async (search: string) => getSystems({
-    sort: 'name+',
-    global_query: search,
-    limit: 1000,
-    offset: 0,
-    filters: [],
-    filters_for_join: [],
-  }).then((json) => json.items);
-
-  const getEntityObjects = async (search: string) => getEntities({
-    sort: 'name+',
-    global_query: search,
-    limit: 1000,
-    offset: 0,
-    filters: [],
-    filters_for_join: [],
-  }).then((json) => json.items);
-
-  const delDlgSubmit = () => {
-    setShowDelDlg(false);
-    setLoading(true);
-    deleteEntityQuery(delObjectData.id)
-      .then(json => {
-        updateArtifactsCount();
-        setLoading(false);
-
-        if (json.metadata && json.metadata.id)
-          navigate('/queries/edit/' + encodeURIComponent(json.metadata.id));
-      })
-      .catch(handleHttpError);
-    setDelObjectData({ id: '', name: '' });
-  };
-
-  const archiveBtnClicked = () => { archiveEntityQuery(data.metadata.id).then(json => {
-    if (json.metadata.id && json.metadata.id != queryId) {
-      navigate(`/queries/edit/${encodeURIComponent(json.metadata.id)}`);
-    }
-    setDataModified(false);
-  }).catch(handleHttpError); };
-
-  const restoreBtnClicked = () => { restoreEntityQuery(data.metadata.id).then(json => {
-    if (json.metadata.id && json.metadata.id != queryId) {
-      navigate(`/queries/edit/${encodeURIComponent(json.metadata.id)}`);
-    }
-    setDataModified(false);
-  }).catch(handleHttpError); };
 
   return (
-    <div className={classNames(styles.page, styles.queryPage, { [styles.loaded]: isLoaded })}>
-      <div className={styles.mainContent}>
-        {queryVersionId && (
-          <Button onClick={() => {
-            restoreEntityQueryVersion(queryId, queryVersionId).then(json => {
-              setDataModified(false);
-              if (json.metadata.id && json.metadata.id !== queryId) {
-                navigate(`/queries/edit/${encodeURIComponent(json.metadata.id)}`);
-              } else { setData(json); }
-            }).catch(handleHttpError);
-          }}>{i18n('Восстановить')}</Button>
-        )}
-        {!queryVersionId && (
-          <WFItemControl
-            key={`wfc-query-` + data?.metadata?.workflow_task_id}
-            itemMetadata={data.metadata}
-            itemIsReadOnly={isReadOnly}
-            onEditClicked={() => { setReadOnly(false); }}
-            onArchiveClicked={archiveBtnClicked}
-            onRestoreClicked={restoreBtnClicked}
-            onDeleteClicked={() => { setDelObjectData({ id: data.metadata.id, name: data.entity.name }); setShowDelDlg(true); }}
-            onObjectIdChanged={(localQueryId) => {
-              if (localQueryId) {
-                setQueryId(localQueryId);
-                window.history.pushState(
-                  {},
-                  '',
-                  `/queries/edit/${encodeURIComponent(localQueryId)}`,
-                );
-              } else navigate('/queries/');
-            }}
-            onObjectDataChanged={(data) => {
-              setData(data);
-              setDataModified(false);
-              setBreadcrumbEntityName(queryId, data.entity.name);
-              setTags(data.metadata.tags ? data.metadata.tags.map((x: any) => ({ value: x.name })) : []);
-              
-              updateEditPageReadOnly(data, setReadOnly, () => {  setLoading(false); setLoaded(true); });
-            }}
-          />
-        )}
-        <div className={styles.title}>
-          <FieldEditor
-            isReadOnly={isReadOnly}
-            labelPrefix={`${i18n('ЗАПРОС')}: `}
-            defaultValue={data.entity.name}
-            className={styles.title}
-            valueSubmitted={(val) => {
-              updateEntityQueryField('name', val.toString());
-            }}
-            isRequired
-            onBlur={(val) => {
-              updateEntityQueryField('name', val);
-            }}
-            showValidation={showValidation}
-          />
-        </div>
-        {!isCreateMode && data.metadata.state != 'ARCHIVED' && (
-          <button className={styles.btn_scheme} onClick={() => { doNavigate('/queries-model/' + encodeURIComponent(queryId), navigate); }}>{i18n('Схема')}</button>
-        )}
-        {!isCreateMode && (
-          <Tags
-            key={'tags-' + queryId + '-' + queryVersionId + '-' + uuid()}
-            tags={tags}
-            isReadOnly={isReadOnly}
-            
-            onTagAdded={(tagName: string) => tagAddedHandler(tagName, queryId, 'entity_query', data.metadata.state ?? '', tags, setLoading, setTags, '/queries/edit/', navigate)}
-            onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, queryId, 'entity_query', data.metadata.state ?? '', setLoading, setTags, '/queries/edit/', navigate)}
-          />
-        )}
+    <>
+      <EditPage objectId={queryId} objectVersionId={queryVersionId} data={data} restoreVersion={restoreEntityQueryVersion} urlSlug='queries' setData={setData} isReadOnly={isReadOnly} setReadOnly={setReadOnly}
+        archiveObject={archiveEntityQuery} artifactType='entity_query' setTags={setTags} getObjectVersion={getEntityQueryVersion} getObjectVersions={getEntityQueryVersions} getObject={getEntityQuery} deleteObject={deleteEntityQuery}
+        restoreObject={restoreEntityQuery} updateObject={updateEntityQuery} tabs={[
+        {
+          key: 'tab-gen',
+          title: i18n('Сведения'),
+          unscrollable: true,
+          content: <div className={styles.tab_2col}>
+            <div className={classNames(styles.col, styles.scrollable)}>
+              <h2>Общая информация</h2>
+              {data.metadata.state != 'ARCHIVED' && (
+                <div>
+                <button className={styles.btn_scheme} onClick={() => { doNavigate(`/queries-model/${encodeURIComponent(queryId)}`, navigate); }}>{i18n('Смотреть схему')}</button>
+                </div>
+              )}
 
-        <div className={styles.general_data}>
-          <div className={styles.data_row}>
-            <FieldAutocompleteEditor
-              className=""
-              label={i18n('Система')}
-              defaultValue={data.entity.system_id}
-              valueSubmitted={(identity) => updateEntityQueryField('system_id', identity)}
-              getDisplayValue={getSystemDisplayValue}
-              getObjects={getSystemObjects}
-              isRequired
-              isReadOnly={isReadOnly}
-              showValidation={showValidation}
-              artifactType='system'
-            />
-          </div>
-          <div className={styles.data_row}>
-            <FieldAutocompleteEditor
-              className=""
-              label={i18n('Логический объект')}
-              defaultValue={data.entity.entity_id}
-              valueSubmitted={(identity) => updateEntityQueryField('entity_id', identity)}
-              getDisplayValue={getEntityDisplayValue}
-              getObjects={getEntityObjects}
-              isRequired
-              isReadOnly={isReadOnly}
-              showValidation={showValidation}
-              artifactType='entity'
-            />
-          </div>
-          <div className={styles.data_row}>
-            <FieldEditor
-              className=""
-              layout="separated"
-              labelPrefix={i18n('Текст запроса')}
-              isMultiline
-              isReadOnly={isReadOnly}
-              defaultValue={data.entity.query_text}
-              valueSubmitted={(value) => updateEntityQueryField('query_text', value.toString())}
-              isRequired
-              showValidation={showValidation}
-            />
-          </div>
-        </div>
+              <FieldTextEditor
+                  isReadOnly={isReadOnly}
+                  label={i18n('Название')}
+                  defaultValue={data.entity.name}
+                  className=''
+                  valueSubmitted={(val) => {
+                    updateQueryField('name', val);
+                  }}
+                />
 
-        {!isCreateMode && data.metadata.state == 'PUBLISHED' && (
-          <>
-            <label className={styles.lbl_tasks}>{i18n('Выполнение запроса')}</label>
-            <TasksControl queryId={queryId} isReadOnly={false} />
-          </>
-        )}
+              <div data-uitest="query_tag" className={styles.tags_block}>
+                <div className={styles.label}>{i18n('Теги')}</div>
+                <Tags
+                  key={'tags-' + queryId + '-' + queryVersionId + '-' + uuid()}
+                  isReadOnly={isReadOnly}
+                  tags={tags}
+                  tagPrefix='#'
+                  onTagAdded={(tagName: string) => tagAddedHandler(tagName, queryId, 'entity_query', data.metadata.state ?? '', tags, setLoading, setTags, '/queries/edit/', navigate)}
+                  onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, queryId, 'entity_query', data.metadata.state ?? '', setLoading, setTags, '/queries/edit/', navigate)}
+                />
+              </div>
+            </div>
+            <div className={classNames(styles.col, styles.scrollable)}>
+              <h2>Дополнительные параметры</h2>
 
-        <RelatedObjectsControl artifactId={queryId} artifactType='entity_query'></RelatedObjectsControl>
-      </div>
-      {!isCreateMode && (
-        <div className={styles.rightBar}>
-          {(data.metadata.state == 'PUBLISHED' || data.metadata.state == 'ARCHIVED') && (
-          <Versions
-            rating={ratingData.rating}
-            ownRating={ownRating}
-            version_id={queryVersionId || data.metadata.version_id}            
-            versions={versions}
-            version_url_pattern={`/queries/${encodeURIComponent(queryId)}/version/{version_id}`}
-            root_object_url={`/queries/edit/${encodeURIComponent(queryId)}`}
-            onRateClick={r => rateClickedHandler(r, queryId, 'entity_query', setOwnRating, setRatingData)}
-          />
-          )}
-        </div>
-      )}
+              <FieldAutocompleteEditor
+                label={i18n('Система')}
+                defaultValue={data.entity.system_id}
+                valueSubmitted={(identity) => updateQueryField('system_id', identity)}
+                getDisplayValue={getSystemDisplayValue}
+                getObjects={getSystemAutocompleteObjects}
+                isRequired
+                isReadOnly={isReadOnly}
+                showValidation={showValidation}
+                artifactType='system'
+              />
+
+              <FieldAutocompleteEditor
+                label={i18n('Модель')}
+                defaultValue={data.entity.entity_id}
+                valueSubmitted={(identity) => updateQueryField('entity_id', identity)}
+                getDisplayValue={getEntityDisplayValue}
+                getObjects={getEntityAutocompleteObjects}
+                isRequired
+                isReadOnly={isReadOnly}
+                showValidation={showValidation}
+                artifactType='entity'
+              />
+
+              <FieldTextareaEditor
+                label={i18n('Текст запроса')}
+                isReadOnly={isReadOnly}
+                defaultValue={data.entity.query_text}
+                valueSubmitted={(value) => updateQueryField('query_text', value)}
+                isRequired
+                showValidation={showValidation}
+              />
+
+              {data.metadata.state == 'PUBLISHED' && (
+                <>
+                  <label className={styles.lbl_tasks}>{i18n('Выполнение запроса')}</label>
+                  <TasksControl queryId={queryId} isReadOnly={false} />
+                </>
+              )}
+            </div>
+          </div>
+        },
+        {
+          key: 'tab-related',
+          title: i18n('Связи'),
+          content: <div className={styles.tab_white}>
+            <RelatedObjectsControl artifactId={queryId} artifactType='entity_query'></RelatedObjectsControl>
+          </div>
+        },
+        {
+          key: 'tab-desc',
+          title: i18n('Расширенное описание'),
+          content: <div className={styles.tab_transparent}>
+
+            <FieldVisualEditor
+                isReadOnly={isReadOnly}
+                defaultValue={data.entity.description}
+                className=''
+                valueSubmitted={(val) => {
+                  updateQueryField('description', val);
+                }}
+              />  
+          
+          </div>
+        }
+      ]} />
 
       <Modal
         show={showAddQueryDlg}
@@ -428,38 +240,6 @@ export function Query() {
           </Button>
         </Modal.Footer>
       </Modal>
-
-      <Modal
-        show={showDelQueryDlg}
-        backdrop={false}
-        onHide={handleDelEntityDlgClose}
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>
-            Вы действительно хотите удалить
-            {' '}
-            {delQueryData.name}
-            ?
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body />
-        <Modal.Footer>
-          <Button
-            variant="primary"
-            onClick={() => delEntityDlgSubmit(delQueryData.id)}
-          >
-            Удалить
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={handleDelEntityDlgClose}
-          >
-            Отмена
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      <DeleteObjectModal show={showDelDlg} objectTitle={delObjectData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />
-    </div>
+    </>
   );
 }

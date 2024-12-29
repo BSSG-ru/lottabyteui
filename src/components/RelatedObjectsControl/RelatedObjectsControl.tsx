@@ -29,6 +29,7 @@ export const RelatedObjectsControl: FC<RelatedObjectsControlProps> = ({ artifact
             header: i18n('Koд'),
             sortDisabled: true,
             filterDisabled: true,
+            width: '55px'
         },
         {
             property: 'name',
@@ -62,21 +63,25 @@ export const RelatedObjectsControl: FC<RelatedObjectsControlProps> = ({ artifact
         indicator: indicatorsTableColumns,
         business_entity: beTableColumns,
         product: prodTableColumns,
-        entity_sample_property: [ ...commonCols ]
+        entity_sample_property: [ ...commonCols ],
+        meta_database: [ ...commonCols,
+            { property: 'driver_class_name', header: i18n('Тип') },
+            { property: 'jdbc_url', header: i18n('Сервер') },
+        ]
     };
 
     const [state, setState] = useUrlState({ t: '1' }, { navigateMode: 'replace' });
     const [relatedArtifactTypes, setRelatedArtifactTypes] = useState<string[]>([]);
-    const allowedArtifactTypes = { 'entity_attribute': i18n('Атрибуты'), 'domain': i18n('Домены'), 'system': i18n('Системы'), 'entity': i18n('Лог. объекты'), 'task': i18n('Задачи'), 'entity_query': i18n('Запросы'), 
-    'entity_sample': i18n('Сэмплы'), 'data_asset': i18n('Активы'), 'indicator': i18n('Показатели'), 'business_entity': i18n('Бизнес-сущности'), 'product': i18n('Продукты'), 
-    'entity_sample_property': i18n('Атрибуты сэмпла') };
+    const allowedArtifactTypes = { 'entity_attribute': i18n('Атрибуты'), 'domain': i18n('Домены'), 'system': i18n('Системы'), 'entity': i18n('Модели'), 'task': i18n('Задачи'), 'entity_query': i18n('Запросы'), 
+    'entity_sample': i18n('Сэмплы'), 'data_asset': i18n('Активы'), 'indicator': i18n('Показатели'), 'business_entity': i18n('Глоссарий'), 'product': i18n('Продукты'), 
+    'entity_sample_property': i18n('Атрибуты сэмпла'), 'meta_database': i18n('Метаданные') };
     const [tabs, setTabs] = useState<any[]>([]);
 
     useEffect(() => {
         if (artifactId) {
             getRelatedObjectArtifactTypes(artifactType).then((json:any) => {
                 let order = { 'entity_attribute': 1, 'domain': 2, 'system' : 3, 'entity': 4, 'task': 5, 'entity_query': 6, 'entity_sample': 7, 'data_asset': 8, 'indicator': 9,
-                    'business_entity': 10, 'product': 11, 'entity_sample_property': 12 };
+                    'business_entity': 10, 'product': 11, 'entity_sample_property': 12, 'meta_database': 13 };
                 setRelatedArtifactTypes(json.sort((a:any, b:any) => { 
                     var v1 = order[a as keyof typeof order];
                     var v2 = order[b as keyof typeof order];
@@ -95,7 +100,7 @@ export const RelatedObjectsControl: FC<RelatedObjectsControlProps> = ({ artifact
     }, [ artifactId, artifactType ]);
 
     useEffect(() => {
-        setTabs(relatedArtifactTypes.filter(at => at != artifactType && Object.keys(allowedArtifactTypes).indexOf(at) !== -1).map(rat => ({
+        setTabs(relatedArtifactTypes.filter(at => (at == 'product' || at != artifactType) && Object.keys(allowedArtifactTypes).indexOf(at) !== -1).map(rat => ({
             key: 'tab-' + rat,
             id: 'tab-' + rat,
             title: allowedArtifactTypes[rat as keyof typeof allowedArtifactTypes],
@@ -120,7 +125,6 @@ export const RelatedObjectsControl: FC<RelatedObjectsControlProps> = ({ artifact
                 }}
                 showCreateBtn={artifactType == 'entity' && rat == 'entity_attribute'}
                 onCreateBtnClick={(artifactType == 'entity' && rat == 'entity_attribute') ? createEAttrClick : undefined}
-                renderActionsPopup={(artifactType == 'entity' && rat == 'entity_attribute') ? renderEAttrActionsPopup : undefined}
                 onRowClick={(row: any) => {
                     if (rat == 'entity_attribute')
                         navigate(getArtifactUrl(row.entity_id, 'entity'));
@@ -136,13 +140,6 @@ export const RelatedObjectsControl: FC<RelatedObjectsControlProps> = ({ artifact
               />)
         })));
     }, [ relatedArtifactTypes ]);
-
-    useEffect(() => {
-        setTimeout( () => {
-            //console.log(';aaaaaaaaaaa');
-        setState(() => ({ t: 1 }));
-        }, 200);
-    }, [ tabs ]);
 
     return (
     <div className={styles.related_objects_wrap}>

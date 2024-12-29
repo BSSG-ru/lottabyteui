@@ -1,11 +1,14 @@
 .button {
     border: none;
-    font-weight: 500;
-    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 800;
+    border-radius: 8px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 5px;
+    line-height: 30px;
+    
 
     transition: all .2s linear;
     svg {
@@ -13,16 +16,18 @@
     }
     
     &_standart {
-        padding: 16px 20px;
+        padding: 0 12px;
+        
         &.button_icon {
-            padding: 14px 20px;
+            padding: 0 20px;
         }
     }
+
     &_big {
         padding: 22px 30px;
         text-transform: uppercase;
     }
-
+    
     &_none {
         background: none;
     }
@@ -44,13 +49,17 @@
         }
     }
     &_outlined-blue {
-        background-color: var(--white);
-        color: var(--blue-100);
-        border: 1px solid var(--blue-100);
+        background-color: transparent;
+        color: #0062FF;
+        border: 1px solid #545BF9;
         &[disabled] {
             color: var(--disabled);
             border: 1px solid var(--disabled);
         }
+    }
+    &_none-blue {
+        background: none;
+        color: #0062FF;
     }
     &_outlined-orange {
         background-color: var(--white);
@@ -77,12 +86,12 @@
     }
     &_blue {
         color: var(--white);
-        background-color: var(--blue-main);
+        background-color: var(--primary60);
         &:active {
-            background-color: var(--blue-70);
+            background-color: var(--primary60);
         }
         &:hover {
-            background-color: var(--blue-100);
+            background-color: var(--primary60);
         }
         &[disabled] {
             background-color: var(--disabled);

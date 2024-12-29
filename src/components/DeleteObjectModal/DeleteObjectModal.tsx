@@ -1,5 +1,7 @@
 import { FC } from 'react';
-import { Button, Modal } from 'react-bootstrap';
+import { Modal } from 'react-bootstrap';
+import { Button } from '../Button';
+import styles from './DeleteObject.module.scss';
 
 export type DeleteObjectModalProps = {
   show: boolean;
@@ -13,6 +15,7 @@ export const DeleteObjectModal: FC<DeleteObjectModalProps> = ({ show, onClose, o
     show={show}
     backdrop={false}
     onHide={onClose}
+    className={styles.dlg_delete}
   >
     <Modal.Header closeButton>
       <Modal.Title>
@@ -24,13 +27,13 @@ export const DeleteObjectModal: FC<DeleteObjectModalProps> = ({ show, onClose, o
     <Modal.Body />
     <Modal.Footer>
       <Button
-        variant="primary"
+        background='blue'
         onClick={onSubmit}
       >
         Удалить
       </Button>
       <Button
-        variant="secondary"
+        background='outlined-blue'
         onClick={onClose}
       >
         Отмена

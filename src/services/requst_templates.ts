@@ -40,9 +40,6 @@ export const URL = REACT_APP_BASE_API_URL; //replacePort(REACT_APP_BASE_API_URL)
 
 export const usermgmtURL = REACT_APP_USER_MGT_API_URL; //replacePort(REACT_APP_USER_MGT_API_URL);
 
-console.log(URL);
-console.log(usermgmtURL);
-
 export const optionsGet = (signal?: AbortSignal | null): CustomRequest => ({
   method: 'GET',
   mode: 'cors',

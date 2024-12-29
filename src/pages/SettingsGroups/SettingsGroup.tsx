@@ -1,20 +1,26 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import styles from './SettingsGroups.module.scss';
-import { getArtifactUrl, handleHttpError, i18n } from '../../utils';
-import { FieldEditor } from '../../components/FieldEditor';
+import { getArtifactUrl, handleHttpError, i18n, setDataModified } from '../../utils';
 import {
-  getUser, createUser, updateUser, getRoles, searchRoles, getPermissions, searchPermissions,
+  searchRoles, searchPermissions
 } from '../../services/pages/users';
-import { FieldCheckboxListEditor } from '../../components/FieldCheckboxListEditor';
-import { createGroup, getGroup, updateGroup } from '../../services/pages/groups';
 import { FieldArrayEditor } from '../../components/FieldArrayEditor/FieldArrayEditor';
 import { getPermission, getRole } from '../../services/pages/roles';
 import { GroupData } from '../../types/data';
+import useUrlState from '@ahooksjs/use-url-state';
+import classNames from 'classnames';
+import { FieldTextEditor } from '../../components/FieldTextEditor';
+import { getGroup, updateGroup } from '../../services/pages/groups';
+import { EditPage } from '../../components/EditPage';
 
 export function SettingsGroup() {
+  const navigate = useNavigate();
+
   const [, setLoading] = useState(true);
+  const [isLoaded, setLoaded] = useState(false);
+  const [state, setState] = useUrlState({ sc: 1 }, { navigateMode: 'replace' });
   const [data, setData] = useState<GroupData>({
     metadata: { id: '', artifact_type: 'external_groups', version_id: '' },
     entity: {
@@ -25,7 +31,6 @@ export function SettingsGroup() {
     }
   });
 
-  const [isCreateMode, setCreateMode] = useState(false);
   const [showValidation, setShowValidation] = useState(true);
   const [groupId, setGroupId] = useState<string>('');
   const [selectedRoleNames, setSelectedRoleNames] = useState<any[]>([]);
@@ -37,8 +42,7 @@ export function SettingsGroup() {
     if (!groupId && id) setGroupId(id);
   }, [id]);
 
-  useEffect(() => {
-    setCreateMode(groupId === '');
+  const loadData = () => {
     if (groupId) {
       getGroup(groupId)
         .then((json: any) => {
@@ -46,30 +50,15 @@ export function SettingsGroup() {
           const el = document.getElementById(`crumb_${groupId}`);
           if (el) el.innerText = json.entity.name;
           setLoading(false);
+          setLoaded(true);
         })
         .catch(handleHttpError);
     }
-  }, [groupId]);
+  }
 
   useEffect(() => {
-    
-    if (isCreateMode) {
-      if (data.entity.name) {
-        createGroup(data.entity)
-          .then((json) => {
-            if (json && json.metadata.id) {
-              setGroupId(json.metadata.id);
-              window.history.pushState(
-                {},
-                '',
-                `/settings/groups/edit/${encodeURIComponent(json.metadata.id)}`,
-              );
-            }
-          })
-          .catch(handleHttpError);
-      }
-    }
-  }, [data]);
+    //loadData();
+  }, [groupId]);
 
   useEffect(() => {
     setSelectedRoleNames([]);
@@ -90,23 +79,8 @@ export function SettingsGroup() {
   }, [ data.entity.permissions ]);
 
   const updateGroupField = (field: string, value: any) => {
-    if (groupId) {
-      const d: any = {};
-      d[field] = value;
-      
-      updateGroup(groupId, d)
-        .then(() => {})
-        .catch(handleHttpError);
-    } else {
-      setShowValidation(true);
-      if (field === 'user_roles') {
-        setData((prev: any) => ({
-          ...prev,
-          user_roles: value,
-          user_roles_ids: value,
-        }));
-      } else setData((prev: any) => ({ ...prev, entity: {...prev.entity, [field]: value } }));
-    }
+    setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } }));
+    setDataModified(true);
   };
 
   const getRoleOptions = async (search: string) => 
@@ -119,82 +93,86 @@ export function SettingsGroup() {
     return json.items.map((item:any) => { return { value: item.id, label: item.name, name: item.name, id: item.id } });
   });
 
+  const saveData = () => {
+    updateGroup(groupId, data.entity).then(json => {
+      if (json.metadata && json.metadata.id != groupId)
+        navigate(`/settings/groups/edit/${json.metadata.id}`);
+    }).catch(handleHttpError);
+  }
+
   return (
-    <div className={`${styles.page} ${styles.groupPage}`}>
-      <div className={styles.mainContent}>
-        <div className={styles.general_data}>
-          <div className={styles.data_row}>
-            <FieldEditor
-              className=""
-              layout="separated"
-              labelPrefix={i18n('Название')}
-              isMultiline={false}
+    <>
+
+      <EditPage noRecentViews noRating data={data} objectId={groupId} objectVersionId='' urlSlug='settings/groups' setData={setData} isReadOnly={false} setReadOnly={() => {}} artifactType='group' 
+        updateObject={updateGroup}
+        getObject={getGroup} tabs={[
+        {
+          key: 'tab-gen',
+          title: i18n('Сведения'),
+          content: <div className={styles.tab_white}>
+            
+              <h2>Общая информация</h2>
+
+              <FieldTextEditor
+              label={i18n('Название')}
               isReadOnly={false}
               defaultValue={data.entity.name}
               valueSubmitted={(value) => updateGroupField('name', value)}
               isRequired
               showValidation={showValidation}
             />
-          </div>
-          <div className={styles.data_row}>
-          <FieldEditor
-              isReadOnly={false}
-              layout="separated"
-              labelPrefix={`${i18n('Описание')}`}
+
+            <FieldTextEditor
+              label={i18n('Описание')}
               defaultValue={data.entity.description}
-              className=""
               valueSubmitted={(val) => {
-                updateGroupField('description', val.toString());
+                updateGroupField('description', val);
               }}
             />
-          </div>
 
-          <div className={styles.data_row}>
-          
-          <FieldArrayEditor 
-                    key={'ed-ind-' + groupId}
-                    getOptions={getRoleOptions}
-                    isReadOnly={false} 
-                    labelPrefix={i18n('Роли')} 
-                    className={styles.long_input}
-                    defaultValue={selectedRoleNames} 
-                    inputPlaceholder={i18n('Выберите роль')} 
-                    addBtnText={i18n('Добавить')}
-                    valueSubmitted={()=>{ updateGroupField('user_roles', data.entity.user_roles) }}
-                    onValueIdAdded={(id:string, name: string) => { 
-                      setData((prev) => ({...prev, entity: {...prev.entity, user_roles: [...prev.entity.user_roles, id ]}}));
-                    }}
-                    onValueIdRemoved={(id:string) => {
-                      let arr = [...data.entity.user_roles];
-                      arr.splice(parseInt(id), 1);
-                      setData(prev => ({...prev, entity: {...prev.entity, user_roles: arr}}));
-                    }}
-                />
+            <FieldArrayEditor 
+                key={'ed-ind-' + groupId}
+                getOptions={getRoleOptions}
+                isReadOnly={false} 
+                label={i18n('Роли')} 
+                defaultValue={selectedRoleNames} 
+                inputPlaceholder={i18n('Выберите роль')} 
+                addBtnText={i18n('Добавить')}
+                valueSubmitted={()=>{ updateGroupField('user_roles', data.entity.user_roles) }}
+                onValueIdAdded={(id:string, name: string) => { 
+                  setData((prev) => ({...prev, entity: {...prev.entity, user_roles: [...prev.entity.user_roles, id ]}}));
+                }}
+                onValueIdRemoved={(id:string) => {
+                  let arr = [...data.entity.user_roles];
+                  arr.splice(parseInt(id), 1);
+                  setData(prev => ({...prev, entity: {...prev.entity, user_roles: arr}}));
+                }}
+            />
+
+            <FieldArrayEditor 
+                key={'ed-isnd-' + groupId}
+                getOptions={getPermissionOptions}
+                isReadOnly={false} 
+                label={i18n('Разрешения')} 
+                defaultValue={selectedPermissionNames} 
+                inputPlaceholder={i18n('Выберите разрешение')} 
+                addBtnText={i18n('Добавить')}
+                valueSubmitted={()=>{ updateGroupField('permissions', data.entity.permissions) }}
+                onValueIdAdded={(id:string, name: string) => { 
+                  setData((prev) => ({...prev, entity: {...prev.entity, permissions: [...prev.entity.permissions, id ]}}));
+                }}
+                onValueIdRemoved={(id:string) => {
+                  let arr = [...data.entity.permissions];
+                  arr.splice(parseInt(id), 1);
+                  setData(prev => ({...prev, entity: {...prev.entity, permissions: arr}}));
+                }}
+            />
+
+              
           </div>
-          <div className={styles.data_row}>
-          
-          <FieldArrayEditor 
-                    key={'ed-isnd-' + groupId}
-                    getOptions={getPermissionOptions}
-                    isReadOnly={false} 
-                    labelPrefix={i18n('Разрешения')} 
-                    className={styles.long_input}
-                    defaultValue={selectedPermissionNames} 
-                    inputPlaceholder={i18n('Выберите разрешение')} 
-                    addBtnText={i18n('Добавить')}
-                    valueSubmitted={()=>{ updateGroupField('permissions', data.entity.permissions) }}
-                    onValueIdAdded={(id:string, name: string) => { 
-                      setData((prev) => ({...prev, entity: {...prev.entity, permissions: [...prev.entity.permissions, id ]}}));
-                    }}
-                    onValueIdRemoved={(id:string) => {
-                      let arr = [...data.entity.permissions];
-                      arr.splice(parseInt(id), 1);
-                      setData(prev => ({...prev, entity: {...prev.entity, permissions: arr}}));
-                    }}
-                />
-          </div>
-        </div>
-      </div>
-    </div>
+        }
+      ]} />
+
+    </>
   );
 }

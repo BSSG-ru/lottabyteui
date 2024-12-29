@@ -3,28 +3,31 @@
 /* eslint-disable jsx-a11y/control-has-associated-label */
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import React, { useEffect, useState } from 'react';
-import Modal from 'react-bootstrap/Modal';
-import Button from 'react-bootstrap/Button';
 import useUrlState from '@ahooksjs/use-url-state';
 import styles from './Samples.module.scss';
-import { doNavigate, getTablePageSize, handleHttpError, i18n, updateArtifactsCount } from '../../utils';
+import { getEntityAutocompleteObjects, getEntityDisplayValue, getQueryAutocompleteObjects, getQueryDisplayValue, getSystemAutocompleteObjects, getSystemDisplayValue, getTablePageSize, handleHttpError, i18n, updateArtifactsCount, uuid } from '../../utils';
 import { Table } from '../../components/Table';
 import { Loader } from '../../components/Loader';
-import { Input } from '../../components/Input';
-import { Textarea } from '../../components/Textarea';
 import { createSample, deleteSample } from '../../services/pages/samples';
 import { useNavigate } from "react-router-dom";
+import classNames from 'classnames';
+import { Button } from '../../components/Button';
+import { DeleteObjectModal } from '../../components/DeleteObjectModal';
+import { ModalDlg } from '../../components/ModalDlg';
+import { FieldTextEditor } from '../../components/FieldTextEditor';
+import { FieldAutocompleteEditor } from '../../components/FieldAutocompleteEditor';
 
 export function Samples() {
   const navigate = useNavigate();
   const [state, setState] = useUrlState({ p: '1', q: undefined }, { navigateMode: 'replace' });
-  const [loading, setLoading] = useState(false);
-  const [data] = useState([]);
-  const [showAddDlg, setShowAddDlg] = useState(false);
-  const [newSampleData, setNewSampleData] = useState<any>({});
+  const [loaded, setLoaded] = useState(true);
+  const [tableKey, setTableKey] = useState(uuid());
 
   const [showDelDlg, setShowDelDlg] = useState(false);
-  const [delSampleData, setDelSampleData] = useState<any>({ id: '', name: '' });
+  const [delObjectData, setDelObjectData] = useState<any>({ id: '', name: '' });
+  const [showCreateDlg, setShowCreateDlg] = useState(false);
+  const [showCreateValidation, setShowCreateValidation] = useState(false);
+  const [createData, setCreateData] = useState({ name: '', system_id: '', entity_id: '', entity_query_id: '', sample_type: 'table' });
 
   const columns = [
     { property: 'id', header: 'ID', isHidden: true },
@@ -33,6 +36,7 @@ export function Samples() {
       header: i18n('Koд'),
       sortDisabled: true,
       filterDisabled: true,
+      width: '55px'
     },
     {
       property: 'name',
@@ -42,60 +46,53 @@ export function Samples() {
       property: 'system_id',
       filter_property: 'system.name',
       header: i18n('Система'),
-      render: (item: any) => <span>{item.system_name}</span>,
+      render: (row: any) => <>{row.system_name && (<span key={`sys-pill-${row.id}`} className={styles.pill}>{row.system_name}</span>)}</>,
+      width: '125px'
     },
     {
       property: 'entity_id',
       filter_property: 'entity.name',
-      header: i18n('Логический объект'),
-      render: (item: any) => <span>{item.entity_name}</span>,
+      header: i18n('Модель'),
+      render: (row: any) => <>{row.entity_name && (<span key={`e-pill-${row.id}`} className={styles.pill}>{row.entity_name}</span>)}</>,
     },
     {
       property: 'entity_query_id',
       filter_property: 'entity_query.name',
       header: i18n('Запрос'),
-      render: (item: any) => <span>{item.entity_query_name}</span>,
+      render: (row: any) => <>{row.entity_query_name && (<span key={`eq-pill-${row.id}`} className={styles.pill}>{row.entity_query_name}</span>)}</>,
     },
     {
       property: 'tags',
       header: i18n('Теги'),
       filterDisabled: false,
       sortDisabled: true,
-      render: (row: any) => row.tags.join(', '),
+      render: (row: any) => <div className={styles.pills}>{row.tags.map((tag:any, i:number) => <span key={`tag-pill-${row.id}-${i}`} className={styles.pill}>#{tag}</span>)}</div>,
     }
   ];
 
-  const handleAddDlgClose = () => {
-    setShowAddDlg(false);
-    return false;
-  };
-  const handleDelDlgClose = () => {
-    setShowDelDlg(false);
-    return false;
-  };
-
-  const addDlgSubmit = () => {
-    setShowAddDlg(false);
-    setLoading(true);
-    createSample(newSampleData)
-      .then(() => {
-        setLoading(false);
-      })
-      .catch(handleHttpError);
-    setNewSampleData({});
-  };
-
   const delDlgSubmit = () => {
     setShowDelDlg(false);
-    setLoading(true);
-    deleteSample(delSampleData.id)
+    deleteSample(delObjectData.id)
       .then(() => {
         updateArtifactsCount();
-        setLoading(false);
+        setTableKey(uuid());
       })
       .catch(handleHttpError);
-    setDelSampleData({ id: '', name: '' });
+    setDelObjectData({ id: '', name: '' });
   };
+
+  const submitCreate = () => {
+    if (createData.name && createData.entity_id && createData.system_id && createData.entity_query_id) {
+      setShowCreateDlg(false);
+
+      createSample(createData).then(json => {
+        if (json && json.metadata.id) {
+          navigate(`/samples/edit/${encodeURIComponent(json.metadata.id)}`);
+        }
+      }).catch(handleHttpError)
+    } else
+      setShowCreateValidation(true);
+  }
 
   const [limitSteward, setLimitSteward] = useState((window as any).limitStewardSwitch ? (window as any).limitStewardSwitch.getLimitSteward() : true);
 
@@ -106,145 +103,86 @@ export function Samples() {
   }, []);
 
   return (
-    <div className={styles.page}>
-      {loading ? (
+    <div className={classNames(styles.page, styles.scrollable, { [styles.loaded]: loaded })}>
+      {!loaded ? (
         <Loader className="centrify" />
       ) : (
         <>
-          <div className={styles.title}>{`${i18n('СЭМПЛЫ')}`}</div>
-          {data ? (
-            <Table
-              cookieKey='samples'
-              className={styles.table}
-              columns={columns}
-              paginate
-              columnSearch
-              globalSearch
-              dataUrl="/v1/samples/search"
-              limitSteward={limitSteward}
-              initialFetchRequest={{
-                sort: 'name+',
-                global_query: state.q !== undefined ? state.q : '',
-                limit: getTablePageSize(),
-                offset: (state.p - 1) * getTablePageSize(),
-                filters: [],
-                filters_preset: [],
-                filters_for_join: [],
-              }}
-              showCreateBtn
-              onCreateBtnClick={() => {
-                navigate("/samples/edit/");
-              }}
-              onRowClick={(row: any) => {
-                navigate(`/samples/edit/${encodeURIComponent(row.id)}`);
-              }}
-              renderActionsPopup={(row: any) => (
-                <div>
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      navigate('/samples/edit/');
-                    }}
-                    className={styles.btn_create}
-                  />
-                  <a
-                    href={`/samples/edit/${encodeURIComponent(row.id)}`}
-                    className={styles.btn_edit}
-                    onClick={(e) => { e.preventDefault(); navigate(`/samples/edit/${encodeURIComponent(row.id)}`); }}
-                  />
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      setDelSampleData({ id: row.id, name: row.name });
-                      setShowDelDlg(true);
-                      return false;
-                    }}
-                    className={styles.btn_del}
-                  />
-                </div>
-              )}
-              onPageChange={(page: number) => (
-                setState(() => ({ p: page }))
-              )}
-              onQueryChange={(query: string) => (
-                setState(() => ({ p: undefined, q: query }))
-              )}
-            />
-          ) : (
-            ''
-          )}
-          <Modal
-            show={showAddDlg}
-            backdrop={false}
-            onHide={handleAddDlgClose}
-          >
-            <Modal.Header closeButton>
-              <Modal.Title>Создание нового сэмпла</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-              <Input
-                label={i18n('Название')}
-                value={newSampleData.name}
-                onChange={(e) => {
-                  setNewSampleData((prev: any) => ({ ...prev, name: e.target.value }));
-                }}
-              />
-              <Textarea
-                label={i18n('Описание')}
-                value={newSampleData.description}
-                onChange={(e) => {
-                  setNewSampleData((prev: any) => ({ ...prev, description: e.target.value }));
-                }}
-              />
-            </Modal.Body>
-            <Modal.Footer>
-              <Button
-                variant="primary"
-                onClick={addDlgSubmit}
-              >
-                Создать
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={handleAddDlgClose}
-              >
-                Отмена
-              </Button>
-            </Modal.Footer>
-          </Modal>
+          <div className={styles.title}>{`${i18n('Сэмплы')}`}<Button background='blue' onClick={() => { setShowCreateValidation(false); setShowCreateDlg(true); }}>Создать сэмпл</Button></div>
+          <Table
+            artifactType='entity_sample'
+            key={tableKey}
+            cookieKey='samples'
+            className={styles.table}
+            columns={columns}
+            paginate
+            columnSearch
+            globalSearch
+            dataUrl="/v1/samples/search"
+            limitSteward={limitSteward}
+            initialFetchRequest={{
+              sort: 'name+',
+              global_query: state.q !== undefined ? state.q : '',
+              limit: getTablePageSize(),
+              offset: (state.p - 1) * getTablePageSize(),
+              filters: [],
+              filters_preset: [],
+              filters_for_join: [],
+            }}
+            onRowClick={(row: any) => {
+              navigate(`/samples/edit/${encodeURIComponent(row.id)}`);
+            }}
+            onDeleteClicked={(row: any) => {
+              setDelObjectData({ id: row.id, name: row.name });
+              setShowDelDlg(true);
+            }}
+            onPageChange={(page: number) => (
+              setState(() => ({ p: page }))
+            )}
+            onQueryChange={(query: string) => (
+              setState(() => ({ p: undefined, q: query }))
+            )}
+          />
+          
+          <DeleteObjectModal show={showDelDlg} objectTitle={delObjectData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />
+          <ModalDlg show={showCreateDlg} title={i18n('Создать сэмпл')} cancelBtnText={i18n('Отменить')} submitBtnText={i18n('Создать')} onClose={() => setShowCreateDlg(false)} dialogClassName={styles.dlg_create} onSubmit={submitCreate}>
+            <div className={styles.fields}>
+                <FieldTextEditor label={i18n('Название сэмпла')} isRequired showValidation={showCreateValidation} className='' defaultValue='' valueSubmitted={(v) => setCreateData((prev) => ({...prev, name: v ?? ''}))} />
 
-          <Modal
-            show={showDelDlg}
-            backdrop={false}
-            onHide={handleDelDlgClose}
-          >
-            <Modal.Header closeButton>
-              <Modal.Title>
-                Вы действительно хотите удалить
-                {delSampleData.name}
-                ?
-              </Modal.Title>
-            </Modal.Header>
-            <Modal.Body />
-            <Modal.Footer>
-              <Button
-                variant="primary"
-                onClick={() => delDlgSubmit()}
-              >
-                Удалить
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={handleDelDlgClose}
-              >
-                Отмена
-              </Button>
-            </Modal.Footer>
-          </Modal>
+                <FieldAutocompleteEditor
+                  label={i18n('Модель')}
+                  defaultValue={''}
+                  valueSubmitted={(v) => setCreateData((prev) => ({...prev, entity_id: v ?? ''}))}
+                  getDisplayValue={getEntityDisplayValue}
+                  getObjects={getEntityAutocompleteObjects}
+                  isRequired
+                  showValidation={showCreateValidation}
+                  artifactType="entity"
+                />
+
+                <FieldAutocompleteEditor
+                  label={i18n('Система')}
+                  defaultValue={''}
+                  valueSubmitted={(v) => setCreateData((prev) => ({...prev, system_id: v ?? ''}))}
+                  getDisplayValue={getSystemDisplayValue}
+                  getObjects={getSystemAutocompleteObjects}
+                  isRequired
+                  showValidation={showCreateValidation}
+                  artifactType="system"
+                />
+                
+                <FieldAutocompleteEditor
+                  label={i18n('Запрос')}
+                  defaultValue={''}
+                  valueSubmitted={(v) => setCreateData((prev) => ({...prev, entity_query_id: v ?? ''}))}
+                  getDisplayValue={getQueryDisplayValue}
+                  getObjects={getQueryAutocompleteObjects}
+                  isRequired
+                  showValidation={showCreateValidation}
+                  artifactType="entity_query"
+                />
+            </div>
+          </ModalDlg>
         </>
       )}
     </div>

@@ -2,79 +2,59 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import useUrlState from '@ahooksjs/use-url-state';
 import classNames from 'classnames';
 import styles from './Systems.module.scss';
-import { handleHttpError, i18n, getDomainDisplayValue, getDomainAutocompleteObjects, updateArtifactsCount, setDataModified, doNavigate, tagAddedHandler, tagDeletedHandler, loadEditPageData, rateClickedHandler, updateEditPageReadOnly, setBreadcrumbEntityName, uuid } from '../../utils';
+import { handleHttpError, i18n, setDataModified, doNavigate, tagAddedHandler, tagDeletedHandler, uuid, getArtifactUrl } from '../../utils';
 import {
   getSystem,
   getSystemVersions,
   updateSystem,
-  createSystem,
   getSystemTypes,
   getSystemVersion,
   restoreSystemVersion,
   archiveSystem,
-  restoreSysten,
+  restoreSystem,
 } from '../../services/pages/systems';
 import { Tags, TagProp } from '../../components/Tags';
-import { Versions, VersionData } from '../../components/Versions';
-import Button from 'react-bootstrap/Button';
-import { FieldEditor } from '../../components/FieldEditor';
 import { FieldAutocompleteEditor } from '../../components/FieldAutocompleteEditor';
-import { ReactComponent as PlusInCircle } from '../../assets/icons/plus-in-circle.svg';
-import { ReactComponent as Close } from '../../assets/icons/close.svg';
-import { setRecentView } from '../../services/pages/recentviews';
-import { WFItemControl } from '../../components/WFItemControl/WFItemControl';
 import { RelatedObjectsControl } from '../../components/RelatedObjectsControl';
-import { deleteSystem } from '../../services/pages/domains';
-import { DeleteObjectModal } from '../../components/DeleteObjectModal';
+import { deleteSystem, getDomain, getDomains } from '../../services/pages/domains';
 import { FieldVisualEditor } from '../../components/FieldVisualEditor';
+import { FieldTextareaEditor } from '../../components/FieldTextareaEditor';
+import { EditPage } from '../../components/EditPage';
+import { FieldTextEditor } from '../../components/FieldTextEditor';
+import { FieldArrayEditor } from '../../components/FieldArrayEditor/FieldArrayEditor';
 
 export function System() {
-  const [state, setState] = useUrlState({
-    t: '1', p1: '1', p2: '1', p3: '1', p4: '1',
-  }, { navigateMode: 'replace' });
+  const navigate = useNavigate();
+
   const [, setLoading] = useState(true);
+
   const [data, setData] = useState({
-    entity: {
-      name: null,
-      system_type: '',
-      description: '',
-      domain_ids: [],
-    },
-    metadata: { id: '', artifact_type: 'system', version_id: '', tags: [], state: 'PUBLISHED', ancestor_draft_id: '', workflow_task_id: '' },
+    entity: { name: '', description: '', short_description: '', system_type: '', domain_ids: [] },
+    metadata: { id: '', artifact_type: 'system', version_id: '', tags: [], state: 'PUBLISHED', ancestor_draft_id: '', workflow_task_id: '', created_by: '' },
   });
-  const [ratingData, setRatingData] = useState({ rating: 0, total_rates: 0 });
-  const [ownRating, setOwnRating] = useState(0);
-  const [versions, setVersions] = useState<VersionData[]>([]);
+  
   const [tags, setTags] = useState<TagProp[]>([]);
-  const [isCreateMode, setCreateMode] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
 
-  const [systemTypes, setSystemTypes] = useState();
-
   const [isReadOnly, setReadOnly] = useState(true);
-  const [isLoaded, setLoaded] = useState(false);
-
+  
   const { id, version_id } = useParams();
-
   const [systemId, setSystemId] = useState<string>(id ?? '');
   const [systemVersionId, setSystemVersionId] = useState<string>(version_id ?? '');
 
-  const [delObjectData, setDelObjectData] = useState<any>({ id: '', name: '' });
-  const [showDelDlg, setShowDelDlg] = useState(false);
-
-  const navigate = useNavigate();
+  const [systemTypes, setSystemTypes] = useState();
+  const [selectedDomainNames, setSelectedDomainNames] = useState<any[]>([]);
 
   const getSystemTypeDisplayValue = async (i: string) => {
     if (!i) return '';
     // @ts-ignore
-    return systemTypes.get(i);
+    return systemTypes ? systemTypes.get(i) : '??';
   };
 
   const getSystemType = async (search: string) => getSystemTypes().then((json) => {
-    const res = [];
+    const res:any[] = [];
     const map = new Map();
     for (let i = 0; i < json.length; i += 1) {
       res.push({ id: json[i].id, name: json[i].description });
@@ -105,255 +85,134 @@ export function System() {
   }, [id, version_id]);
 
   useEffect(() => {
-    setCreateMode(systemId === '');
-    if (systemId) {
-      if (!systemVersionId) { setRecentView('system', systemId); }
+    const a = [];
+    for (let i = 0; i < data.entity.domain_ids.length; i++) { a.push(''); }
+    setSelectedDomainNames(a);
 
-      loadEditPageData(systemId, systemVersionId, setData, setTags, setLoading, setLoaded, getSystemVersion, getSystem, setRatingData,
-        setOwnRating, getSystemVersions, setVersions, setReadOnly);
-      
-    } else {
-      setData((prev) => ({ ...prev, metadata: { ...prev.metadata, state: 'DRAFT' } }));
-      setReadOnly(false);
-      setLoaded(true);
-    }
-  }, [systemId, systemVersionId]);
+    data.entity.domain_ids.forEach((id, index) => {
+      getDomain(id).then((json) => {
+        setSelectedDomainNames((prev) => ([...prev.slice(0, index), `<div><a href="${getArtifactUrl(json.metadata.id, 'domain')}">${json.entity.name}</a></div>`, ...prev.slice(index + 1)]));
+      }).catch(handleHttpError);
+    });
+  }, [data.entity.domain_ids]);
 
-  useEffect(() => {
-    if (isCreateMode) {
-      if (data.entity.name && data.entity.system_type) {
-        createSystem({
-          name: data.entity.name,
-          system_type: data.entity.system_type,
-          description: data.entity.description,
-        })
-          .then((json) => {
-            setDataModified(false);
-            updateArtifactsCount();
-            if (json.metadata.id) {
-              setSystemId(json.metadata.id);
-              window.history.pushState(
-                {},
-                '',
-                `/systems/edit/${encodeURIComponent(json.metadata.id)}`,
-              );
-            }
-          })
-          .catch(handleHttpError);
-      }
-    }
-  }, [data]);
-
-  const addDomain = () => {
-    setData((prev: any) => ({ ...prev, entity: { ...prev.entity, domain_ids: [...prev.entity.domain_ids, ''] } }));
+  const updateSystemField = (field: string, value: string | string[] | undefined) => {
+    setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } }));
+    setDataModified(true);
   };
 
-  const delDomain = (k: number) => {
-    const arr: string[] = [...data.entity.domain_ids];
-    arr.splice(k, 1);
-
-    updateSystemField('domain_ids', arr.filter((x) => x));
-  };
-
-  const updateSystemDomainId = (k: number, id: string) => {
-    const arr: string[] = [...data.entity.domain_ids];
-    if (arr.length > k) { arr[k] = id; } else { arr.push(id); }
-
-    updateSystemField('domain_ids', arr.filter((x) => x));
-  };
-
-  const updateSystemField = (field: string, value: string | string[]) => {
-    if (systemId) {
-      const d: any = {};
-      d[field] = value;
-      updateSystem(systemId, d)
-        .then((json) => {
-          setDataModified(false);
-          if (json.metadata.id && json.metadata.id != systemId) {
-            
-            navigate(`/systems/edit/${encodeURIComponent(json.metadata.id)}`);
-          } else {
-            setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } }));
-          }
-        })
-        .catch(handleHttpError);
-    } else {
-      setShowValidation(true);
-      setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } }));
-      setDataModified(false);
-    }
-  };
-
-  const delDlgSubmit = () => {
-    setShowDelDlg(false);
-    setLoading(true);
-    deleteSystem(delObjectData.id)
-      .then(json => {
-        updateArtifactsCount();
-        setLoading(false);
-
-        if (json.metadata && json.metadata.id)
-          navigate('/systems/edit/' + encodeURIComponent(json.metadata.id));
-      })
-      .catch(handleHttpError);
-    setDelObjectData({ id: '', name: '' });
-  };
-
-  const archiveBtnClicked = () => { archiveSystem(data.metadata.id).then(json => {
-    if (json.metadata.id && json.metadata.id != systemId) {
-      navigate(`/systems/edit/${encodeURIComponent(json.metadata.id)}`);
-    }
-    setDataModified(false);
-  }).catch(handleHttpError); };
-
-  const restoreBtnClicked = () => { restoreSysten(data.metadata.id).then(json => {
-    if (json.metadata.id && json.metadata.id != systemId) {
-      navigate(`/systems/edit/${encodeURIComponent(json.metadata.id)}`);
-    }
-    setDataModified(false);
-  }).catch(handleHttpError); };
+  const getDomainOptions = async (search: string) => getDomains({ filters: [], filters_for_join: [], global_query: search, limit: 1000, offset: 0, sort: 'name+', state: 'PUBLISHED' }).then((json) => json.items.map((item: any) => ({ value: item.id, label: item.name, name: item.name })));
 
   return (
-    <div className={classNames(styles.page, styles.systemPage, { [styles.loaded]: isLoaded })}>
-      <div className={styles.mainContent}>
-      {systemVersionId && (
-          <Button onClick={() => {
-            restoreSystemVersion(systemId, systemVersionId).then(json => {
-              setDataModified(false);
-              if (json.metadata.id && json.metadata.id !== systemId) {
-                navigate(`/systems/edit/${encodeURIComponent(json.metadata.id)}`);
-              } else { setData(json); }
-            }).catch(handleHttpError);
-          }}>{i18n('Восстановить')}</Button>
-        )}
-        {!systemVersionId && (
-          <WFItemControl
-            key={`wfc-sys-` + data?.metadata?.workflow_task_id}
-            itemMetadata={data.metadata}
-            itemIsReadOnly={isReadOnly}
-            onEditClicked={() => { setReadOnly(false); }}
-            onArchiveClicked={archiveBtnClicked}
-            onRestoreClicked={restoreBtnClicked}
-            onDeleteClicked={() => { setDelObjectData({ id: data.metadata.id, name: data.entity.name }); setShowDelDlg(true); }}
-            onObjectIdChanged={(id:string) => {
-              if (id) {
-                setSystemId(id);
-                window.history.pushState(
-                  {},
-                  '',
-                  `/systems/edit/${encodeURIComponent(id)}`,
-                );
-              } else navigate('/systems/');
-            }}
-            onObjectDataChanged={(data:any) => {
-              setData(data);
-              setDataModified(false);
-              setBreadcrumbEntityName(systemId, data.entity.name);
-              setTags(data.metadata.tags ? data.metadata.tags.map((x: any) => ({ value: x.name })) : []);
-              
-              updateEditPageReadOnly(data, setReadOnly, () => {  setLoading(false); setLoaded(true); });
-            }}
-          />
-        )}
-        <div className={styles.title}>
-          <FieldEditor
-            isReadOnly={isReadOnly}
-            labelPrefix={`${i18n('СИСТЕМА')}: `}
-            defaultValue={data.entity.name}
-            className={styles.title}
-            valueSubmitted={(val) => {
-              updateSystemField('name', val.toString());
-            }}
-            isRequired
-            onBlur={(val) => {
-              updateSystemField('name', val);
-            }}
-            showValidation={showValidation}
-          />
-        </div>
-        {!isCreateMode && data.metadata.state != 'ARCHIVED' && (
-          <button className={styles.btn_scheme} onClick={() => { doNavigate('/systems-model/' + encodeURIComponent(systemId), navigate); }}>{i18n('Схема')}</button>
-        )}
-        <FieldAutocompleteEditor
-          className={styles.long_input}
-          label={i18n('Тип: ')}
-          isReadOnly={isReadOnly}
-          defaultValue={data.entity.system_type}
-          valueSubmitted={(identity) => updateSystemField('system_type', identity)}
-          getDisplayValue={getSystemTypeDisplayValue}
-          getObjects={getSystemType}
-          isRequired
-          showValidation={showValidation}
-        />
-        {!isCreateMode && (
-          <div className={styles.domains_wrap}>
-          <div className={styles.domains_head}>
-            <label>{`${i18n('Домены')}:`}</label>
-            {!isReadOnly && (<PlusInCircle onClick={addDomain} />)}
-          </div>
-          {data.entity.domain_ids.map((sId, k) => (
-            <div className={styles.domain_item} key={`dse${k}`}>
+
+    <EditPage objectId={systemId} objectVersionId={systemVersionId} data={data} restoreVersion={restoreSystemVersion} urlSlug='systems' setData={setData} isReadOnly={isReadOnly} setReadOnly={setReadOnly}
+      archiveObject={archiveSystem} artifactType='system' setTags={setTags} getObjectVersion={getSystemVersion} getObjectVersions={getSystemVersions} getObject={getSystem} deleteObject={deleteSystem}
+      restoreObject={restoreSystem} updateObject={updateSystem} tabs={[
+        {
+          key: 'tab-gen',
+          title: i18n('Сведения'),
+          unscrollable: true,
+          content: <div className={styles.tab_2col}>
+            <div className={classNames(styles.col, styles.scrollable)}>
+              <h2>Общая информация</h2>
+              {data.metadata.state != 'ARCHIVED' && (
+                <div>
+                <button className={styles.btn_scheme} onClick={() => { doNavigate(`/systems-model/${encodeURIComponent(systemId)}`, navigate); }}>{i18n('Смотреть схему')}</button>
+                </div>
+              )}
+
+              <FieldTextEditor
+                  isReadOnly={isReadOnly}
+                  label={i18n('Название')}
+                  defaultValue={data.entity.name}
+                  className=''
+                  valueSubmitted={(val) => {
+                    updateSystemField('name', val);
+                  }}
+                />
+
               <FieldAutocompleteEditor
-                key={`se${k}`}
-                className={styles.long_input}
-                isReadOnly={isReadOnly}
-                label=""
-                defaultValue={sId}
-                valueSubmitted={(identity) => updateSystemDomainId(k, identity)}
-                getDisplayValue={getDomainDisplayValue}
-                getObjects={getDomainAutocompleteObjects}
-                artifactType='domain'
-              />
-              {!isReadOnly && (<Close key={`ds${k}`} onClick={() => delDomain(k)} />)}
+                  className=''
+                  label={i18n('Тип')}
+                  isReadOnly={isReadOnly}
+                  defaultValue={data.entity.system_type}
+                  valueSubmitted={(identity) => updateSystemField('system_type', identity)}
+                  getDisplayValue={getSystemTypeDisplayValue}
+                  getObjects={getSystemType}
+                  isRequired
+                  showValidation={showValidation}
+                />
+
+              <FieldTextareaEditor
+                  isReadOnly={isReadOnly}
+                  label={i18n('Описание')}
+                  defaultValue={data.entity.short_description}
+                  className=''
+                  valueSubmitted={(val) => {
+                    updateSystemField('short_description', val);
+                  }}
+                />
+
+              <div data-uitest="system_tag" className={styles.tags_block}>
+                <div className={styles.label}>{i18n('Теги')}</div>
+                <Tags
+                  key={'tags-' + systemId + '-' + systemVersionId + '-' + uuid()}
+                  isReadOnly={isReadOnly}
+                  tags={tags}
+                  tagPrefix='#'
+                  onTagAdded={(tagName: string) => tagAddedHandler(tagName, systemId, 'system', data.metadata.state ?? '', tags, setLoading, setTags, '/systems/edit/', navigate)}
+                  onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, systemId, 'system', data.metadata.state ?? '', setLoading, setTags, '/systems/edit/', navigate)}
+                />
+              </div>
             </div>
-          ))}
+            <div className={classNames(styles.col, styles.scrollable)}>
+              <h2>Дополнительные параметры</h2>
 
-        </div>
-        )}
+              <FieldArrayEditor
+                key={`ed-dom-${systemId}`}
+                getOptions={getDomainOptions}
+                isReadOnly={isReadOnly}
+                label={i18n('Домены')}
+                defaultValue={selectedDomainNames}
+                inputPlaceholder={i18n('Выберите домен')}
+                addBtnText={i18n('Добавить')}
+                valueSubmitted={() => { updateSystemField('domain_ids', data.entity.domain_ids); }}
+                onValueIdAdded={(id: string) => {
+                  setData((prev:any) => ({ ...prev, entity: { ...prev.entity, domain_ids: [...prev.entity.domain_ids, id] } }));
+                }}
+                onValueIdRemoved={(id: string) => {
+                  const arr = [...data.entity.domain_ids];
+                  arr.splice(parseInt(id), 1);
+                  setData((prev) => ({ ...prev, entity: { ...prev.entity, domain_ids: arr } }));
+                }}
+              />
+              
+            </div>
+          </div>
+        },
+        {
+          key: 'tab-related',
+          title: i18n('Связи'),
+          content: <div className={styles.tab_white}>
+            <RelatedObjectsControl artifactId={systemId} artifactType='system'></RelatedObjectsControl>
+          </div>
+        },
+        {
+          key: 'tab-desc',
+          title: i18n('Расширенное описание'),
+          content: <div className={styles.tab_transparent}>
 
-        {!isCreateMode && (
-          <div className={styles.description}>
             <FieldVisualEditor
                 isReadOnly={isReadOnly}
-                labelPrefix={`${i18n('Описание')}:`}
                 defaultValue={data.entity.description}
-                className={styles.long_input}
+                className=''
                 valueSubmitted={(val) => {
                   updateSystemField('description', val.toString());
                 }}
-              />
-            
+              />  
+          
           </div>
-        )}
-        {!isCreateMode && (
-          <Tags
-            key={'tags-' + systemId + '-' + systemVersionId + '-' + uuid()}
-            tags={tags}
-            isReadOnly={isReadOnly}
-            onTagAdded={(tagName: string) => tagAddedHandler(tagName, systemId, 'system', data.metadata.state ?? '', tags, setLoading, setTags, '/systems/edit/', navigate)}
-            onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, systemId, 'system', data.metadata.state ?? '', setLoading, setTags, '/systems/edit/', navigate)}
-          />
-        )}
-
-        <RelatedObjectsControl artifactId={systemId} artifactType='system'></RelatedObjectsControl>
-      </div>
-      {!isCreateMode && (
-        <div className={styles.rightBar}>
-          {(data.metadata.state == 'PUBLISHED' || data.metadata.state == 'ARCHIVED') && (
-            <Versions
-              rating={ratingData.rating}
-              ownRating={ownRating}
-              version_id={systemVersionId || data.metadata.version_id}
-              versions={versions}
-              version_url_pattern={`/systems/${encodeURIComponent(systemId)}/version/{version_id}`}
-              root_object_url={`/systems/edit/${encodeURIComponent(systemId)}`}
-              onRateClick={r => rateClickedHandler(r, systemId, 'system', setOwnRating, setRatingData)}
-            />
-          )}
-        </div>
-      )}
-
-      <DeleteObjectModal show={showDelDlg} objectTitle={delObjectData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />
-    </div>
+        }
+      ]} />
   );
 }

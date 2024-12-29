@@ -4,28 +4,63 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable no-plusplus */
 import React, { useEffect, useState } from 'react';
-import Modal from 'react-bootstrap/Modal';
-import Button from 'react-bootstrap/Button';
 import useUrlState from '@ahooksjs/use-url-state';
-import { doNavigate, getCookie, getTablePageSize, handleHttpError, i18n, updateArtifactsCount } from '../../utils';
+import { getTablePageSize, handleHttpError, i18n, updateArtifactsCount } from '../../utils';
 import { Table, TableDataRequest } from '../../components/Table';
 import { Loader } from '../../components/Loader';
-import { Input } from '../../components/Input';
-import { Textarea } from '../../components/Textarea';
 import { createSystem, deleteSystem, getSystemTypes } from '../../services/pages/systems';
 import styles from './Systems.module.scss';
-import { Autocomplete } from '../../components/Autocomplete';
 import { useNavigate } from "react-router-dom";
 import { DeleteObjectModal } from '../../components/DeleteObjectModal';
+import classNames from 'classnames';
+import { Button } from '../../components/Button';
+import { ModalDlg } from '../../components/ModalDlg';
+import { FieldTextEditor } from '../../components/FieldTextEditor';
+import { FieldAutocompleteEditor } from '../../components/FieldAutocompleteEditor';
 
 export function Systems() {
   const navigate = useNavigate();
   const [state, setState] = useUrlState({ p: '1', q: undefined }, { navigateMode: 'replace' });
-  const [loading, setLoading] = useState(false);
-  const [data] = useState([]);
-
+  const [loaded, setLoaded] = useState(true);
+  
   const [showDelDlg, setShowDelDlg] = useState(false);
-  const [delSystemData, setDelSystemData] = useState<any>({ id: '', name: '' });
+  const [delObjectData, setDelObjectData] = useState<any>({ id: '', name: '' });
+  const [showCreateDlg, setShowCreateDlg] = useState(false);
+  const [showCreateValidation, setShowCreateValidation] = useState(false);
+  const [createData, setCreateData] = useState({ name: '', system_type: '' });
+
+  const [systemTypes, setSystemTypes] = useState();
+
+  const getSystemTypeDisplayValue = async (i: string) => {
+    if (!i) return '';
+    // @ts-ignore
+    return systemTypes ? systemTypes.get(i) : '??';
+  };
+
+  const getSystemType = async (search: string) => getSystemTypes().then((json) => {
+    const res:any[] = [];
+    const map = new Map();
+    for (let i = 0; i < json.length; i += 1) {
+      res.push({ id: json[i].id, name: json[i].description });
+      map.set(json[i].id, json[i].description);
+    }
+    // @ts-ignore
+    setSystemTypes(map);
+    return res.filter((x) => x.name.toLowerCase().indexOf(search.toLowerCase()) !== -1);
+  });
+
+  useEffect(() => {
+    getSystemTypes().then((json) => {
+      
+      const map = new Map();
+      for (let i = 0; i < json.length; i += 1) {
+        
+        map.set(json[i].id, json[i].description);
+      }
+      // @ts-ignore
+      setSystemTypes(map);
+    }).catch(handleHttpError);
+  }, []);
 
   const columns = [
     { property: 'id', header: 'ID', isHidden: true },
@@ -34,6 +69,7 @@ export function Systems() {
       header: i18n('Koд'),
       sortDisabled: true,
       filterDisabled: true,
+      width: '55px'
     },
     {
       property: 'name',
@@ -53,24 +89,35 @@ export function Systems() {
       header: i18n('Теги'),
       filterDisabled: false,
       sortDisabled: true,
-      render: (row: any) => row.tags.join(', '),
+      render: (row: any) => <div className={styles.pills}>{row.tags.map((tag:any, i:number) => <span key={`tag-pill-${row.id}-${i}`} className={styles.pill}>#{tag}</span>)}</div>,
     }
   ];
 
   const delDlgSubmit = () => {
     setShowDelDlg(false);
-    setLoading(true);
-    deleteSystem(delSystemData.id)
+    deleteSystem(delObjectData.id)
       .then(json => {
         updateArtifactsCount();
-        setLoading(false);
 
         if (json.metadata && json.metadata.id)
           navigate('/systems/edit/' + encodeURIComponent(json.metadata.id));
       })
       .catch(handleHttpError);
-    setDelSystemData({ id: '', name: '' });
+    setDelObjectData({ id: '', name: '' });
   };
+
+  const submitCreate = () => {
+    if (createData.name && createData.system_type) {
+      setShowCreateDlg(false);
+
+      createSystem(createData).then(json => {
+        if (json && json.metadata.id) {
+          navigate(`/systems/edit/${encodeURIComponent(json.metadata.id)}`);
+        }
+      }).catch(handleHttpError)
+    } else
+      setShowCreateValidation(true);
+  }
 
   const [limitSteward, setLimitSteward] = useState((window as any).limitStewardSwitch.getLimitSteward());
 
@@ -81,81 +128,64 @@ export function Systems() {
   }, []);
 
   return (
-    <div className={styles.page}>
-      {loading ? (
+    <div className={classNames(styles.page, styles.scrollable, { [styles.loaded]: loaded })}>
+      {!loaded ? (
         <Loader className="centrify" />
       ) : (
         <>
-          <div className={styles.title}>{`${i18n('СИСТЕМЫ')}`}</div>
-          {data ? (
-            <Table
-              cookieKey='systems'
-              className={styles.table}
-              columns={columns}
-              paginate
-              columnSearch
-              globalSearch
-              dataUrl="/v1/systems/search"
-              limitSteward={limitSteward}
-              supportsWorkflow
-              initialFetchRequest={{
-                sort: 'name+',
-                global_query: state.q !== undefined ? state.q : '',
-                limit: getTablePageSize(),
-                offset: (state.p - 1) * getTablePageSize(),
-                filters: [],
-                filters_preset: [],
-                filters_for_join: [],
-              }}
-              showCreateBtn
-              onCreateBtnClick={() => {
-                navigate("/systems/edit/");
-              }}
-              onRowClick={(row: any) => {
-                navigate(`/systems/edit/${encodeURIComponent(row.id)}`);
-              }}
-              renderActionsPopup={(row: any) => (
-                <div>
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      navigate('/systems/edit/');
-                    }}
-                    className={styles.btn_create}
-                  />
-                  <a
-                    href={`/systems/edit/${encodeURIComponent(row.id)}`}
-                    className={styles.btn_edit}
-                    onClick={(e) => { e.preventDefault(); navigate(`/systems/edit/${encodeURIComponent(row.id)}`); }}
-                  />
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDelSystemData({ id: row.id, name: row.name });
-                      setShowDelDlg(true);
-                      e.preventDefault();
-                      return false;
-                    }}
-                    className={styles.btn_del}
-                  />
-                </div>
-              )}
-              onPageChange={(page: number) => (
-                setState(() => ({ p: page }))
-              )}
-              onQueryChange={(query: string) => (
-                setState(() => ({ p: undefined, q: query }))
-              )}
-            />
-          ) : (
-            ''
-          )}
-          
+          <div className={styles.title}>{`${i18n('Системы')}`}<Button background='blue' onClick={() => { setShowCreateValidation(false); setShowCreateDlg(true); }}>Создать систему</Button></div>
+          <Table
+            artifactType='system'
+            cookieKey='systems'
+            className={styles.table}
+            columns={columns}
+            paginate
+            columnSearch
+            globalSearch
+            dataUrl="/v1/systems/search"
+            limitSteward={limitSteward}
+            supportsWorkflow
+            initialFetchRequest={{
+              sort: 'name+',
+              global_query: state.q !== undefined ? state.q : '',
+              limit: getTablePageSize(),
+              offset: (state.p - 1) * getTablePageSize(),
+              filters: [],
+              filters_preset: [],
+              filters_for_join: [],
+            }}
+            onRowClick={(row: any) => {
+              navigate(`/systems/edit/${encodeURIComponent(row.id)}`);
+            }}
+            onDeleteClicked={(row: any) => {
+              setDelObjectData({ id: row.id, name: row.name });
+              setShowDelDlg(true);
+            }}
+            onPageChange={(page: number) => (
+              setState(() => ({ p: page }))
+            )}
+            onQueryChange={(query: string) => (
+              setState(() => ({ p: undefined, q: query }))
+            )}
+          />
 
-          <DeleteObjectModal show={showDelDlg} objectTitle={delSystemData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />
+          <DeleteObjectModal show={showDelDlg} objectTitle={delObjectData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />
+          <ModalDlg show={showCreateDlg} title={i18n('Создать систему')} cancelBtnText={i18n('Отменить')} submitBtnText={i18n('Создать')} onClose={() => setShowCreateDlg(false)} dialogClassName={styles.dlg_create} onSubmit={submitCreate}>
+            <div className={styles.fields}>
+                <FieldTextEditor label={i18n('Название системы')} isRequired showValidation={showCreateValidation} className='' defaultValue='' valueSubmitted={(v) => setCreateData((prev) => ({...prev, name: v ?? ''}))} />
+
+                <FieldAutocompleteEditor
+                  className=''
+                  label={i18n('Тип')}
+                  defaultValue=''
+                  valueSubmitted={(identity) => setCreateData((prev) => ({...prev, system_type: identity ?? ''}))}
+                  getDisplayValue={getSystemTypeDisplayValue}
+                  getObjects={getSystemType}
+                  isRequired
+                  showValidation={showCreateValidation}
+                />
+            </div>
+          </ModalDlg>
         </>
       )}
     </div>

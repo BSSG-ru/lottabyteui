@@ -1,55 +1,11 @@
-.page {
-    padding: 70px 50px 200px;
+@import '../../assets/css/common.scss';
 
-    &.productPage {
-        display: none;
-        align-items: flex-start;
-        flex-grow: 1;
-        max-width: 1600px;
 
-        &.loaded {
-            display: flex;
-        }
 
-        .mainContent {
-            flex-grow: 1;
-            min-width: 300px;
-        }
 
-        .rightBar {
-            flex: 0 0 253px;
-            padding: 0;
-            margin-left: 30px;
-        }
-    }
-}
-
-.select_entity {
-    width: 300px;
-    margin-right: 20px;
-}
 
 .error {
     color: red;
-}
-
-.title {
-    text-transform: uppercase;
-    font-weight: 700;
-    font-size: 16px;
-    margin-bottom: 30px;
-    max-width: 750px;
-}
-
-.input {
-    width: 322px;
-    margin-bottom: 20px;
-}
-
-.long_input {
-    max-width: 750px;
-    margin-bottom: 20px;
-
 }
 
 .error {
@@ -179,117 +135,6 @@
     display: none;
 }
 
-.field_editor {
-
-    padding: 8px;
-    border-radius: 4px;
-
-    &.error {
-        background: var(--red10);
-    }
-
-    table {
-        width: 100%;
-    }
-
-    .row_value {
-        display: flex;
-        align-items: center;
-
-        .value {
-            flex-grow: 1;
-            font-weight: bold;
-        }
-
-        .label {
-            font-weight: 700;
-            font-size: 15px;
-            flex: 0 0 30%;
-        }
-
-        .display_value {
-            flex-grow: 1;
-            font-size: 15px;
-        }
-
-
-    }
-
-    .btn_edit,
-    .btn_save {
-        cursor: pointer;
-    }
-
-    .row_edit {
-        margin-top: 15px;
-        display: none;
-        align-items: center;
-
-        &.show {
-            display: flex;
-
-        }
-
-        .input_value {
-            flex-grow: 1;
-        }
-
-        textarea {
-            height: 300px;
-        }
-
-        .inputs {
-            flex-grow: 1;
-
-            input {
-                margin-bottom: 10px;
-            }
-        }
-
-        .actions {
-            display: flex;
-            align-items: center;
-        }
-
-        .btn_save,
-        .btn_add {
-            cursor: pointer;
-
-            margin-left: 15px;
-
-            svg {
-                fill: #C85003;
-            }
-        }
-
-        .btn_add {
-            border: 1px solid #C85003;
-            border-radius: 4px;
-            width: 44px;
-            height: 44px;
-            flex: 0 0 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-    }
-}
-
-.dqrule_wrap {
-    border-top: 1px solid #d9d9d9;
-    border-bottom: 1px solid #d9d9d9;
-    max-width: 750px;
-
-    padding: 8px;
-    padding-top: 15px;
-    padding-right: 0;
-    margin-bottom: 100px;
-
-    .long_input {
-        margin-bottom: 10px;
-    }
-}
-
 .synonyms_row {
     svg {
         cursor: pointer;
@@ -298,58 +143,37 @@
     }
 
     label {
-        font-weight: bold;
-        padding: 8px;
+        font-weight: 400;
+        font-size: 14px;
+        color: #717681;
+    }
+
+    .synonym_item {
+        display: flex;
+        align-items: center;
+        margin-top: 8px;
+
+        .select {
+            flex: 1 1;
+        }
     }
 }
 
-.dqrule_head {
-
-
-
-    label {
-        font-weight: bold;
+.attributes {
+    .row_h {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
     }
 
-    svg {
-        cursor: pointer;
-        margin-left: 15px;
-        fill: var(--orange-primary)
+    .select_entity {
+        width: 260px;
+        
     }
 }
 
-.dqrule_item {
+.btns {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
-
-    >svg {
-        cursor: pointer;
-        margin-bottom: 10px;
-    }
-
-    >div {
-        flex-grow: 1;
-    }
-}
-.dqrule_close {
-    flex-basis:10px;
-}
-
-.btn_scheme {
-    padding: 9px 19px;
-    margin-bottom: 20px;
-    line-height: 23px;
-    
-    line-height: 23px;
-    background-color: var(--white);
-    color: var(--blue-100);
-    border: 1px solid var(--blue-100);
-    border-radius: 4px;
-}
-
-.description {
-    label {
-        font-weight: bold;
-    }
+    gap: 8px;
 }

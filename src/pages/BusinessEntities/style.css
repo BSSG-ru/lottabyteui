@@ -1,0 +1,20 @@
+.p-paginator-bottom {
+    max-width: 100%;
+}
+
+.p-paginator-bottom .p-dropdown {
+    margin-left: 12px;
+}
+
+.p-column-header-content {
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    min-height: 32px;
+}
+
+.paginator .p-paginator-pages .p-link.p-highlight {
+    background: none;
+    border-color: var(--primary60);
+    color: var(--primary60);
+}

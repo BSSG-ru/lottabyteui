@@ -3,6 +3,7 @@
     
     th {
         width: 290px;
+        font-weight: 400;
     }
     th, td {
         padding: 5px;
@@ -14,4 +15,9 @@
         border: 1px solid #B2B2B2;
         box-shadow: none;
     }
+}
+
+.label {
+    color: #717681;
+    margin-bottom: 4px;
 }

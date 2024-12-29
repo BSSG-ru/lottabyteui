@@ -3,25 +3,30 @@
 /* eslint-disable jsx-a11y/control-has-associated-label */
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import React, { useEffect, useState } from 'react';
-import Modal from 'react-bootstrap/Modal';
-import Button from 'react-bootstrap/Button';
 import useUrlState from '@ahooksjs/use-url-state';
 import { useNavigate } from 'react-router-dom';
 import styles from './Indicators.module.scss';
-import { doNavigate, getTablePageSize, handleHttpError, i18n, updateArtifactsCount } from '../../utils';
+import { getDomainAutocompleteObjects, getDomainDisplayValue, getIndicatorTypeAutocompleteObjects, getIndicatorTypeDisplayValue, getTablePageSize, handleHttpError, i18n, updateArtifactsCount } from '../../utils';
 import { renderDate, Table, TableDataRequest } from '../../components/Table';
 import { Loader } from '../../components/Loader';
-import { deleteIndicator } from '../../services/pages/indicators';
+import { createIndicator, deleteIndicator } from '../../services/pages/indicators';
 import { DeleteObjectModal } from '../../components/DeleteObjectModal';
+import { Button } from '../../components/Button';
+import { ModalDlg } from '../../components/ModalDlg';
+import { FieldTextEditor } from '../../components/FieldTextEditor';
+import { FieldAutocompleteEditor } from '../../components/FieldAutocompleteEditor';
+import classNames from 'classnames';
 
 export function Indicators() {
   const navigate = useNavigate();
   const [state, setState] = useUrlState({ p: '1', q: undefined }, { navigateMode: 'replace' });
-  const [loading, setLoading] = useState(false);
-  const [data] = useState([]);
-
+  const [loaded, setLoaded] = useState(true);
+  
   const [showDelDlg, setShowDelDlg] = useState(false);
-  const [delIndicatorData, setDelIndicatorData] = useState<any>({ id: '', name: '' });
+  const [delObjectData, setDelObjectData] = useState<any>({ id: '', name: '' });
+  const [showCreateDlg, setShowCreateDlg] = useState(false);
+  const [showCreateValidation, setShowCreateValidation] = useState(false);
+  const [createData, setCreateData] = useState({ name: '', indicator_type_id: '', domain_id: '' });
 
   const columns = [
     { property: 'id', header: 'ID', isHidden: true },
@@ -30,6 +35,7 @@ export function Indicators() {
       header: i18n('Koд'),
       sortDisabled: true,
       filterDisabled: true,
+      width: '55px'
     },
     {
       property: 'name',
@@ -39,7 +45,7 @@ export function Indicators() {
       property: 'domain_id',
       filter_property: 'domain.name',
       header: i18n('Домен'),
-      render: (item: any) => <span>{item.domain_name}</span>,
+      render: (row: any) => <>{row.domain_name && (<span key={`dm-pill-${row.id}`} className={styles.pill}>{row.domain_name}</span>)}</>,
     },
     {
       property: 'indicator_type_id',
@@ -63,22 +69,33 @@ export function Indicators() {
       header: i18n('Теги'),
       filterDisabled: false,
       sortDisabled: true,
-      render: (row: any) => row.tags.join(', '),
+      render: (row: any) => <div className={styles.pills}>{row.tags.map((tag:any, i:number) => <span key={`tag-pill-${row.id}-${i}`} className={styles.pill}>#{tag}</span>)}</div>,
     }
   ];
 
   const delDlgSubmit = () => {
     setShowDelDlg(false);
-    setLoading(true);
-    deleteIndicator(delIndicatorData.id)
+    deleteIndicator(delObjectData.id)
       .then((json) => {
         updateArtifactsCount();
-        setLoading(false);
         if (json.metadata && json.metadata.id) { navigate(`/indicators/edit/${encodeURIComponent(json.metadata.id)}`); }
       })
       .catch(handleHttpError);
-    setDelIndicatorData({ id: '', name: '' });
+    setDelObjectData({ id: '', name: '' });
   };
+
+  const submitCreate = () => {
+    if (createData.name && createData.indicator_type_id && createData.domain_id) {
+      setShowCreateDlg(false);
+
+      createIndicator(createData).then(json => {
+        if (json && json.metadata.id) {
+          navigate(`/indicators/edit/${encodeURIComponent(json.metadata.id)}`);
+        }
+      }).catch(handleHttpError)
+    } else
+      setShowCreateValidation(true);
+  }
 
   const [limitSteward, setLimitSteward] = useState((window as any).limitStewardSwitch.getLimitSteward());
 
@@ -89,82 +106,76 @@ export function Indicators() {
   }, []);
 
   return (
-    <div className={styles.page}>
-      {loading ? (
+    <div className={classNames(styles.page, styles.scrollable, { [styles.loaded]: loaded })}>
+      {!loaded ? (
         <Loader className="centrify" />
       ) : (
         <>
-          <div className={styles.title}>{`${i18n('ПОКАЗАТЕЛИ')}`}</div>
-          {data ? (
-            <Table
-              cookieKey='indicators'
-              className={styles.table}
-              columns={columns}
-              paginate
-              columnSearch
-              globalSearch
-              dataUrl="/v1/indicators/search"
-              limitSteward={limitSteward}
-              supportsWorkflow
-              initialFetchRequest={{
-                sort: 'name+',
-                global_query: state.q !== undefined ? state.q : '',
-                limit: getTablePageSize(),
-                offset: (state.p - 1) * getTablePageSize(),
-                filters: [],
-                filters_preset: [],
-                filters_for_join: [],
-              }}
-              showCreateBtn
-              onCreateBtnClick={() => {
-                navigate('/indicators/edit/');
-              }}
-              onRowClick={(row: any) => {
-                navigate(`/indicators/edit/${encodeURIComponent(row.id)}`);
-              }}
-              renderActionsPopup={(row: any) => (
-                <div>
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      navigate('/indicators/edit/');
-                      return false;
-                    }}
-                    className={styles.btn_create}
-                  />
-                  <a
-                    href={`/indicators/edit/${encodeURIComponent(row.id)}`}
-                    className={styles.btn_edit}
-                    onClick={(e) => { e.preventDefault(); navigate(`/indicators/edit/${encodeURIComponent(row.id)}`); }}
-                  />
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      setDelIndicatorData({ id: row.id, name: row.name });
-                      setShowDelDlg(true);
-                      return false;
-                    }}
-                    className={styles.btn_del}
-                  />
-                </div>
-              )}
-              onPageChange={(page: number) => (
-                setState(() => ({ p: page }))
-              )}
-              onQueryChange={(query: string) => (
-                setState(() => ({ p: undefined, q: query }))
-              )}
-            />
-          ) : (
-            ''
-          )}
+          <div className={styles.title}>{`${i18n('Показатели')}`}<Button background='blue' onClick={() => { setShowCreateValidation(false); setShowCreateDlg(true); }}>Создать показатель</Button></div>
+          <Table
+            artifactType='indicator'
+            cookieKey='indicators'
+            className={styles.table}
+            columns={columns}
+            paginate
+            columnSearch
+            globalSearch
+            dataUrl="/v1/indicators/search"
+            limitSteward={limitSteward}
+            supportsWorkflow
+            initialFetchRequest={{
+              sort: 'name+',
+              global_query: state.q !== undefined ? state.q : '',
+              limit: getTablePageSize(),
+              offset: (state.p - 1) * getTablePageSize(),
+              filters: [],
+              filters_preset: [],
+              filters_for_join: [],
+            }}
+            onRowClick={(row: any) => {
+              navigate(`/indicators/edit/${encodeURIComponent(row.id)}`);
+            }}
+            onDeleteClicked={(row: any) => {
+              setDelObjectData({ id: row.id, name: row.name });
+              setShowDelDlg(true);
+            }}
+            onPageChange={(page: number) => (
+              setState(() => ({ p: page }))
+            )}
+            onQueryChange={(query: string) => (
+              setState(() => ({ p: undefined, q: query }))
+            )}
+          />
+         
 
-          <DeleteObjectModal show={showDelDlg} objectTitle={delIndicatorData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />
+          <DeleteObjectModal show={showDelDlg} objectTitle={delObjectData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />
+          <ModalDlg show={showCreateDlg} title={i18n('Создать показатель')} cancelBtnText={i18n('Отменить')} submitBtnText={i18n('Создать')} onClose={() => setShowCreateDlg(false)} dialogClassName={styles.dlg_create} onSubmit={submitCreate}>
+            <div className={styles.fields}>
+                <FieldTextEditor label={i18n('Название показателя')} isRequired showValidation={showCreateValidation} className='' defaultValue='' valueSubmitted={(v) => setCreateData((prev) => ({...prev, name: v ?? ''}))} />
 
+                <FieldAutocompleteEditor
+                  label={i18n('Домен')}
+                  defaultValue=''
+                  valueSubmitted={(v) => setCreateData((prev) => ({...prev, domain_id: v ?? ''}))}
+                  getDisplayValue={getDomainDisplayValue}
+                  getObjects={getDomainAutocompleteObjects}
+                  isRequired
+                  showValidation={showCreateValidation}
+                  artifactType='domain'
+                />
+
+                <FieldAutocompleteEditor
+                  label={i18n('Тип')}
+                  defaultValue=''
+                  valueSubmitted={(v) => setCreateData((prev) => ({...prev, indicator_type_id: v ?? ''}))}
+                  getDisplayValue={getIndicatorTypeDisplayValue}
+                  getObjects={getIndicatorTypeAutocompleteObjects}
+                  isRequired
+                  showValidation={showCreateValidation}
+                />
+
+            </div>
+          </ModalDlg>
         </>
       )}
     </div>

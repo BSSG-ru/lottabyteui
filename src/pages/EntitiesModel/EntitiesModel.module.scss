@@ -1,3 +1,5 @@
+@import '../../assets/css/common.scss';
+
 main {
   flex-direction: column;
   flex: 1 1;
@@ -38,7 +40,7 @@ main {
   }
 }
 
-.filter_tags, .lnk_tags_filter {
+.filter_tags, .lnk_tags_filter, .nodes_search {
   flex: 0 0 40px;
   width: 100%;
   min-height: 40px;
@@ -53,17 +55,25 @@ main {
   }
 }
 
+.nodes_search {
+  input {
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-left: 5px;
+  }
+}
+
 .filter_tags {
 
   .btn_filter_tag {
-    padding: 5px 10px;
+    padding: 0 10px;
     margin-left: 5px;
     background: #fff;
-    border: 1px solid var(--blue-70);
-    color: var(--blue-70);
+    border: 1px solid var(--primary60);
+    color: var(--primary60);
 
     &.active {
-      background: var(--blue-70);
+      background: var(--primary60);
       color: #fff;
   }
   }
@@ -73,8 +83,8 @@ main {
 
   .btn_filter {
     background: #fff;
-    border: 1px solid var(--blue-70);
-    color: var(--blue-70);
+    border: 1px solid var(--primary60);
+    color: var(--primary60);
     display: none;
     padding: 5px 10px;
     margin-left: 5px;
@@ -84,7 +94,7 @@ main {
     }
 
     &.active {
-        background: var(--blue-70);
+        background: var(--primary60);
         color: #fff;
     }
   }
@@ -101,12 +111,19 @@ main {
   display: flex;
   align-items: stretch;
   height: 100%;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.topbar {
+  @include white-block;
+  padding: 6px;
 }
 
 .right_sidebar {
+  @include white-block;
+  padding: 10px;
   flex: 0 0 300px;
-  background: #fff;
-  border-left: 2px solid #666;
   display: flex;
   flex-direction: column;
 
@@ -126,6 +143,7 @@ main {
       border-radius: 4px;
       cursor: all-scroll;
       margin: 5px;
+      color: var(--primary60);
     }
   }
 }
@@ -138,8 +156,9 @@ main {
 }
 
 .comments_panel {
+  @include white-block;
+  padding: 10px;
   flex: 0 0 300px;
-  background: #fff;
 
   label {
     display: block;
@@ -151,7 +170,6 @@ main {
     padding: 3px;
 
     button {
-      padding: 4px;
       margin-top: 3px;
     }
   }
@@ -170,8 +188,8 @@ main {
 
 .leftToolBar {
   position: absolute;
-  top: 100px;
-  left: 20px;
+  top: 110px;
+  left: 0;
   width: 40px;
   background: #fff;
   padding: 8px;
@@ -179,6 +197,7 @@ main {
   display: flex;
   flex-direction: column;
   align-items: center;
+  border-radius: 8px;
 
   -moz-box-shadow: 4px 2px 5px 0px rgba(34, 60, 80, 0.4);
   -webkit-box-shadow: 4px 2px 5px 0px rgba(34, 60, 80, 0.4);
@@ -193,7 +212,7 @@ main {
     border-radius: 4px;
 
     &.active {
-      background-color: var(--blue-70);
+      background-color: var(--primary10);
       //img { filter: invert(100%); }
     }
 
@@ -205,7 +224,7 @@ main {
 
 .rightToolBar {
     position: absolute;
-    top: 100px;
+    top: 110px;
     right: 40px;
     width: 40px;
     background: #fff;

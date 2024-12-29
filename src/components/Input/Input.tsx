@@ -5,6 +5,7 @@ import { ReactComponent as SearchSmaller } from '../../assets/icons/search-small
 import { ReactComponent as Filters } from '../../assets/icons/filters.svg';
 import styles from './Input.module.scss';
 import { Checkbox } from '../Checkbox';
+import { uuid } from '../../utils';
 
 export type InputProps = {
   id?: string;
@@ -44,7 +45,7 @@ export const Input: FC<InputProps> = ({
   filter = false,
   inputStyle = styles.input,
   type = 'text',
-  id,
+  id = 'input-' + uuid(),
   name,
   value,
   defaultValue,
@@ -61,10 +62,10 @@ export const Input: FC<InputProps> = ({
 }) => {
   const localClassName = className ?? '';
 
-  const [isShown, setIsSHown] = useState(false);
+  const [isShown, setIsShown] = useState(false);
 
   const togglePassword = () => {
-    setIsSHown(!isShown);
+    setIsShown(!isShown);
   };
 
   return (
@@ -103,7 +104,7 @@ export const Input: FC<InputProps> = ({
         <Checkbox
           className={styles.checkbox}
           name="show-pass"
-          id="show-pass"
+          id={"show-pass-" + id}
           label="Показать пароль"
           checked={isShown}
           onChange={togglePassword}

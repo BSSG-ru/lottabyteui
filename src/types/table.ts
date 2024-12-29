@@ -4,6 +4,7 @@ type DomainDataItem = {
   description: string | null;
   createAt: string | null;
   responsible: string | null;
+  is_in_fav: boolean | null | undefined;
 };
 
 export enum Direction {

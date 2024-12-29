@@ -3,7 +3,6 @@ import classNames from 'classnames';
 import { Handle, NodeProps, Position } from 'reactflow';
 import { ReactComponent as Asset } from '../../assets/icons/assets-icon.svg';
 import { ReactComponent as System } from '../../assets/icons/systems-icon.svg';
-import { ReactComponent as Task } from '../../assets/icons/tasks-icon.svg';
 import { ReactComponent as Domain } from '../../assets/icons/domains-icon.svg';
 
 import './CustomNode.module.css';

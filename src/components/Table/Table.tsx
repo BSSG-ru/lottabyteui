@@ -3,7 +3,6 @@
 /* eslint-disable react/require-default-props */
 import React, { CSSProperties, FC, useEffect, useState } from 'react';
 import classNames from 'classnames';
-import { count } from 'console';
 import styles from './Table.module.scss';
 import {
   i18n, uuid, handleHttpResponse, handleHttpError, setTablePageSize,
@@ -20,6 +19,7 @@ import {
 } from '../../services/requst_templates';
 import { TableFilters } from '../../types/redux/states';
 import Cookies from 'js-cookie';
+import { addToFav, delFromFav } from '../../services/pages/userfav';
 
 type TableFilterRequest = {
   column: string;
@@ -67,7 +67,7 @@ type TableProps = {
   onRowClick?: (row: any) => void;
   onRowDoubleClick?: (row: any) => void;
   onCreateBtnClick?: () => void;
-  renderActionsPopup?: (row: any) => React.ReactNode;
+  onDeleteClicked?: (row: any) => void;
   onPageChange?: (page: number) => void;
   onQueryChange?: (query: string) => void;
   limitSteward?: boolean;
@@ -80,6 +80,7 @@ type TableProps = {
   rowStyle?: (row: any) => CSSProperties;
   cookieKey?: string;
   pageSizeCookieSuffix?: string;
+  artifactType?: string;
 };
 
 export type Column = {
@@ -93,7 +94,7 @@ export type Column = {
   isHidden?: boolean;
   isHiddenCallback?: (fetchRequest: TableDataRequest) => boolean;
   render?: (item: any) => React.ReactNode;
-  isActionsPopupDisabled?: boolean;
+  width?: string;
 };
 
 export const renderDate = (row: any, dateField: string) => {
@@ -112,7 +113,7 @@ export const Table: FC<TableProps> = ({
   initialFetchRequest,
   showCreateBtn = false,
   onCreateBtnClick = () => { },
-  renderActionsPopup,
+  onDeleteClicked,
   onRowClick,
   onRowDoubleClick,
   onPageChange = () => { },
@@ -127,7 +128,8 @@ export const Table: FC<TableProps> = ({
   rowClassName,
   rowStyle,
   cookieKey,
-  pageSizeCookieSuffix
+  pageSizeCookieSuffix,
+  artifactType
 }) => {
   
 
@@ -141,6 +143,20 @@ export const Table: FC<TableProps> = ({
   const [rows, setRows] = useState<any[]>([]);
   const [fetchRequest, setFetchRequest] = useState<TableDataRequest>(initialFetchRequest ? { ...initialFetchRequest, limit_steward: limitSteward, state: supportsWorkflow ? 'PUBLISHED' : undefined, global_query: tableState.global_query ? tableState.global_query.toLowerCase().trim() : initialFetchRequest.global_query, sort: tableState.sort ? tableState.sort : initialFetchRequest.sort, filters: tableState.filters ? tableState.filters : initialFetchRequest.filters } : {});
   const [wfStatus, setWfStatus] = useState('PUBLISHED');
+
+  const onFavClicked = (row: any) => {
+    if (artifactType) {
+      if (row.is_in_fav) {
+        delFromFav(row.id).then(() => {
+          setRows(rows.map(r => r.id == row.id ? {...r, is_in_fav: false} : r));
+        }).catch(handleHttpError);
+      } else {
+        addToFav(row.id, artifactType).then(() => {
+          setRows(rows.map(r => r.id == row.id ? {...r, is_in_fav: true} : r));
+        }).catch(handleHttpError);
+      }
+    }
+  }
 
   const getData = async (request: any | null = null) => {
     if (dataUrl.length === 0) {
@@ -213,12 +229,15 @@ export const Table: FC<TableProps> = ({
   return (
     <div key={uuid()} className={classNames(styles.table_wrapper, { [className]: className })}>
       {supportsWorkflow && (
-        <div className={styles.wf_bnts}>
-          <Button className={classNames(styles.btn_published, { [styles.active]: (wfStatus == 'PUBLISHED') })} onClick={() => setWfStatus('PUBLISHED')}>{i18n('Опубликованные')}</Button>
-          <Button className={classNames(styles.btn_published, { [styles.active]: (wfStatus == 'DRAFT') })} onClick={() => setWfStatus('DRAFT')}>{i18n('Черновики')}</Button>
-          <Button className={classNames(styles.btn_published, { [styles.active]: (wfStatus == 'ARCHIVED') })} onClick={() => setWfStatus('ARCHIVED')}>{i18n('Архивные')}</Button>
+        <div className={styles.wf_btns}>
+          <Button background='none' className={classNames(styles.btn_published, { [styles.active]: (wfStatus == 'PUBLISHED') })} onClick={() => setWfStatus('PUBLISHED')}>{i18n('Опубликованные')}</Button>
+          <div className={styles.sep}></div>
+          <Button background='none' className={classNames(styles.btn_published, { [styles.active]: (wfStatus == 'DRAFT') })} onClick={() => setWfStatus('DRAFT')}>{i18n('Черновики')}</Button>
+          <div className={styles.sep}></div>
+          <Button background='none' className={classNames(styles.btn_published, { [styles.active]: (wfStatus == 'ARCHIVED') })} onClick={() => setWfStatus('ARCHIVED')}>{i18n('Архивные')}</Button>
         </div>
       )}
+      <div className={styles.table_top}>
       {globalSearch ? (
         <Input
           key={uuid()}
@@ -273,11 +292,12 @@ export const Table: FC<TableProps> = ({
           }}
         >
           <Filters key={uuid()} />
-          {i18n(searchMode ? i18n('Сбросить фильтры') : i18n('Фильтры'))}
+          {i18n(searchMode ? i18n('Сбросить фильтры') : i18n('Добавить фильтр'))}
         </Button>
       ) : (
         ''
       )}
+      </div>
       {tableButtons ? (tableButtons.map((tb) => <Button key={uuid()} background="outlined-blue" className={styles.table_button} onClick={tb.onClick}>{tb.text}</Button>)) : ('')}
 
       <div key={uuid()} className={styles.clear} />
@@ -368,7 +388,8 @@ export const Table: FC<TableProps> = ({
                     key={uuid()}
                     row={item}
                     columns={columnsList}
-                    renderActionsPopup={renderActionsPopup}
+                    onDeleteClicked={onDeleteClicked}
+                    onFavClicked={onFavClicked}
                     onClick={onRowClick}
                     onDoubleClick={onRowDoubleClick}
                     rowClassName={rowClassName}
@@ -387,10 +408,10 @@ export const Table: FC<TableProps> = ({
         {paginate && rows && rows.length > 0 ? (
           <Pagination
             key={uuid()}
-            label={`${i18n('Показано с')} ${(fetchRequest.offset ?? 0) + 1} ${i18n('по')} ${(fetchRequest.offset ?? 0) + (fetchRequest.limit ?? 10) > total
+            label={`${(fetchRequest.offset ?? 0) + 1}-${(fetchRequest.offset ?? 0) + (fetchRequest.limit ?? 10) > total
               ? total
               : (fetchRequest.offset ?? 0) + (fetchRequest.limit ?? 10)
-              } ${i18n('категории из')} ${total}`}
+              } ${i18n('из')} ${total} ${i18n('записей')}`}
             page={(fetchRequest.offset ?? 0) / (fetchRequest.limit ?? 10) + 1}
             pageSize={fetchRequest.limit ?? 5}
             inTotal={Math.ceil(total / (fetchRequest.limit ?? 10))}

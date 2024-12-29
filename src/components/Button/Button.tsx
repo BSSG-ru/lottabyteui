@@ -25,11 +25,12 @@ type ButtonBackgroung =
   | 'pagination'
   | 'pagination-arrow'
   | 'outlined-orange'
-  | 'none';
+  | 'none'
+  | 'none-blue';
 
 export function Button({
   isSubmit = false,
-  background = 'orange',
+  background = 'outlined-blue',
   size = 'standart',
   icon = false,
   children,

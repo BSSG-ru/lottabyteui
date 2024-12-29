@@ -3,15 +3,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Modal from 'react-bootstrap/Modal';
-import Button from 'react-bootstrap/Button';
-import useUrlState from '@ahooksjs/use-url-state';
 import classNames from 'classnames';
 import styles from './LogicObjects.module.scss';
-import { doNavigate, getBusinessEntityAutocompleteObjects, getBusinessEntityDisplayValue, getSystemAutocompleteObjects, getSystemDisplayValue, handleHttpError, i18n, loadEditPageData, rateClickedHandler, setBreadcrumbEntityName, setDataModified, tagAddedHandler, tagDeletedHandler, updateArtifactsCount, updateEditPageReadOnly, uuid } from '../../utils';
+import { doNavigate, getArtifactUrl, getBusinessEntityAutocompleteObjects, getBusinessEntityDisplayValue, getSystemAutocompleteObjects, getSystemDisplayValue, getTablePageSize, handleHttpError, i18n, loadEditPageData, rateClickedHandler, setBreadcrumbEntityName, setDataModified, tagAddedHandler, tagDeletedHandler, updateArtifactsCount, updateEditPageReadOnly, uuid } from '../../utils';
 import { Tags, TagProp } from '../../components/Tags';
-import { Versions, VersionData } from '../../components/Versions';
-import { renderAttribute } from '../../mocks/logic_objects';
-import { FieldEditor } from '../../components/FieldEditor';
+import { attributesTableColumns, renderAttribute } from '../../mocks/logic_objects';
 import { Input } from '../../components/Input';
 import { Textarea } from '../../components/Textarea';
 import {
@@ -32,36 +28,29 @@ import {
 } from '../../services/pages/dataEntities';
 import { Autocomplete } from '../../components/Autocomplete';
 import { FieldAutocompleteEditor } from '../../components/FieldAutocompleteEditor';
-import { setRecentView } from '../../services/pages/recentviews';
-import { ReactComponent as PlusInCircle } from '../../assets/icons/plus-in-circle.svg';
-import { ReactComponent as Close } from '../../assets/icons/close.svg';
-import { WFItemControl } from '../../components/WFItemControl/WFItemControl';
 import { createDraft } from '../../services/pages/tags';
 import { Checkbox } from '../../components/Checkbox';
 import { RelatedObjectsControl } from '../../components/RelatedObjectsControl';
-import { DeleteObjectModal } from '../../components/DeleteObjectModal';
 import { FieldVisualEditor } from '../../components/FieldVisualEditor';
+import { EditPage } from '../../components/EditPage';
+import { FieldTextEditor } from '../../components/FieldTextEditor';
+import { FieldTextareaEditor } from '../../components/FieldTextareaEditor';
+import { Button } from '../../components/Button';
+import { Table } from '../../components/Table';
+import { FieldArrayEditor } from '../../components/FieldArrayEditor/FieldArrayEditor';
+import { getSystem, getSystems } from '../../services/pages/systems';
 
 export function LogicObject() {
   const navigate = useNavigate();
 
-  const [state, setState] = useUrlState({
-    t: '1', p1: '1', p2: '1', p3: '1',
-  }, { navigateMode: 'replace' });
   const [, setLoading] = useState(true);
   const [data, setData] = useState({
-    entity: { name: null, description: '', system_ids: [], business_entity_id: '', roles: '', tech_name: '' },
-    metadata: { id: '', artifact_type: 'entity', version_id: '', tags: [], state: 'PUBLISHED', ancestor_draft_id: '', workflow_task_id: '' },
+    entity: { name: '', description: '', system_ids: [], business_entity_id: '', roles: '', tech_name: '', short_description: '' },
+    metadata: { id: '', artifact_type: 'entity', version_id: '', tags: [], state: 'PUBLISHED', ancestor_draft_id: '', workflow_task_id: '', created_by: '' },
   });
-  const [ratingData, setRatingData] = useState({ rating: 0, total_rates: 0 });
-  const [ownRating, setOwnRating] = useState(0);
-  const [versions, setVersions] = useState<VersionData[]>([]);
   const [tags, setTags] = useState<TagProp[]>([]);
 
-  const [isCreateMode, setCreateMode] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
-
-  const [, setAttrTypes] = useState();
 
   const [isReadOnly, setReadOnly] = useState(true);
   const [isLoaded, setLoaded] = useState(false);
@@ -77,6 +66,7 @@ export function LogicObject() {
     description: '',
     system_ids: [],
   });
+  const [selectedSystemNames, setSelectedSystemNames] = useState<any[]>([]);
 
   const [showDelEntityDlg, setShowDelEntityDlg] = useState(false);
   const [delEntityData, setDelEntityData] = useState<any>({ id: '', name: '' });
@@ -88,9 +78,6 @@ export function LogicObject() {
   const [errorTypeText, setErrorTypeText] = useState('');
 
   const [tblAttrsKey, setTblAttrsKey] = useState(uuid());
-
-  const [delObjectData, setDelObjectData] = useState<any>({ id: '', name: '' });
-  const [showDelDlg, setShowDelDlg] = useState(false);
 
   const handleAddEntityDlgClose = () => {
     setShowAddEntityDlg(false);
@@ -143,6 +130,18 @@ export function LogicObject() {
     attribute_id: '',
     is_pk: false
   });
+
+  useEffect(() => {
+    const a = [];
+    for (let i = 0; i < data.entity.system_ids.length; i++) { a.push(''); }
+    setSelectedSystemNames(a);
+
+    data.entity.system_ids.forEach((id, index) => {
+      getSystem(id).then((json) => {
+        setSelectedSystemNames((prev) => ([...prev.slice(0, index), `<div><a href="${getArtifactUrl(json.metadata.id, 'system')}">${json.entity.name}</a></div>`, ...prev.slice(index + 1)]));
+      }).catch(handleHttpError);
+    });
+  }, [data.entity.system_ids]);
 
   const updateAttrDlgSubmit = () => {
     setShowUpdateAttrDlg(false);
@@ -211,7 +210,7 @@ export function LogicObject() {
             createAttr(json.metadata.id, newAttrData).then(() => {
               setLoading(false);
               setNewAttrData({ name: '', description: '', attribute_type: '' });
-              navigate(`/logic-objects/edit/${encodeURIComponent(json.metadata.id)}`);
+              navigate(`/logic-objects/edit/${encodeURIComponent(json.metadata.id)}?sc=2`);
             }).catch(handleHttpError);
           }
         }).catch(handleHttpError);
@@ -286,45 +285,6 @@ export function LogicObject() {
     setDataModified(false);
   }, [id, version_id]);
 
-  useEffect(() => {
-    setCreateMode(logicObjectId === '');
-    if (logicObjectId) {
-      if (!logicObjectVersionId) { setRecentView('entity', logicObjectId); }
-
-      loadEditPageData(logicObjectId, logicObjectVersionId, setData, setTags, setLoading, setLoaded, getEntityVersion, getEntity,
-        setRatingData, setOwnRating, getEntityVersions, setVersions, setReadOnly);
-
-    } else {
-      setData((prev) => ({ ...prev, metadata: { ...prev.metadata, state: 'DRAFT' } }));
-      setReadOnly(false);
-      setLoaded(true);
-    }
-  }, [logicObjectId, logicObjectVersionId]);
-
-  useEffect(() => {
-    if (isCreateMode) {
-      if (data.entity.name) {
-        createEntity({
-          name: data.entity.name,
-          description: data.entity.description,
-        })
-          .then((json) => {
-            setDataModified(false);
-            if (json.metadata.id) {
-              updateArtifactsCount();
-              setLogicObjectId(json.metadata.id);
-              window.history.pushState(
-                {},
-                '',
-                `/logic-objects/edit/${encodeURIComponent(json.metadata.id)}`,
-              );
-            }
-          })
-          .catch(handleHttpError);
-      }
-    }
-  }, [data]);
-
   const attrTagAdded = (tagName: string) => {
     setUpdateAttrData((prev: any) => ({ ...prev, tags: [...prev.tags, tagName] }));
   };
@@ -337,177 +297,99 @@ export function LogicObject() {
     setUpdateAttrData((prev: any) => ({ ...prev, tags: newTags }));
   };
 
-  const addSystem = () => {
-    setData((prev: any) => ({ ...prev, entity: { ...prev.entity, system_ids: [...prev.entity.system_ids, ''] } }));
+  const updateLogicObjectField = (field: string, value: string | string[] | undefined) => {
+    setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } }));
+    setDataModified(true);
   };
 
-  const delSystem = (k: number) => {
-    const arr: string[] = [...data.entity.system_ids];
-    arr.splice(k, 1);
-
-    updateLogicObjectField('system_ids', arr.filter((x) => x));
-  };
-
-  const updateLogicObjectSystemId = (k: number, id: string) => {
-    const arr: string[] = [...data.entity.system_ids];
-    if (arr.length > k) { arr[k] = id; } else { arr.push(id); }
-
-    updateLogicObjectField('system_ids', arr.filter((x) => x));
-  };
-
-  const updateLogicObjectField = (field: string, value: string | string[]) => {
-    if (logicObjectId) {
-      const d: any = {};
-      d[field] = value;
-      updateEntity(logicObjectId, d)
-        .then((json) => {
-          setDataModified(false);
-          if (json.metadata.id && json.metadata.id !== logicObjectId) {
-            navigate(`/logic-objects/edit/${encodeURIComponent(json.metadata.id)}`);
-          } else { setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } })); }
-        })
-        .catch(handleHttpError);
-    } else {
-      setShowValidation(true);
-      setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } }));
-      setDataModified(false);
-    }
-  };
-
-  const delDlgSubmit = () => {
-    setShowDelDlg(false);
-    setLoading(true);
-    deleteEntity(delObjectData.id)
-      .then(json => {
-        updateArtifactsCount();
-        setLoading(false);
-
-        if (json.metadata && json.metadata.id)
-          navigate('/logic-objects/edit/' + encodeURIComponent(json.metadata.id));
-      })
-      .catch(handleHttpError);
-    setDelObjectData({ id: '', name: '' });
-  };
-
-  const archiveBtnClicked = () => { archiveEntity(data.metadata.id).then(json => {
-    if (json.metadata.id && json.metadata.id != logicObjectId) {
-      navigate(`/logic-objects/edit/${encodeURIComponent(json.metadata.id)}`);
-    }
-    setDataModified(false);
-  }).catch(handleHttpError); };
-
-  const restoreBtnClicked = () => { restoreEntity(data.metadata.id).then(json => {
-    if (json.metadata.id && json.metadata.id != logicObjectId) {
-      navigate(`/logic-objects/edit/${encodeURIComponent(json.metadata.id)}`);
-    }
-    setDataModified(false);
-  }).catch(handleHttpError); };
+  const getSystemOptions = async (search: string) => getSystems({ filters: [], filters_for_join: [], global_query: search, limit: 1000, offset: 0, sort: 'name+', state: 'PUBLISHED' }).then((json) => json.items.map((item: any) => ({ value: item.id, label: item.name, name: item.name })));
 
   return (
-    <div className={classNames(styles.page, styles.entityPage, { [styles.loaded]: isLoaded })}>
-      <div className={styles.mainContent}>
-      {logicObjectVersionId && (
-          <Button onClick={() => {
-            restoreEntityVersion(logicObjectId, logicObjectVersionId).then(json => {
-              setDataModified(false);
-              if (json.metadata.id && json.metadata.id !== logicObjectId) {
-                navigate(`/logic-objects/edit/${encodeURIComponent(json.metadata.id)}`);
-              } else { setData(json); }
-            }).catch(handleHttpError);
-          }}>{i18n('Восстановить')}</Button>
-        )}
-        {!logicObjectVersionId && (
-          <WFItemControl
-            key={`wfc-ent-` + data?.metadata?.workflow_task_id}
-            itemMetadata={data.metadata}
-            itemIsReadOnly={isReadOnly}
-            onEditClicked={() => { setReadOnly(false); }}
-            onArchiveClicked={archiveBtnClicked}
-            onRestoreClicked={restoreBtnClicked}
-            onDeleteClicked={() => { setDelObjectData({ id: data.metadata.id, name: data.entity.name }); setShowDelDlg(true); }}
-            onObjectIdChanged={(id) => {
-              if (id) {
-                setLogicObjectId(id);
-                window.history.pushState(
-                  {},
-                  '',
-                  `/logic-objects/edit/${encodeURIComponent(id)}`,
-                );
-              } else navigate('/logic-objects/');
-            }}
-            onObjectDataChanged={(d) => {
-              setData(d);
-              setDataModified(false);
-              setBreadcrumbEntityName(logicObjectId, d.entity.name);
-              setTags(d.metadata.tags ? d.metadata.tags.map((x: any) => ({ value: x.name })) : []);
-              updateEditPageReadOnly(d, setReadOnly, () => {  setLoading(false); setLoaded(true); });
-            }}
-          />
-        )}
-        <div className={styles.title}>
-          <FieldEditor
-            isReadOnly={isReadOnly}
-            labelPrefix={`${i18n('ЛОГИЧЕСКИЙ ОБЪЕКТ')}: `}
-            defaultValue={data.entity.name}
-            className={styles.title}
-            valueSubmitted={(val) => {
-              updateLogicObjectField('name', val.toString());
-            }}
-            isRequired
-            onBlur={(val) => {
-              updateLogicObjectField('name', val);
-            }}
-            showValidation={showValidation}
-          />
-        </div>
-        {!isCreateMode && data.metadata.state != 'ARCHIVED' && (
-          <button className={styles.btn_scheme} onClick={() => { doNavigate('/model', navigate); }}>{i18n('Схема')}</button>
-        )}
-        {!isCreateMode && (
-            <div className={styles.tech_name_wrap}>
-              <FieldEditor
+    <>
+      <EditPage objectId={logicObjectId} objectVersionId={logicObjectVersionId} data={data} restoreVersion={restoreEntityVersion} urlSlug='logic-objects' setData={setData} isReadOnly={isReadOnly} setReadOnly={setReadOnly}
+      archiveObject={archiveEntity} artifactType='entity' setTags={setTags} getObjectVersion={getEntityVersion} getObjectVersions={getEntityVersions} getObject={getEntity} deleteObject={deleteEntity}
+      restoreObject={restoreEntity} updateObject={updateEntity} tabs={[
+        {
+          key: 'tab-gen',
+          title: i18n('Сведения'),
+          unscrollable: true,
+          content: <div className={styles.tab_2col}>
+            <div className={classNames(styles.col, styles.scrollable)}>
+              <h2>Общая информация</h2>
+              {data.metadata.state != 'ARCHIVED' && (
+                <div>
+                <button className={styles.btn_scheme} onClick={() => { doNavigate(`/model`, navigate); }}>{i18n('Смотреть схему')}</button>
+                </div>
+              )}
+
+              <FieldTextEditor
+                  isReadOnly={isReadOnly}
+                  label={i18n('Название')}
+                  defaultValue={data.entity.name}
+                  className=''
+                  valueSubmitted={(val) => {
+                    updateLogicObjectField('name', val);
+                  }}
+                />
+
+              <FieldTextareaEditor
+                  isReadOnly={isReadOnly}
+                  label={i18n('Описание')}
+                  defaultValue={data.entity.short_description}
+                  className=''
+                  valueSubmitted={(val) => {
+                    updateLogicObjectField('short_description', val);
+                  }}
+                />
+
+              <div data-uitest="entity_tag" className={styles.tags_block}>
+                <div className={styles.label}>{i18n('Теги')}</div>
+                <Tags
+                  key={'tags-' + logicObjectId + '-' + logicObjectVersionId + '-' + uuid()}
+                  isReadOnly={isReadOnly}
+                  tags={tags}
+                  tagPrefix='#'
+                  onTagAdded={(tagName: string) => tagAddedHandler(tagName, logicObjectId, 'entity', data.metadata.state ?? '', tags, setLoading, setTags, '/logic-objects/edit/', navigate)}
+                  onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, logicObjectId, 'entity', data.metadata.state ?? '', setLoading, setTags, '/logic-objects/edit/', navigate)}
+                />
+              </div>
+            </div>
+            <div className={classNames(styles.col, styles.scrollable)}>
+              <h2>Дополнительные параметры</h2>
+
+              <FieldTextEditor
+                  isReadOnly={isReadOnly}
+                  label={i18n('Техническое название')}
+                  defaultValue={data.entity.tech_name}
+                  className=''
+                  valueSubmitted={(val) => {
+                    updateLogicObjectField('tech_name', val);
+                  }}
+                />
+
+              <FieldArrayEditor
+                key={`ed-sys-${logicObjectId}`}
+                getOptions={getSystemOptions}
                 isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${i18n('Техническое название')}:`}
-                defaultValue={data.entity.tech_name}
-                className={styles.editor}
-                valueSubmitted={(val) => {
-                  updateLogicObjectField('tech_name', val.toString());
+                label={i18n('Системы')}
+                defaultValue={selectedSystemNames}
+                inputPlaceholder={i18n('Выберите систему')}
+                addBtnText={i18n('Добавить')}
+                valueSubmitted={() => { updateLogicObjectField('system_ids', data.entity.system_ids); }}
+                onValueIdAdded={(id: string) => {
+                  setData((prev:any) => ({ ...prev, entity: { ...prev.entity, system_ids: [...prev.entity.system_ids, id] } }));
+                }}
+                onValueIdRemoved={(id: string) => {
+                  const arr = [...data.entity.system_ids];
+                  arr.splice(parseInt(id), 1);
+                  setData((prev) => ({ ...prev, entity: { ...prev.entity, system_ids: arr } }));
                 }}
               />
-            </div>
-        )}
-        {!isCreateMode && (
-          <>
 
-            <div className={styles.systems_wrap}>
-              <div className={styles.systems_head}>
-                <label>{`${i18n('Системы')}:`}</label>
-                {!isReadOnly && (<PlusInCircle onClick={addSystem} />)}
-              </div>
-              {data.entity.system_ids.map((sId, k) => (
-                <div key={`ds-${sId}`} className={styles.system_item}>
-                  <FieldAutocompleteEditor
-                    key={`se${k}`}
-                    className={styles.long_input}
-                    isReadOnly={isReadOnly}
-                    label=""
-                    defaultValue={sId}
-                    valueSubmitted={(identity) => updateLogicObjectSystemId(k, identity)}
-                    getDisplayValue={getSystemDisplayValue}
-                    getObjects={getSystemAutocompleteObjects}
-                    artifactType="system"
-                  />
-                  {!isReadOnly && (<Close key={`ds${k}`} onClick={() => delSystem(k)} />)}
-                </div>
-              ))}
-
-            </div>
-            <div className={styles.business_entity_wrap}>
               <FieldAutocompleteEditor
-                className={styles.long_input}
+                className=''
                 isReadOnly={isReadOnly}
-                label={i18n('Бизнес-сущность') + ':'}
+                label={i18n('Глоссарий')}
                 defaultValue={data.entity.business_entity_id}
                 valueSubmitted={(identity) => { updateLogicObjectField('business_entity_id', identity); }}
                 getDisplayValue={getBusinessEntityDisplayValue}
@@ -517,321 +399,294 @@ export function LogicObject() {
                 allowClear
                 artifactType="business_entity"
               />
-            </div>
-            {!isCreateMode && (
-              <div className={styles.data_row}>
-                <FieldEditor
-                  isReadOnly={isReadOnly}
-                  layout="separated"
-                  labelPrefix={`${i18n('Ключевые роли процесса')}:`}
-                  defaultValue={data.entity.roles}
-                  className={styles.long_input}
-                  valueSubmitted={(val) => {
-                    updateLogicObjectField('roles', val.toString());
-                  }}
-                />
-              </div>
-            )}
-          </>
-        )}
 
-        {!isCreateMode && (
-          <div className={styles.description}>
+              <FieldTextEditor
+                isReadOnly={isReadOnly}
+                label={i18n('Ключевые роли процесса')}
+                defaultValue={data.entity.roles}
+                className=''
+                valueSubmitted={(val) => {
+                  updateLogicObjectField('roles', val);
+                }}
+              />
+            </div>
+          </div>
+        },
+        {
+          key: 'tab-attrs',
+          title: i18n('Атрибуты'),
+          content: <div className={classNames(styles.tab_white, styles.tab_attrs)}>
+            {!isReadOnly && (<Button background='blue' className={styles.btn_add_attr} onClick={() => setShowAddAttrDlg(true)}>{i18n('Создать атрибут')}</Button>)}
+            <Table
+              cookieKey={'tab-tbl-eattrs'}
+              key={`tab-tbl-attrs-` + logicObjectId + tblAttrsKey}
+              className={styles.table}
+              columns={attributesTableColumns}
+              paginate
+              columnSearch
+              globalSearch
+              dataUrl={`/v1/artifacts/search_related_artifacts/entity/${logicObjectId}/entity_attribute`}
+              initialFetchRequest={{
+                sort: 'name+',
+                global_query: '',
+                limit: getTablePageSize('related-entity_attribute'),
+                offset: 0,//(state.p6 - 1) * 5,
+                filters: [],
+                filters_preset: [],
+                filters_for_join: [],
+                state: 'PUBLISHED'
+              }}
+              onDeleteClicked={(row: any) => {
+                setDelEntityAttrData({ id: row.id, name: row.name, attribute_id: row.attribute_id });
+                setShowDelEntityAttrDlg(true);
+              }}
+              onRowClick={(row: any) => {}}
+              onPageChange={(page: number) => {
+                //setState(() => ({ p6: page }));
+              }}
+              pageSizeCookieSuffix={'related-entity_attribute'}
+            />
+          </div>
+        },
+        {
+          key: 'tab-related',
+          title: i18n('Связи'),
+          content: <div className={styles.tab_white}>
+            <RelatedObjectsControl key={'roc-' + logicObjectId + tblAttrsKey + (logicObjectVersionId ?? '')} artifactId={logicObjectId} artifactType='entity' 
+              
+            ></RelatedObjectsControl>
+          </div>
+        },
+        {
+          key: 'tab-desc',
+          title: i18n('Расширенное описание'),
+          content: <div className={styles.tab_transparent}>
+
             <FieldVisualEditor
                 isReadOnly={isReadOnly}
-                labelPrefix={`${i18n('Описание')}:`}
                 defaultValue={data.entity.description}
-                className={styles.long_input}
+                className=''
                 valueSubmitted={(val) => {
                   updateLogicObjectField('description', val.toString());
                 }}
-              />
+              />  
+          
           </div>
-        )}
-        {!isCreateMode && (
-          <Tags
-            key={'tags-' + logicObjectId + '-' + logicObjectVersionId + '-' + uuid()}
-            tags={tags}
-            isReadOnly={isReadOnly}
-            onTagAdded={(tagName: string) => tagAddedHandler(tagName, logicObjectId, 'entity', data.metadata.state ?? '', tags, setLoading, setTags, '/logic-objects/edit/', navigate)}
-            onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, logicObjectId, 'entity', data.metadata.state ?? '', setLoading, setTags, '/logic-objects/edit/', navigate)}
-          />
-        )}
+        }
+      ]} />
 
-        <RelatedObjectsControl key={'roc-' + logicObjectId + tblAttrsKey + (logicObjectVersionId ?? '')} artifactId={logicObjectId} artifactType='entity' createEAttrClick={() => setShowAddAttrDlg(true)}
-          renderEAttrActionsPopup={(row: any) => (
-            <div>
-              <a
-                href=""
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowAddAttrDlg(true);
-                  return false;
-                }}
-                className={styles.btn_create}
-              />
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setUpdateAttrData({
-                    id: row.id,
-                    name: row.name,
-                    description: row.description,
-                    attribute_type: row.attribute_type,
-                    tags: row.tags ?? [],
-                    attribute_id: row.attribute_id,
-                    is_pk: row.is_pk
-                  });
-                  setShowUpdateAttrDlg(true);
-                  return false;
-                }}
-                className={styles.btn_edit}
-              />
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setDelEntityAttrData({ id: row.id, name: row.name, attribute_id: row.attribute_id });
-                  setShowDelEntityAttrDlg(true);
-                  return false;
-                }}
-                className={styles.btn_del}
-              />
-            </div>
-          )}
-        ></RelatedObjectsControl>
-      </div>
-      {!isCreateMode && (
-        <div className={styles.rightBar}>
-          {(data.metadata.state == 'PUBLISHED' || data.metadata.state == 'ARCHIVED') && (
-            <Versions
-              rating={ratingData.rating}
-              ownRating={ownRating}
-              version_id={logicObjectVersionId || data.metadata.version_id}
-              versions={versions}
-              version_url_pattern={`/logic-objects/${encodeURIComponent(logicObjectId)}/version/{version_id}`}
-              root_object_url={`/logic-objects/edit/${encodeURIComponent(logicObjectId)}`}
-              onRateClick={r => rateClickedHandler(r, logicObjectId, 'entity', setOwnRating, setRatingData)}
+      <Modal
+          show={showAddAttrDlg}
+          backdrop={false}
+          onHide={handleAddAttrDlgClose}
+          dialogClassName={styles.dlg_add_attr}
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>Создание нового атрибута</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <div className={styles.fields}>
+            <Input
+              label={i18n('Название')}
+              value={newAttrData.name}
+              onChange={(e) => {
+                setNewAttrData((prev: any) => ({ ...prev, name: e.target.value }));
+              }}
             />
-          )}
-        </div>
-      )}
+            {errorNameText ? <div className={styles.error}>{errorNameText}</div> : ''}
+            <Textarea
+              label={i18n('Описание')}
+              value={newAttrData.description}
+              onChange={(e) => {
+                setNewAttrData((prev: any) => ({ ...prev, description: e.target.value }));
+              }}
+            />
+            <Autocomplete
+              label={i18n('Тип')}
+              getOptions={getAttrType}
+              defaultOptions
+              defaultValue={newAttrData.attribute_type}
+              onChanged={(d: any) => {
+                setNewAttrData((prev: any) => ({
+                  ...prev,
+                  attribute_type: d.id,
+                }));
+              }}
+            />
+            <Checkbox id='create_attr_pk' label='Первичный ключ' checked={false} value='1' onChange={(e) => { setNewAttrData((prev:any) => ({ ...prev, is_pk: e.target.checked })) }} />
+            {errorTypeText ? <div className={styles.error}>{errorTypeText}</div> : ''}
+            </div>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              background='blue'
+              onClick={addAttrDlgSubmit}
+            >
+              Создать
+            </Button>
+            <Button
+              background='outlined-blue'
+              onClick={handleAddAttrDlgClose}
+            >
+              Отмена
+            </Button>
+          </Modal.Footer>
+        </Modal>
 
-      <Modal
-        show={showAddAttrDlg}
-        backdrop={false}
-        onHide={handleAddAttrDlgClose}
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Создание нового атрибута</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Input
-            label={i18n('Название')}
-            value={newAttrData.name}
-            onChange={(e) => {
-              setNewAttrData((prev: any) => ({ ...prev, name: e.target.value }));
-            }}
-          />
-          {errorNameText ? <div className={styles.error}>{errorNameText}</div> : ''}
-          <Textarea
-            label={i18n('Описание')}
-            value={newAttrData.description}
-            onChange={(e) => {
-              setNewAttrData((prev: any) => ({ ...prev, description: e.target.value }));
-            }}
-          />
-          <Autocomplete
-            label={i18n('Тип')}
-            getOptions={getAttrType}
-            defaultOptions
-            defaultValue={newAttrData.attribute_type}
-            onChanged={(d: any) => {
-              setNewAttrData((prev: any) => ({
-                ...prev,
-                attribute_type: d.id,
-              }));
-            }}
-          />
-          <Checkbox id='create_attr_pk' label='Первичный ключ' checked={false} value='1' onChange={(e) => { setNewAttrData((prev:any) => ({ ...prev, is_pk: e.target.checked })) }} />
-          {errorTypeText ? <div className={styles.error}>{errorTypeText}</div> : ''}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button
-            variant="primary"
-            onClick={addAttrDlgSubmit}
-          >
-            Создать
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={handleAddAttrDlgClose}
-          >
-            Отмена
-          </Button>
-        </Modal.Footer>
-      </Modal>
+        <Modal
+          show={showUpdateAttrDlg}
+          backdrop={false}
+          onHide={handleUpdateAttrDlgClose}
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>Изменение атрибута</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Input
+              label={i18n('Название')}
+              value={updateAttrData.name}
+              
+              onChange={(e) => {
+                setUpdateAttrData((prev: any) => ({ ...prev, name: e.target.value }));
+              }}
+            />
+            <Tags key={`attr-tags-${updateAttrData.id}`} tagPrefix='#' isReadOnly={false} tags={updateAttrData.tags.map((x: string) => ({ value: x }))} onTagAdded={attrTagAdded} onTagDeleted={attrTagDeleted} />
+            <Textarea
+              label={i18n('Описание')}
+              value={updateAttrData.description}
+              onChange={(e) => {
+                setUpdateAttrData((prev: any) => ({ ...prev, description: e.target.value }));
+              }}
+            />
+            <Autocomplete
+              label={i18n('Тип')}
+              getOptions={getAttrType}
+              defaultOptions
+              onChanged={(d: any) => {
+                setUpdateAttrData((prev: any) => ({
+                  ...prev,
+                  attribute_type: d.id,
+                }));
+              }}
+              placeholder={renderAttribute(updateAttrData.attribute_type)}
+            />
+            <Checkbox id='edit_attr_pk' label='Первичный ключ' checked={updateAttrData.is_pk} value='1' onChange={(e) => { setUpdateAttrData((prev:any) => ({ ...prev, is_pk: e.target.checked })) }} />
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              background='blue'
+              onClick={updateAttrDlgSubmit}
+            >
+              Изменить
+            </Button>
+            <Button
+              background='outlined-blue'
+              onClick={handleUpdateAttrDlgClose}
+            >
+              Отмена
+            </Button>
+          </Modal.Footer>
+        </Modal>
 
-      <Modal
-        show={showUpdateAttrDlg}
-        backdrop={false}
-        onHide={handleUpdateAttrDlgClose}
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Изменение атрибута</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Input
-            label={i18n('Название')}
-            value={updateAttrData.name}
-            
-            onChange={(e) => {
-              setUpdateAttrData((prev: any) => ({ ...prev, name: e.target.value }));
-            }}
-          />
-          <Tags key={`attr-tags-${updateAttrData.id}`} isReadOnly={false} tags={updateAttrData.tags.map((x: string) => ({ value: x }))} onTagAdded={attrTagAdded} onTagDeleted={attrTagDeleted} />
-          <Textarea
-            label={i18n('Описание')}
-            value={updateAttrData.description}
-            onChange={(e) => {
-              setUpdateAttrData((prev: any) => ({ ...prev, description: e.target.value }));
-            }}
-          />
-          <Autocomplete
-            label={i18n('Тип')}
-            getOptions={getAttrType}
-            defaultOptions
-            onChanged={(d: any) => {
-              setUpdateAttrData((prev: any) => ({
-                ...prev,
-                attribute_type: d.id,
-              }));
-            }}
-            placeholder={renderAttribute(updateAttrData.attribute_type)}
-          />
-          <Checkbox id='edit_attr_pk' label='Первичный ключ' checked={updateAttrData.is_pk} value='1' onChange={(e) => { setUpdateAttrData((prev:any) => ({ ...prev, is_pk: e.target.checked })) }} />
-        </Modal.Body>
-        <Modal.Footer>
-          <Button
-            variant="primary"
-            onClick={updateAttrDlgSubmit}
-          >
-            Изменить
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={handleUpdateAttrDlgClose}
-          >
-            Отмена
-          </Button>
-        </Modal.Footer>
-      </Modal>
+        <Modal
+          show={showAddEntityDlg}
+          backdrop={false}
+          onHide={handleAddEntityDlgClose}
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>Создание новой модели</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Input
+              label={i18n('Название')}
+              value={newEntityData.name}
+              onChange={(e) => {
+                setNewEntityData((prev: any) => ({ ...prev, name: e.target.value }));
+              }}
+            />
+            <Textarea
+              label={i18n('Описание')}
+              value={newEntityData.description}
+              onChange={(e) => {
+                setNewEntityData((prev: any) => ({ ...prev, description: e.target.value }));
+              }}
+            />
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              background='blue'
+              onClick={addEntityDlgSubmit}
+            >
+              Создать
+            </Button>
+            <Button
+              background='outlined-blue'
+              onClick={handleAddEntityDlgClose}
+            >
+              Отмена
+            </Button>
+          </Modal.Footer>
+        </Modal>
 
-      <Modal
-        show={showAddEntityDlg}
-        backdrop={false}
-        onHide={handleAddEntityDlgClose}
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Создание нового логического объекта</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Input
-            label={i18n('Название')}
-            value={newEntityData.name}
-            onChange={(e) => {
-              setNewEntityData((prev: any) => ({ ...prev, name: e.target.value }));
-            }}
-          />
-          <Textarea
-            label={i18n('Описание')}
-            value={newEntityData.description}
-            onChange={(e) => {
-              setNewEntityData((prev: any) => ({ ...prev, description: e.target.value }));
-            }}
-          />
-        </Modal.Body>
-        <Modal.Footer>
-          <Button
-            variant="primary"
-            onClick={addEntityDlgSubmit}
-          >
-            Создать
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={handleAddEntityDlgClose}
-          >
-            Отмена
-          </Button>
-        </Modal.Footer>
-      </Modal>
+        <Modal
+          show={showDelEntityDlg}
+          backdrop={false}
+          onHide={handleDelEntityDlgClose}
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>
+              Вы действительно хотите удалить
+              {' '}
+              {delEntityData.name}
+              ?
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body />
+          <Modal.Footer>
+            <Button
+              background='blue'
+              onClick={() => delEntityDlgSubmit(delEntityData.id)}
+            >
+              Удалить
+            </Button>
+            <Button
+              background='outlined-blue'
+              onClick={handleDelEntityDlgClose}
+            >
+              Отмена
+            </Button>
+          </Modal.Footer>
+        </Modal>
 
-      <Modal
-        show={showDelEntityDlg}
-        backdrop={false}
-        onHide={handleDelEntityDlgClose}
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>
-            Вы действительно хотите удалить
-            {' '}
-            {delEntityData.name}
-            ?
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body />
-        <Modal.Footer>
-          <Button
-            variant="primary"
-            onClick={() => delEntityDlgSubmit(delEntityData.id)}
-          >
-            Удалить
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={handleDelEntityDlgClose}
-          >
-            Отмена
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      <Modal
-        show={showDelEntityAttrDlg}
-        backdrop={false}
-        onHide={handleDelEntityAttrDlgClose}
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>
-            Вы действительно хотите удалить
-            {' '}
-            {delEntityAttrData.name}
-            ?
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body />
-        <Modal.Footer>
-          <Button
-            variant="primary"
-            onClick={() => delEntityAttrDlgSubmit(delEntityAttrData.id, delEntityAttrData.name, delEntityAttrData.attribute_id)}
-          >
-            Удалить
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={handleDelEntityAttrDlgClose}
-          >
-            Отмена
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      <DeleteObjectModal show={showDelDlg} objectTitle={delObjectData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />
-    </div>
+        <Modal
+          show={showDelEntityAttrDlg}
+          backdrop={false}
+          onHide={handleDelEntityAttrDlgClose}
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>
+              Вы действительно хотите удалить
+              {' '}
+              {delEntityAttrData.name}
+              ?
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body />
+          <Modal.Footer>
+            <Button
+              background='blue'
+              onClick={() => delEntityAttrDlgSubmit(delEntityAttrData.id, delEntityAttrData.name, delEntityAttrData.attribute_id)}
+            >
+              Удалить
+            </Button>
+            <Button
+              background='outlined-blue'
+              onClick={handleDelEntityAttrDlgClose}
+            >
+              Отмена
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      </>
   );
 }

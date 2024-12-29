@@ -1,58 +1,8 @@
-.rate_block {
-    width: 253px;
-    background-color: var(--gray-10);
-    padding: 18px 22px 22px;
-    border-radius: 4px;
-    box-shadow: 0px 4px 7px rgba(0, 0, 0, 0.15);
-}
 
-.rate_header {
-    display: flex;
-    gap: 31px;
-}
 
-.header_title {
-    font-size: 12px;
-}
 
-.header_value {
-    font-size: 23px;
-    font-weight: 700;
-    line-height: 20px;
-    margin-left: 5px;
-    &_marked {
-        color: var(--orange-pressed);
-    }
-}
-
-.stars {
-    margin-top: 15px;
-    display: flex;
-}
-
-.star {
-    svg {
-        fill: var(--gray-70);
-    }
-    &_hover, &:hover {
-        cursor: pointer;
-        svg {
-            fill: var(--orange-primary);
-        }
-    }
-    &_active, &:active {
-        svg {
-            fill: var(--orange-pressed);
-        }
-    }
-    &:not(:first-child) {
-        padding-left: 2px;
-    }
-}
 
 .versions {
-    width: 266px;
-    margin-top: 50px;
     &_title {
         margin-left: 3px;
         font-size: 15px;
@@ -84,6 +34,55 @@
             border-radius: 20px;
             border: 4px solid #E8E8E8;
         }
+    }
+}
+
+.versions_dd {
+    button, button:active, button:focus-visible, button:hover {
+        background: #fff !important;
+        border-radius: 8px;
+        line-height: 24px;
+        border: none;
+        color: var(--neutral90) !important;
+        font-size: 12px;
+        padding: 0 8px;
+    }
+
+    .version_name {
+        font-size: 14px;
+    }
+
+    .version_date, .version_responsible {
+        font-size: 12px;
+        color: var(--neutral50);
+    }
+
+    .menu {
+        padding: 4px;
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0px 3.2px 9px 0px #00000029;
+        box-shadow: 0px 0.6px 1.8px 0px #0000001A;
+        box-shadow: 0px -1.5px 6px 0px #0000000F;
+        max-height: 400px;
+        overflow: auto;
+    }
+
+    .item {
+        background: #fff;
+        border-radius: 8px;
+
+        &.current {
+            background: #E8E8E8;
+        }
+        
+        &:hover {
+            background: #F2F2F2;
+        }
+    }
+
+    .toggle:after {
+        vertical-align: 2px;
     }
 }
 

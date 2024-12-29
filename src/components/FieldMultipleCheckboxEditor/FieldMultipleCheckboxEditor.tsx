@@ -4,10 +4,9 @@
 import React, { ChangeEvent, FC, useEffect, useState } from 'react';
 
 import styles from './FieldMultipleCheckboxEditor.module.scss';
-import { ReactComponent as PencilIcon } from '../../assets/icons/pencil.svg';
-import { ReactComponent as OrangePencilIcon } from '../../assets/icons/pencil_org.svg';
 import { Checkbox } from '../Checkbox';
 import { uuid } from '../../utils';
+import classNames from 'classnames';
 
 export type DataSetType = {
   name: string;
@@ -15,7 +14,7 @@ export type DataSetType = {
 };
 
 export type FieldMultipleCheckboxEditorProps = {
-  className: string;
+  className?: string;
   isReadOnly?: boolean;
   isScroll?: boolean;
   label: string;
@@ -27,7 +26,7 @@ export type FieldMultipleCheckboxEditorProps = {
 };
 
 export const FieldMultipleCheckboxEditor: FC<FieldMultipleCheckboxEditorProps> = ({
-  className,
+  className = '',
   isReadOnly,
   isScroll,
   label,
@@ -37,27 +36,24 @@ export const FieldMultipleCheckboxEditor: FC<FieldMultipleCheckboxEditorProps> =
   valueSubmitted,
   dataSet,
 }) => {
-  const [isEditMode, setEditMode] = useState<boolean>(false);
   const [values, setValues] = useState<string[]>([]);
-  const [storedValues, setStoredValues] = useState<string[]>([]);
-  const [storedDisplayValues, setStoredDisplayValues] = useState<string[]>([]);
+  const [displayValues, setDisplayValues] = useState<string[]>([]);
   const [options, setOptions] = useState<DataSetType[]>([]);
 
   useEffect(() => {
     setValues(defaultValues ?? []);
-    setStoredValues(defaultValues ?? []);
   }, [defaultValues]);
 
   useEffect(() => {
     if (options.length > 0) {
       const displayVals: string[] = [];
-      for (let i = 0; i < storedValues.length; i += 1) {
-        const el = options.find((x) => x.id === storedValues[i]);
+      for (let i = 0; i < values.length; i += 1) {
+        const el = options.find((x) => x.id === values[i]);
         if (el) displayVals.push(el.name);
       }
-      setStoredDisplayValues(displayVals);
+      setDisplayValues(displayVals);
     }
-  }, [isEditMode, storedValues, values, options]);
+  }, [values, options]);
 
   useEffect(() => {
     dataSet('').then((json) => {
@@ -69,25 +65,6 @@ export const FieldMultipleCheckboxEditor: FC<FieldMultipleCheckboxEditorProps> =
       );
     });
   }, []);
-
-  /* useEffect(() => {
-    const displayVals: string[] = [];
-    for (let i = 0; i < values.length; i += 1) {
-      const el = options.find((x) => x.id === values[i]);
-      displayVals.push(el ? el.name : '');
-    }
-    setStoredDisplayValues(displayVals);
-  }, [values]); */
-
-  const editClicked = () => {
-    setEditMode(!isEditMode);
-  };
-
-  const saveClicked = () => {
-    setStoredValues(values);
-    valueSubmitted(values);
-    setEditMode(false);
-  };
 
   const valuesContain = (s: string) => values.some((val) => val === s);
 
@@ -102,60 +79,42 @@ export const FieldMultipleCheckboxEditor: FC<FieldMultipleCheckboxEditorProps> =
       }
     }
     setValues(p);
+    valueSubmitted(p);
   };
 
   return (
-    <div
-      className={`${styles.field_autocomplete_editor} ${className}${showValidation
-        && isRequired
-        && (!storedValues || storedValues.length === 0) ? ` ${styles.error}` : ''}`}
-      key={uuid()}
-    >
-      <div className={styles.row_value} key={uuid()}>
-        <div className={label === '' ? styles.close_label : styles.label} key={uuid()}>{label}</div>
-        <div className={styles.display_value} key={uuid()}>{storedDisplayValues.join(', ')}</div>
+    <div className={classNames(styles.field_editor, className, { [styles.error]: isRequired && showValidation && (!values || values.length == 0) })} key={uuid()}>
+      {label && (<div className={styles.label}>{label}{isRequired && (<span className={styles.req}>*</span>)}</div>)}
+      <div className={styles.value} key={uuid()}>
+        
+        
         {isReadOnly ? (
-          ''
+          <div className={styles.display_value} key={uuid()}>{displayValues.join(', ')}</div>
         ) : (
-          <a
-            className={styles.btn_edit}
-            onClick={editClicked}
-            key={uuid()}
-          >
-            <PencilIcon key={uuid()} />
-          </a>
-        )}
-      </div>
-      <div className={`${styles.row_edit} ${isEditMode ? styles.show : ''}`} key={uuid()}>
-        {options ? (
-          <div className={`${styles.checkboxes} ${isScroll ? styles.data_scroll : ''}`} key={uuid()}>
-            {options.map((option: DataSetType) => (
-              <div className={styles.row} key={uuid()}>
-                <Checkbox
-                  // eslint-disable-next-line react/no-array-index-key
-                  key={uuid()}
-                  id={option.id}
-                  name={option.name}
-                  label={option.name}
-                  className={styles.checkbox}
-                  checked={valuesContain(option.id)}
-                  value={option.id}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                    valueChanged(e.target.value, e.target.checked);
-                  }}
-                />
+          <>
+            {options && (
+              <div className={`${styles.checkboxes} ${isScroll ? styles.data_scroll : ''}`} key={uuid()}>
+                {options.map((option: DataSetType) => (
+                  <div className={styles.row} key={uuid()}>
+                    <Checkbox
+                      // eslint-disable-next-line react/no-array-index-key
+                      key={uuid()}
+                      id={option.id}
+                      name={option.name}
+                      label={option.name}
+                      className={styles.checkbox}
+                      checked={valuesContain(option.id)}
+                      value={option.id}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                        valueChanged(e.target.value, e.target.checked);
+                      }}
+                    />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        ) : (
-          <> </>
+            )}
+          </>
         )}
-        <a
-          className={styles.btn_save}
-          onClick={saveClicked}
-        >
-          <OrangePencilIcon />
-        </a>
       </div>
     </div>
   );

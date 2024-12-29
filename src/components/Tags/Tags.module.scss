@@ -1,9 +1,11 @@
+@import '../../assets/css/common.scss';
+
 .tags {
-    min-height: 38px;
+    
     display: flex;
     flex-direction: column;
     gap: 10px;
-    margin-bottom: 20px;
+    
     width: 100%;
     &_wrapper {
         width: 100%;
@@ -11,10 +13,16 @@
         flex-wrap: wrap;
         gap: 5px;
     }
+
+    &.has_tags {
+        min-height: 38px;
+        margin-bottom: 20px;
+    }
 }
 
 .btn {
-    padding: 8px 11px;
+    color: var(--primary60);
+    padding: 0;
 }
 
 .input {

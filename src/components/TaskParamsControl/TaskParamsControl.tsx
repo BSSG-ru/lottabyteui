@@ -121,9 +121,8 @@ export const TaskParamsControl: FC<TaskParamsControlProps> = ({
 
   return (
     <>
-      <tr>
-        <th>{i18n('Тип подключения')}</th>
-        <td>
+      <div>
+        <div className={styles.label}>{i18n('Тип подключения')}</div>
           <Autocomplete
             defaultOptions
             getOptions={getConnectorObjects}
@@ -137,8 +136,7 @@ export const TaskParamsControl: FC<TaskParamsControlProps> = ({
               }));
             }}
           />
-        </td>
-      </tr>
+      </div>
       {useScheduler && (
         <TaskScheduleEditor
           onChanged={(value) => {
@@ -153,8 +151,7 @@ export const TaskParamsControl: FC<TaskParamsControlProps> = ({
           defaultScheduleParams={storedTaskData ? storedTaskData.schedule_params : ''}
         />
       )}
-      <tr className={styles.tr_conn_params}>
-        <td colSpan={2}>
+      <div className={styles.tr_conn_params}>
           <table className={styles.params}>
             <tbody>
               {connectionParams.map((param: any) => (
@@ -163,6 +160,7 @@ export const TaskParamsControl: FC<TaskParamsControlProps> = ({
                   <td>
                     {param.entity.param_type === 'TEXT' && (
                       <Input
+                        id={`inp-${param.metadata.id}`}
                         value={getConnParamValue(param.metadata.id)}
                         onChange={(e) => {
                           setConnParamValue(param.metadata.id, e.target.value);
@@ -172,6 +170,7 @@ export const TaskParamsControl: FC<TaskParamsControlProps> = ({
                     )}
                     {param.entity.param_type === 'PASSWORD' && (
                       <Input
+                        id={`inp-${param.metadata.id}`}
                         type="password"
                         value={getConnParamValue(param.metadata.id)}
                         onChange={(e) => {
@@ -182,6 +181,7 @@ export const TaskParamsControl: FC<TaskParamsControlProps> = ({
                     )}
                     {param.entity.param_type === 'INTEGER' && (
                       <Input
+                        id={`inp-${param.metadata.id}`}
                         type="number"
                         value={getConnParamValue(param.metadata.id)}
                         onChange={(e) => {
@@ -222,8 +222,7 @@ export const TaskParamsControl: FC<TaskParamsControlProps> = ({
               ))}
             </tbody>
           </table>
-        </td>
-      </tr>
+      </div>
     </>
   );
 };

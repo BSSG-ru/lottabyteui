@@ -2,15 +2,18 @@
     display: flex;
     position: relative;
     max-height: 100vh;
-    flex: 1 1;
-    overflow: auto;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+    margin-bottom: 16px;
+    
+    max-width: 1568px;
+    width: 100%;
+    padding-left: 5px;
 }
 
 .aside {
-    width: 252px;
-    @media (max-width: 1000px) {
-        width: 120px;
-    }
+    overflow: auto;
 }
 
 .main {
@@ -18,4 +21,14 @@
     //overflow-x: auto;
     //width: 100%;
     //position: relative;
+    padding: 0 16px;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1;
+    min-width: 1px;
+}
+
+.crumbs_placeholder {
+    display: block;
+    height: 20px;
 }

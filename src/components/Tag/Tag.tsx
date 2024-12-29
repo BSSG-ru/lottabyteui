@@ -5,9 +5,11 @@
 /* eslint-disable react/require-default-props */
 import classNames from 'classnames';
 import React, {
-  FC, useEffect, useRef, RefObject,
+  FC, useEffect, useRef, RefObject, useState,
 } from 'react';
+import { Tooltip } from 'react-tooltip';
 import { ReactComponent as CloseIcon } from '../../assets/icons/close.svg';
+import { uuid } from '../../utils';
 
 import styles from './Tag.module.scss';
 
@@ -34,6 +36,7 @@ export const Tag: FC<TagProps> = ({
   onDelete = () => {},
   onDeleteId = () => {},
 }) => {
+  const [tooltipId, setTooltipId] = useState('tt-id-' + uuid());
   const tagRef = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     if (tagRef.current && wrapperRef && wrapperRef.current) {
@@ -54,12 +57,16 @@ export const Tag: FC<TagProps> = ({
 
   return (
     <span
+      id={tooltipId}
+      data-tooltip-content={value.replaceAll(/(<([^>]+)>)/gi, '')}
       className={classNames(styles.tag, { [styles.tag_more]: moreTag })}
       ref={tagRef}
       onClick={onClick}
       
     >
-      <span dangerouslySetInnerHTML={{ __html: value }}></span>
+      <span 
+      
+      dangerouslySetInnerHTML={{ __html: value }}></span>
       {disableDelete ? (
         ''
       ) : (
@@ -72,6 +79,9 @@ export const Tag: FC<TagProps> = ({
             e.stopPropagation();
           }}
         />
+      )}
+      {value.replaceAll(/(<([^>]+)>)/gi, '').length > 16 && (
+        <Tooltip anchorId={tooltipId} noArrow className="tooltip" place="right" delayShow={400} positionStrategy="absolute" />
       )}
     </span>
   );

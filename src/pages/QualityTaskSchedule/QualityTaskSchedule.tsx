@@ -2,7 +2,6 @@
 /* eslint-disable jsx-a11y/anchor-has-content */
 import React, { useState } from 'react';
 import Modal from 'react-bootstrap/Modal';
-import Button from 'react-bootstrap/Button';
 
 import useUrlState from '@ahooksjs/use-url-state';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +11,8 @@ import { runTask, getQualityRuleRuns } from '../../services/pages/qualityTasks';
 import { Table } from '../../components/Table';
 import { Loader } from '../../components/Loader';
 import styles from './QualityTaskSchedule.module.scss';
+import classNames from 'classnames';
+import { Button } from '../../components/Button';
 
 type DateiledElementType = {
   entity: {
@@ -23,6 +24,7 @@ export function QualityTaskSchedule() {
   const navigate = useNavigate();
   const [state, setState] = useUrlState({ p: '1', q: undefined }, { navigateMode: 'replace' });
   const [loading] = useState(false);
+  const [loaded, setLoaded] = useState(true);
   const [data] = useState([]);
   const [currentRow, setCurrentRow] = useState<any>(null);
   const [detailData, setDetailData] = useState([]);
@@ -54,10 +56,10 @@ export function QualityTaskSchedule() {
   const columns = [
 
     {
-      property: 'is_crontab',
-      filter_property: 'is_crontab',
+      property: 'is_crontab_text',
+      filter_property: 'is_crontab_text',
       header: i18n('Запланировано'),
-      render: (row: any) => <span>{row.is_crontab === '1' ? i18n('Да') : ''}</span>,
+      //render: (row: any) => <span>{row.is_crontab === '1' ? i18n('Да') : ''}</span>,
     },
     {
       property: 'rule_name',
@@ -179,19 +181,18 @@ export function QualityTaskSchedule() {
     return false;
   };
   return (
-    <div className={styles.page}>
-      {loading ? (
+    <div className={classNames(styles.page, styles.scrollable, { [styles.loaded]: loaded })}>
+      {!loaded ? (
         <Loader className="centrify" />
       ) : (
         <>
-          <div className={styles.title}>{`${i18n('Задачи DQ')}`}</div>
-          <Button
-            className={styles.button}
-            onClick={() => doNavigate('/quality-tasks', navigate)}
-          >
-            {i18n('Мониторинг DQ')}
-
-          </Button>
+          <div className={styles.title}>{`${i18n('Задачи DQ')}`}
+            <div className={styles.btns}>
+              <Button background="outlined-blue" className={styles.button2} onClick={() => doNavigate('/dq_rule/quality-tasks', navigate)}>{i18n('Мониторинг DQ')}</Button>
+              <Button background="outlined-blue" className={styles.button2} onClick={() => doNavigate('/dq_rule/quality-schedule-tasks', navigate)}>{i18n('Задачи DQ')}</Button>
+            </div>
+          </div>
+          
           {data !== undefined ? (
             <Table
               cookieKey='qtschedule'
@@ -241,7 +242,7 @@ export function QualityTaskSchedule() {
         <Modal.Footer>
 
           <Button
-            variant="secondary"
+            background='outlined-blue'
             onClick={handleCloseConfirm}
           >
             Закрыть
@@ -286,19 +287,19 @@ export function QualityTaskSchedule() {
         <Modal.Footer>
 
           <Button
-            variant="primary"
+            background='blue'
             onClick={handleCloseRuns}
           >
             Закрыть
           </Button>
           <Button
-            variant="secondary"
+            background='outlined-blue'
             onClick={ruleRun}
           >
             Запустить задание
           </Button>
           <Button
-            variant="secondary"
+            background='outlined-blue'
             onClick={ruleRefresh}
           >
             Обновить

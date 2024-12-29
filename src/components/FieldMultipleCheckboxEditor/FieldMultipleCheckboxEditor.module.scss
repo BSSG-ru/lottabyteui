@@ -1,4 +1,4 @@
-.field_autocomplete_editor {
+.field_editor {
     
     padding: 8px;
     border-radius: 4px;
@@ -40,15 +40,16 @@
     .checkboxes {
         display: flex;
         flex-direction: column;
+        gap: 8px;
         flex-grow: 1;
         overflow: auto;
         max-height: 200px;
+        margin-top: 8px;
     }
 
     .row {
         display: flex;
         flex-direction: row;
-        margin-bottom: 20px;
     }
 
     .row_edit {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { i18n } from '../utils';
+import { getArtifactUrl, i18n } from '../utils';
 import styles from '../pages/LogicObjects/LogicObjects.module.scss';
 import { renderDate } from '../components/Table';
 
@@ -31,6 +31,7 @@ export const attributesTableColumns = [
     header: i18n('Koд'),
     sortDisabled: true,
     filterDisabled: true,
+    width: '55px'
   },
   {
     property: 'name',
@@ -69,6 +70,13 @@ export const attributesTableColumns = [
     render: (row: any) => (row.is_pk ? i18n('Да') : '')
   },
   {
+    property: 'meta_column_name',
+    header: i18n('Метаданные'),
+    filterDisabled: true,
+    sortDisabled: true,
+    render: (row: any) => {return row.meta_column_id ? (<a href={getArtifactUrl(row.meta_database_id, 'meta_column')}>{row.meta_column_name}</a>) : '';}
+  },
+  {
     property: 'created',
     header: i18n('Дата создания'),
     render: (row: any) => renderDate(row, 'created'),
@@ -78,8 +86,9 @@ export const attributesTableColumns = [
     header: i18n('Теги'),
     filterDisabled: true,
     sortDisabled: true,
-    render: (row: any) => row.tags.join(', '),
-  }
+    render: (row: any) => <div className={styles.pills}>{row.tags.map((tag:any, i:number) => <span key={`a-tag-pill-${row.id}-${i}`} className={styles.pill}>#{tag}</span>)}</div>,
+  },
+  
 ];
 
 export const entityTableColumns = [
@@ -89,6 +98,7 @@ export const entityTableColumns = [
     header: i18n('Koд'),
     sortDisabled: true,
     filterDisabled: true,
+    width: '55px'
   },
   {
     property: 'name',
@@ -125,6 +135,7 @@ export const samplesTableColumns = [
     header: i18n('Koд'),
     sortDisabled: true,
     filterDisabled: true,
+    width: '55px'
   },
   {
     property: 'name',
@@ -170,6 +181,7 @@ export const assetsTableColumns = [
     header: i18n('Koд'),
     sortDisabled: true,
     filterDisabled: true,
+    width: '55px'
   },
   {
     property: 'name',

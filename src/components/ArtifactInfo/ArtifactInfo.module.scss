@@ -1,0 +1,92 @@
+@import '../../assets/css/common.scss';
+
+.artifact_info {
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+
+    .artifact_type {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        background: var(--primary10);
+        border-radius: 8px;
+        height: 24px;
+        padding: 0 5px;
+        color: var(--neutral50);
+        min-width: 0;
+
+        svg {
+            width: 16px;
+            height: 16px;
+
+            path {
+                fill: var(--neutral50);
+            }
+        }
+
+        &.transparent {
+            background: none;
+            padding: 0;
+        }
+
+        .name {
+            min-width: 0;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    }
+
+    .artifact_state {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        
+        @include pill-grey;
+    }
+
+    .domains {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+
+        > div {
+            @include pill-grey;
+        }
+
+        .domain {
+            display: flex;
+            align-items: center;
+
+            a {
+                color: var(--gray-100);
+            }
+        }
+    }
+
+    .fav {
+        &, * { cursor: pointer; }
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        @include pill-grey;
+        background: #fff;
+
+        label {
+            font-weight: 400;
+            font-size: 14px;
+        }
+
+        svg {
+            fill: var(--neutral10);
+        }
+
+        &.active svg {
+            fill: #FFCC00;
+        }
+    }
+}

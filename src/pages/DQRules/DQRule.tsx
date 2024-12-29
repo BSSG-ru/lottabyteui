@@ -5,12 +5,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
 import classNames from 'classnames';
-import { RawDraftContentState } from 'draft-js';
 import styles from './DQRules.module.scss';
-import { handleHttpError, i18n, loadEditPageData, rateClickedHandler, setBreadcrumbEntityName, setDataModified, tagAddedHandler, tagDeletedHandler, updateArtifactsCount, updateEditPageReadOnly, uuid } from '../../utils';
-import { Versions, VersionData } from '../../components/Versions';
+import { getRuleTypeAutocompleteObjects, getRuleTypeDisplayValue, handleHttpError, i18n, loadEditPageData, rateClickedHandler, setBreadcrumbEntityName, setDataModified, tagAddedHandler, tagDeletedHandler, updateArtifactsCount, updateEditPageReadOnly, uuid } from '../../utils';
 
-import { FieldEditor } from '../../components/FieldEditor';
 import { Input } from '../../components/Input';
 import { Textarea } from '../../components/Textarea';
 import {
@@ -20,34 +17,27 @@ import {
   getDQRuleVersions,
   getDQRuleVersion,
   updateDQRule,
-  getRuleTypes,
-  getRuleType,
 } from '../../services/pages/dqRules';
 
-import { setRecentView } from '../../services/pages/recentviews';
-import { WFItemControl } from '../../components/WFItemControl/WFItemControl';
 import { FieldTextareaEditor } from '../../components/FieldTextareaEditor';
 import { TagProp, Tags } from '../../components/Tags';
 import { DQRuleData } from '../../types/data';
 import { FieldAutocompleteEditor } from '../../components/FieldAutocompleteEditor';
 import { FieldVisualEditor } from '../../components/FieldVisualEditor';
+import { EditPage } from '../../components/EditPage';
+import { FieldTextEditor } from '../../components/FieldTextEditor';
 
 export function DQRule() {
   const navigate = useNavigate();
-
   const [, setLoading] = useState(true);
 
   const [data, setData] = useState<DQRuleData>({
-    metadata: { id: '', artifact_type: 'dq_rule', version_id: '', tags: [], state: 'PUBLISHED', published_id: '' },
+    metadata: { id: '', artifact_type: 'dq_rule', version_id: '', tags: [], state: 'PUBLISHED', published_id: '', created_by: '' },
     entity: {
-      name: '', description: '', rule_ref: '', settings: '', rule_type_id: null
+      name: '', description: '', rule_ref: '', settings: '', rule_type_id: null, short_description: ''
     },
   });
-  const [ratingData, setRatingData] = useState({ rating: 0, total_rates: 0 });
-  const [ownRating, setOwnRating] = useState(0);
-  const [versions, setVersions] = useState<VersionData[]>([]);
 
-  const [isCreateMode, setCreateMode] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
 
   const [isReadOnly, setReadOnly] = useState(true);
@@ -55,7 +45,6 @@ export function DQRule() {
 
   const { id, version_id } = useParams();
 
-  const [ruleTypes, setRuleTypes] = useState();
   const [dqRuleId, setDQRuleId] = useState<string>(id ?? '');
   const [dqRuleVersionId, setDQRuleVersionId] = useState<string>(version_id ?? '');
   const [tags, setTags] = useState<TagProp[]>([]);
@@ -68,15 +57,8 @@ export function DQRule() {
     settings: '',
   });
 
-  const [showDelDlg, setShowDelDlg] = useState(false);
-  const [delData, setDelData] = useState<any>({ id: '', name: '' });
-
   const handleAddEntityDlgClose = () => {
     setShowAddEntityDlg(false);
-    return false;
-  };
-  const handleDelEntityDlgClose = () => {
-    setShowDelDlg(false);
     return false;
   };
 
@@ -92,246 +74,111 @@ export function DQRule() {
     setNewEntityData({ name: '', description: '' });
   };
 
-  const delEntityDlgSubmit = (identity: string) => {
-    setShowDelDlg(false);
-    setLoading(true);
-    deleteDQRule(identity)
-      .then(() => {
-        setLoading(false);
-      })
-      .catch(handleHttpError);
-    setDelData({ id: '', name: '' });
-  };
-
   useEffect(() => {
     if (id) setDQRuleId(id);
     setDQRuleVersionId(version_id ?? '');
     setDataModified(false);
   }, [id, version_id]);
 
-  const loadDQRuleData = () => {
-    loadEditPageData(dqRuleId, dqRuleVersionId, setData, setTags, setLoading, setLoaded, getDQRuleVersion, getDQRule,
-      setRatingData, setOwnRating, getDQRuleVersions, setVersions, setReadOnly);
 
-  };
-
-  useEffect(() => {
-    setCreateMode(dqRuleId === '');
-    if (dqRuleId) {
-      if (!dqRuleVersionId) { setRecentView('dq_rule', dqRuleId); }
-
-      loadDQRuleData();
-    } else {
-      setData((prev) => ({ ...prev, metadata: { ...prev.metadata, state: 'DRAFT' } }));
-      setDataModified(false);
-      setReadOnly(false);
-      setLoaded(true);
-    }
-  }, [dqRuleId, dqRuleVersionId]);
-
-  useEffect(() => {
-    if (isCreateMode) {
-      if (data.entity.name && data.entity.rule_type_id) {
-        createDQRule({
-          name: data.entity.name,
-          description: data.entity.description,
-          rule_ref: data.entity.rule_ref,
-          settings: data.entity.settings,
-          rule_type_id: data.entity.rule_type_id
-        })
-          .then((json) => {
-            setDataModified(false);
-            if (json.metadata.id) {
-              updateArtifactsCount();
-              setDQRuleId(json.metadata.id);
-              window.history.pushState(
-                {},
-                '',
-                `/dq_rule/edit/${encodeURIComponent(json.metadata.id)}`,
-              );
-            }
-          })
-          .catch(handleHttpError);
-      }
-    }
-  }, [data]);
-
-  useEffect(() => {
-    getRuleTypes().then((json) => {
-      const map = new Map();
-      for (let i = 0; i < json.length; i += 1) {
-        map.set(json[i].id, json[i].name);
-      }
-      //setRuleTypes(map);
-    }).catch(handleHttpError);
-  }, []);
-
-  const getRuleTypeObj = async (search: string) => getRuleTypes().then((json) => {
-    const res = [];
-    const map = new Map();
-    for (let i = 0; i < json.length; i += 1) {
-      res.push({ id: json[i].id, name: json[i].name });
-      map.set(json[i].id, json[i].name);
-    }
-    //setRuleTypes(map);
-    return res.filter((x) => x.name.toLowerCase().indexOf(search.toLowerCase()) !== -1);
-  });
-
-  const getRuleTypeDisplayValue = async (i: string) => {
-    if (!i) return '';
-
-    return getRuleType(i).then((json: any) => {
-      if (json && json.name) return json.name;
-      return '';
-    }).catch(handleHttpError);
-  };
-
-  const updateDQRuleField = (field: string, value: string | string[] | RawDraftContentState) => {
-    if (dqRuleId) {
-      const d: any = {};
-      if (typeof value !== 'string' && !Array.isArray(value)) { d[field] = JSON.stringify(value); } else { d[field] = value; }
-      updateDQRule(dqRuleId, d)
-        .then((json) => {
-          setDataModified(false);
-          if (json.metadata.id && json.metadata.id !== dqRuleId) {
-            navigate(`/dq_rule/edit/${encodeURIComponent(json.metadata.id)}`);
-          } else { setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } })); }
-        })
-        .catch((err) => { handleHttpError(err); loadDQRuleData(); });
-    } else {
-      setShowValidation(true);
-      setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } }));
-      setDataModified(false);
-    }
+  const updateDQRuleField = (field: string, value: string | string[] | undefined) => {
+    setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } }));
+    setDataModified(true);
   };
 
   return (
-    <div className={classNames(styles.page, styles.dqRulePage, { [styles.loaded]: isLoaded })}>
-      <div className={styles.mainContent}>
-        {!dqRuleVersionId && (
-          <WFItemControl
-            key={`wfc-rule-` + data?.metadata?.workflow_task_id}
-            itemMetadata={data.metadata}
-            itemIsReadOnly={isReadOnly}
-            onEditClicked={() => { setReadOnly(false); }}
-            onDeleteClicked={() => { setDelData({ id: data.metadata.id, name: data.entity.name }); setShowDelDlg(true); }}
-            onObjectIdChanged={(localDQRuleId) => {
-              if (localDQRuleId) {
-                setDQRuleId(localDQRuleId);
-                window.history.pushState(
-                  {},
-                  '',
-                  `/dq_rule/edit/${encodeURIComponent(localDQRuleId)}`,
-                );
-              } else navigate('/dq_rule/');
-            }}
-            onObjectDataChanged={(data) => {
-              setData(data);
-              setDataModified(false);
-              setBreadcrumbEntityName(dqRuleId, data.entity.name);
-              setTags(data.metadata.tags ? data.metadata.tags.map((x: any) => ({ value: x.name })) : []);
+    <>
+      <EditPage objectId={dqRuleId} objectVersionId={dqRuleVersionId} data={data} urlSlug='dq_rule' setData={setData} isReadOnly={isReadOnly} setReadOnly={setReadOnly}
+          artifactType='dq_rule' setTags={setTags} getObjectVersion={getDQRuleVersion} getObjectVersions={getDQRuleVersions} getObject={getDQRule} deleteObject={deleteDQRule}
+          updateObject={updateDQRule} tabs={[
+          {
+            key: 'tab-gen',
+            title: i18n('Сведения'),
+            unscrollable: true,
+            content: <div className={styles.tab_2col}>
+              <div className={classNames(styles.col, styles.scrollable)}>
+                <h2>Общая информация</h2>
 
-              updateEditPageReadOnly(data, setReadOnly, () => { setLoading(false); setLoaded(true); });
-            }}
-          />
-        )}
+                <FieldTextEditor
+                    isReadOnly={isReadOnly}
+                    label={i18n('Название')}
+                    defaultValue={data.entity.name}
+                    valueSubmitted={(val) => {
+                      updateDQRuleField('name', val);
+                    }}
+                  />
 
-        <div className={styles.title}>
-          <FieldEditor
-            isReadOnly={isReadOnly}
-            labelPrefix={`${i18n('Название правила')}: `}
-            defaultValue={data.entity.name}
-            className={styles.title}
-            valueSubmitted={(val) => {
-              updateDQRuleField('name', val.toString());
-            }}
-            isRequired
-            onBlur={(val) => {
-              updateDQRuleField('name', val);
-            }}
-            showValidation={showValidation}
-          />
-        </div>
+                <FieldAutocompleteEditor
+                  label={i18n('Тип')}
+                  isReadOnly={isReadOnly}
+                  defaultValue={data.entity.rule_type_id}
+                  valueSubmitted={(identity) => updateDQRuleField('rule_type_id', identity)}
+                  getDisplayValue={getRuleTypeDisplayValue}
+                  getObjects={getRuleTypeAutocompleteObjects}
+                  showValidation={showValidation}
+                />
 
-        {!isCreateMode && (
-          <Tags
-            key={'tags-' + dqRuleId + '-' + dqRuleVersionId + '-' + uuid()}
-            tags={tags}
-            isReadOnly={isReadOnly}
-            onTagAdded={(tagName: string) => tagAddedHandler(tagName, dqRuleId, 'dq_rule', data.metadata.state ?? '', tags, setLoading, setTags, '/dq_rule/edit/', navigate)}
-            onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, dqRuleId, 'dq_rule', data.metadata.state ?? '', setLoading, setTags, '/dq_rule/edit/', navigate)}
-          />
-        )}
+                <FieldTextareaEditor
+                    isReadOnly={isReadOnly}
+                    label={i18n('Описание')}
+                    defaultValue={data.entity.short_description}
+                    valueSubmitted={(val) => {
+                      updateDQRuleField('short_description', val ?? '');
+                    }}
+                  />
 
-        <FieldAutocompleteEditor
-          className={styles.long_input}
-          label={i18n('Тип')}
-          isReadOnly={isReadOnly}
-          defaultValue={data.entity.rule_type_id}
-          valueSubmitted={(identity) => updateDQRuleField('rule_type_id', identity)}
-          getDisplayValue={getRuleTypeDisplayValue}
-          getObjects={getRuleTypeObj}
-          showValidation={showValidation}
-        />
+                <div data-uitest="dq_rule_tag" className={styles.tags_block}>
+                  <div className={styles.label}>{i18n('Теги')}</div>
+                  <Tags
+                    key={'tags-' + dqRuleId + '-' + dqRuleVersionId + '-' + uuid()}
+                    isReadOnly={isReadOnly}
+                    tags={tags}
+                    tagPrefix='#'
+                    onTagAdded={(tagName: string) => tagAddedHandler(tagName, dqRuleId, 'dq_rule', data.metadata.state ?? '', tags, setLoading, setTags, '/dq_rule/edit/', navigate)}
+                    onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, dqRuleId, 'dq_rule', data.metadata.state ?? '', setLoading, setTags, '/dq_rule/edit/', navigate)}
+                  />
+                </div>
+              </div>
+              <div className={classNames(styles.col, styles.scrollable)}>
+                <h2>Дополнительные параметры</h2>
 
-        {!isCreateMode && (
-          <div className={styles.data_row}>
-            <FieldEditor
-              isReadOnly={isReadOnly}
-              layout="separated"
-              labelPrefix={`${i18n('Функция проверки качества')} `}
-              isMultiline
-              defaultValue={data.entity.rule_ref}
-              className={styles.editor}
-              valueSubmitted={(val) => {
-                updateDQRuleField('rule_ref', val.toString());
-              }}
-            />
-          </div>
-        )}
-        {!isCreateMode && (
-          <div className={classNames(styles.data_row, styles.description)}>
+                <FieldTextareaEditor
+                  isReadOnly={isReadOnly}
+                  label={i18n('Функция проверки качества')}
+                  defaultValue={data.entity.rule_ref}
+                  valueSubmitted={(val) => {
+                    updateDQRuleField('rule_ref', val);
+                  }}
+                />
+
+                <FieldTextareaEditor
+                  isReadOnly={isReadOnly}
+                  label={i18n('Пример настроек')}
+                  defaultValue={data.entity.settings}
+                  valueSubmitted={(val) => {
+                    updateDQRuleField('settings', val);
+                  }}
+                />
+              </div>
+            </div>
+          },
+          {
+            key: 'tab-desc',
+            title: i18n('Расширенное описание'),
+            content: <div className={styles.tab_transparent}>
+
               <FieldVisualEditor
-                isReadOnly={isReadOnly}
-                labelPrefix={`${i18n('Описание')}`}
-                defaultValue={data.entity.description}
-                className={styles.editor}
-                valueSubmitted={(val) => {
-                  updateDQRuleField('description', val.toString());
-                }}
-              />
-          </div>
-        )}
-        {!isCreateMode && (
-          <div className={styles.data_row}>
-            <FieldTextareaEditor
-              isReadOnly={isReadOnly}
-              labelPrefix={`${i18n('Пример настроек')}`}
-              isMultiline
-              defaultValue={data.entity.settings}
-              className={styles.editor}
-              valueSubmitted={(val) => {
-                updateDQRuleField('settings', val);
-              }}
-            />
-          </div>
-        )}
-      </div>
-      {!isCreateMode && (
-        <div className={styles.rightBar}>
-          {(data.metadata.state == 'PUBLISHED' || data.metadata.state == 'ARCHIVED') && (
-            <Versions
-              rating={ratingData.rating}
-              ownRating={ownRating}
-              version_id={dqRuleVersionId || data.metadata.version_id}
-              versions={versions}
-              version_url_pattern={`/dq_rule/${encodeURIComponent(dqRuleId)}/version/{version_id}`}
-              root_object_url={`/dq_rule/edit/${encodeURIComponent(dqRuleId)}`}
-              onRateClick={r => rateClickedHandler(r, dqRuleId, 'dq_rule', setOwnRating, setRatingData)}
-            />
-          )}
-        </div>
-      )}
+                  isReadOnly={isReadOnly}
+                  defaultValue={data.entity.description}
+                  className=''
+                  valueSubmitted={(val) => {
+                    updateDQRuleField('description', val);
+                  }}
+                />  
+            
+            </div>
+          }
+        ]} />
 
       <Modal
         show={showAddEntityDlg}
@@ -373,36 +220,6 @@ export function DQRule() {
         </Modal.Footer>
       </Modal>
 
-      <Modal
-        show={showDelDlg}
-        backdrop={false}
-        onHide={handleDelEntityDlgClose}
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>
-            Вы действительно хотите удалить
-            {' '}
-            {delData.name}
-            ?
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body />
-        <Modal.Footer>
-          <Button
-            variant="primary"
-            onClick={() => delEntityDlgSubmit(delData.id)}
-          >
-            Удалить
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={handleDelEntityDlgClose}
-          >
-            Отмена
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-    </div>
+    </>
   );
 }

@@ -11,7 +11,7 @@ label {
 }
   
 .paginator * {
-  font-size: 16px;
+  font-size: 14px;
   line-height: 19px;
   font-weight: 400;
 }
@@ -113,4 +113,6 @@ input.p-column-filter {
   margin-top: 10px;
   margin-bottom: 10px;
   outline: none !important;
+  width: 100%;
+  min-width: 0;
 }

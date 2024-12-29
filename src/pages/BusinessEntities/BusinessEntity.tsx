@@ -2,19 +2,11 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import Modal from 'react-bootstrap/Modal';
-import Button from 'react-bootstrap/Button';
-import useUrlState from '@ahooksjs/use-url-state';
 import classNames from 'classnames';
 import styles from './BusinessEntity.module.scss';
-import { getBusinessEntityDisplayValue, getDataTypeAutocompleteObjects, getDataTypeDisplayValue, getDomainAutocompleteObjects, getDomainDisplayValue, handleHttpError, i18n, loadEditPageData, rateClickedHandler, setCookie, setDataModified, tagAddedHandler, tagDeletedHandler, updateArtifactsCount, updateEditPageReadOnly, uuid } from '../../utils';
-import { Versions, VersionData } from '../../components/Versions';
+import { getArtifactUrl, getBusinessEntityDisplayValue, getDataTypeAutocompleteObjects, getDataTypeDisplayValue, getDomainAutocompleteObjects, getDomainDisplayValue, handleHttpError, i18n, loadEditPageData, rateClickedHandler, setCookie, setDataModified, tagAddedHandler, tagDeletedHandler, updateArtifactsCount, updateEditPageReadOnly, uuid } from '../../utils';
 
-import { FieldEditor } from '../../components/FieldEditor';
-import { Input } from '../../components/Input';
-import { Textarea } from '../../components/Textarea';
 import {
-  createBusinessEntity,
   deleteBusinessEntity,
   getBusinessEntityVersion,
   getBusinessEntity,
@@ -26,43 +18,28 @@ import {
   restoreBusinessEntity,
 } from '../../services/pages/businessEntities';
 
-import { setRecentView } from '../../services/pages/recentviews';
-import { WFItemControl } from '../../components/WFItemControl/WFItemControl';
 import { FieldArrayEditor } from '../../components/FieldArrayEditor/FieldArrayEditor';
 import { FieldTextareaEditor } from '../../components/FieldTextareaEditor';
 import { TagProp, Tags } from '../../components/Tags';
-import { ReactComponent as PlusInCircle } from '../../assets/icons/plus-in-circle.svg';
-import { ReactComponent as Close } from '../../assets/icons/close.svg';
 import { FieldAutocompleteEditor } from '../../components/FieldAutocompleteEditor';
-import { Table } from '../../components/Table';
-import { assetsTableColumns, entityTableColumns } from '../../mocks/logic_objects';
-import { Tabs } from '../../components/Tabs';
-import { userInfoRequest } from '../../services/auth';
 import { RelatedObjectsControl } from '../../components/RelatedObjectsControl';
-import { Responsibles } from '../../components/Responsibles';
-import { DeleteObjectModal } from '../../components/DeleteObjectModal';
 import { FieldVisualEditor } from '../../components/FieldVisualEditor';
+import { EditPage } from '../../components/EditPage';
+import { FieldTextEditor } from '../../components/FieldTextEditor';
 
 export function BusinessEntity() {
   const navigate = useNavigate();
 
-  const [state, setState] = useUrlState({
-    t: '1', p1: '1', p2: '1', p3: '1', p4: '1',
-  }, { navigateMode: 'replace' });
   const [, setLoading] = useState(true);
 
   const [data, setData] = useState({
-    metadata: { id: '', artifact_type: 'business_entity', version_id: '', tags: [], state: 'PUBLISHED', published_id: '', ancestor_draft_id: '', workflow_task_id: '' },
+    metadata: { id: '', artifact_type: 'business_entity', version_id: '', tags: [], state: 'PUBLISHED', published_id: '', ancestor_draft_id: '', workflow_task_id: '', created_by: '' },
     entity: {
       name: '', description: '', tech_name: '', definition: '', regulation: '', alt_names: [], synonym_ids: [], be_link_ids: [], domain_id: null, parent_id: null,
-      formula: '', examples: '', link: '', datatype_id: null, limits: '', roles: ''
+      formula: '', examples: '', link: '', datatype_id: null, limits: '', roles: '', short_description: ''
     },
   });
-  const [ratingData, setRatingData] = useState({ rating: 0, total_rates: 0 });
-  const [ownRating, setOwnRating] = useState(0);
-  const [versions, setVersions] = useState<VersionData[]>([]);
   const [tags, setTags] = useState<TagProp[]>([]);
-  const [isCreateMode, setCreateMode] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
 
   const [isReadOnly, setReadOnly] = useState(true);
@@ -73,50 +50,8 @@ export function BusinessEntity() {
   const [businessEntityId, setBusinessEntityId] = useState<string>(id ?? '');
   const [businessEntityVersionId, setBusinessEntityVersionId] = useState<string>(version_id ?? '');
 
-  const [showAddEntityDlg, setShowAddEntityDlg] = useState(false);
-  const [newEntityData, setNewEntityData] = useState<any>({
-    name: '',
-    description: '',
-    system_ids: [],
-  });
-
-  const [showDelEntityDlg, setShowDelEntityDlg] = useState(false);
-  const [delEntityData, setDelEntityData] = useState<any>({ id: '', name: '' });
-
-  const [delObjectData, setDelObjectData] = useState<any>({ id: '', name: '' });
-  const [showDelDlg, setShowDelDlg] = useState(false);
-
-  const handleAddEntityDlgClose = () => {
-    setShowAddEntityDlg(false);
-    return false;
-  };
-  const handleDelEntityDlgClose = () => {
-    setShowDelEntityDlg(false);
-    return false;
-  };
-
-  const addEntityDlgSubmit = () => {
-    setShowAddEntityDlg(false);
-    setLoading(true);
-    createBusinessEntity(newEntityData)
-      .then(() => {
-        setLoading(false);
-        updateArtifactsCount();
-      })
-      .catch(handleHttpError);
-    setNewEntityData({ name: '', description: '' });
-  };
-
-  const delEntityDlgSubmit = (identity: string) => {
-    setShowDelEntityDlg(false);
-    setLoading(true);
-    deleteBusinessEntity(identity)
-      .then(() => {
-        setLoading(false);
-      })
-      .catch(handleHttpError);
-    setDelEntityData({ id: '', name: '' });
-  };
+  const [selectedSynonymNames, setSelectedSynonymNames] = useState<string[]>([]);
+  const [selectedBELinkNames, setSelectedBELinkNames] = useState<string[]>([]);
 
   useEffect(() => {
     if (id) setBusinessEntityId(id);
@@ -124,72 +59,9 @@ export function BusinessEntity() {
     setDataModified(false);
   }, [id, version_id]);
 
-  useEffect(() => {
-    setCreateMode(businessEntityId === '');
-    if (businessEntityId) {
-      if (!businessEntityVersionId) { setRecentView('business_entity', businessEntityId); }
-
-      loadEditPageData(businessEntityId, businessEntityVersionId, setData, setTags, setLoading, setLoaded, getBusinessEntityVersion,
-        getBusinessEntity, setRatingData, setOwnRating, getBusinessEntityVersions, setVersions, setReadOnly);
-      
-    } else {
-
-      userInfoRequest().then(resp => {
-        resp.json().then(data => {
-          //console.log('set userp', data.permissions);
-          setCookie('userp', data.permissions.join(','), { path: '/' });
-          setData((prev) => ({ ...prev, metadata: { ...prev.metadata, state: 'DRAFT' }, entity: { ...prev.entity, domain_id: data.steward_domains ? data.steward_domains[0] : null} }));
-          setDataModified(false);
-          setReadOnly(false);
-          setLoaded(true);
-        });
-      });
-
-    }
-  }, [businessEntityId, businessEntityVersionId]);
-
-  useEffect(() => {
-    if (isCreateMode) {
-      if (data.entity.name && data.entity.definition) {
-        createBusinessEntity({
-          name: data.entity.name,
-          definition: data.entity.definition,
-          domain_id: data.entity.domain_id
-        })
-          .then((json) => {
-            setDataModified(false);
-            if (json.metadata.id) {
-              updateArtifactsCount();
-              setBusinessEntityId(json.metadata.id);
-              window.history.pushState(
-                {},
-                '',
-                `/business-entities/edit/${encodeURIComponent(json.metadata.id)}`,
-              );
-            }
-          })
-          .catch(handleHttpError);
-      }
-    }
-  }, [data]);
-  
-  const updateBEField = (field: string, value: string | string[]) => {
-    if (businessEntityId) {
-      const d: any = {};
-      d[field] = value;
-      updateBusinessEntity(businessEntityId, d)
-        .then((json) => {
-          setDataModified(false);
-          if (json.metadata.id && json.metadata.id !== businessEntityId) {
-            navigate(`/business-entities/edit/${encodeURIComponent(json.metadata.id)}`);
-          } else { setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } })); }
-        })
-        .catch(handleHttpError);
-    } else {
-      setShowValidation(true);
-      setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } }));
-      setDataModified(false);
-    }
+  const updateBEField = (field: string, value: string | string[] | undefined) => {
+    setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } }));
+    setDataModified(true);
   };
 
   const addSynonym = () => {
@@ -203,30 +75,29 @@ export function BusinessEntity() {
     updateBEField('synonym_ids', arr.filter((x) => x));
   };
 
-  const addBELink = () => {
-    setData((prev: any) => ({ ...prev, entity: { ...prev.entity, be_link_ids: [...prev.entity.be_link_ids, ''] } }));
-  };
+  useEffect(() => {
+    const a = [];
+    for (let i = 0; i < data.entity.synonym_ids.length; i++) { a.push(''); }
+    setSelectedSynonymNames(a);
 
-  const delBELink = (k: number) => {
-    const arr: string[] = [...data.entity.be_link_ids];
-    arr.splice(k, 1);
+    data.entity.synonym_ids.forEach((id, index) => {
+      getBusinessEntity(id).then((json) => {
+        setSelectedSynonymNames((prev) => ([...prev.slice(0, index), `<div><a href="${getArtifactUrl(json.metadata.id, 'business_entity')}">${json.entity.name}</a></div>`, ...prev.slice(index + 1)]));
+      }).catch(handleHttpError);
+    });
+  }, [data.entity.synonym_ids]);
 
-    updateBEField('be_link_ids', arr.filter((x) => x));
-  };
+  useEffect(() => {
+    const a = [];
+    for (let i = 0; i < data.entity.be_link_ids.length; i++) { a.push(''); }
+    setSelectedBELinkNames(a);
 
-  const updateBESynonymId = (k: number, id: string) => {
-    const arr: string[] = [...data.entity.synonym_ids];
-    if (arr.length > k) { arr[k] = id; } else { arr.push(id); }
-
-    updateBEField('synonym_ids', arr.filter((x) => x));
-  };
-
-  const updateBELink = (k: number, id: string) => {
-    const arr: string[] = [...data.entity.be_link_ids];
-    if (arr.length > k) { arr[k] = id; } else { arr.push(id); }
-
-    updateBEField('be_link_ids', arr.filter((x) => x));
-  };
+    data.entity.be_link_ids.forEach((id, index) => {
+      getBusinessEntity(id).then((json) => {
+        setSelectedBELinkNames((prev) => ([...prev.slice(0, index), `<div><a href="${getArtifactUrl(json.metadata.id, 'business_entity')}">${json.entity.name}</a></div>`, ...prev.slice(index + 1)]));
+      }).catch(handleHttpError);
+    });
+  }, [data.entity.be_link_ids]);
 
   const getBEObjects = async (search: string) => getBusinessEntities({
     sort: 'name+',
@@ -236,7 +107,7 @@ export function BusinessEntity() {
     filters: [...data.entity.synonym_ids, data.metadata.id, data.metadata.published_id ?? ''].filter((id) => id).map((id) => ({ column: 'id', value: id, operator: 'NOT_EQUAL' })),
     filters_for_join: [],
     state: 'PUBLISHED',
-  }).then((json) => json.items);
+  }).then((json) => json.items.map((item: any) => ({ value: item.id, label: item.name, name: item.name })));
 
   const getBELinkObjects = async (search: string) => getBusinessEntities({
     sort: 'name+',
@@ -246,7 +117,7 @@ export function BusinessEntity() {
     filters: [...data.entity.be_link_ids, data.metadata.id, data.metadata.published_id ?? ''].filter((id) => id).map((id) => ({ column: 'id', value: id, operator: 'NOT_EQUAL' })),
     filters_for_join: [],
     state: 'PUBLISHED',
-  }).then((json) => json.items);
+  }).then((json) => json.items.map((item: any) => ({ value: item.id, label: item.name, name: item.name })));
 
   const getParentBEAutocompleteObjects = async (search: string) => getBusinessEntities({
     sort: 'name+',
@@ -257,223 +128,32 @@ export function BusinessEntity() {
     filters_for_join: [],
   }).then((json) => json.items);
 
-  const delDlgSubmit = () => {
-    setShowDelDlg(false);
-    setLoading(true);
-    deleteBusinessEntity(delObjectData.id)
-      .then(json => {
-        updateArtifactsCount();
-        setLoading(false);
-
-        if (json.metadata && json.metadata.id)
-          navigate('/business-entities/edit/' + encodeURIComponent(json.metadata.id));
-      })
-      .catch(handleHttpError);
-    setDelObjectData({ id: '', name: '' });
-  };
-
-  const archiveBtnClicked = () => { archiveBusinessEntity(data.metadata.id).then(json => {
-    if (json.metadata.id && json.metadata.id != businessEntityId) {
-      navigate(`/business-entities/edit/${encodeURIComponent(json.metadata.id)}`);
-    }
-    setDataModified(false);
-  }).catch(handleHttpError); };
-
-  const restoreBtnClicked = () => { restoreBusinessEntity(data.metadata.id).then(json => {
-    if (json.metadata.id && json.metadata.id != businessEntityId) {
-      navigate(`/business-entities/edit/${encodeURIComponent(json.metadata.id)}`);
-    }
-    setDataModified(false);
-  }).catch(handleHttpError); };
+  
 
   return (
-    <div className={classNames(styles.page, styles.bePage, { [styles.loaded]: isLoaded })}>
-      <div className={styles.mainContent}>
-        {businessEntityVersionId && (
-          <Button onClick={() => {
-            restoreBusinessEntityVersion(businessEntityId, businessEntityVersionId).then(json => {
-              setDataModified(false);
-              if (json.metadata.id && json.metadata.id !== businessEntityId) {
-                navigate(`/business-entities/edit/${encodeURIComponent(json.metadata.id)}`);
-              } else { setData(json); }
-            }).catch(handleHttpError);
-          }}>{i18n('Восстановить')}</Button>
-        )}
-        {!businessEntityVersionId && (
-          <WFItemControl
-            //key={`wfc-${uuid()}`}
-            key={`wfc-be`}
-            itemMetadata={data.metadata}
-            itemIsReadOnly={isReadOnly}
-            onEditClicked={() => { setReadOnly(false); }}
-            onArchiveClicked={archiveBtnClicked}
-            onRestoreClicked={restoreBtnClicked}
-            onDeleteClicked={() => { setDelObjectData({ id: data.metadata.id, name: data.entity.name }); setShowDelDlg(true); }}
-            onObjectIdChanged={(id) => {
-              if (id) {
-                setBusinessEntityId(id);
-                window.history.pushState(
-                  {},
-                  '',
-                  `/business-entities/edit/${encodeURIComponent(id)}`,
-                );
-              } else navigate('/business-entities/');
-            }}
-            onObjectDataChanged={(d) => {
-              setData(d);
-              setDataModified(false);
-              if (document.getElementById(`crumb_${businessEntityId}`) !== null) {
-                document.getElementById(`crumb_${businessEntityId}`)!.innerText = d.entity.name;
-              }
-              setTags(d.metadata.tags ? d.metadata.tags.map((x: any) => ({ value: x.name })) : []);
-              updateEditPageReadOnly(d, setReadOnly, () => {  setLoading(false); setLoaded(true); });
-            }}
-          />
-        )}
-        <div className={styles.title} data-uitest="be_name">
-          <FieldEditor
-            isReadOnly={isReadOnly}
-            labelPrefix={`${i18n('БИЗНЕС-СУЩНОСТЬ')}: `}
-            defaultValue={data.entity.name}
-            className={styles.title}
-            valueSubmitted={(val) => {
-              updateBEField('name', val.toString());
-            }}
-            isRequired
-            onBlur={(val) => {
-              updateBEField('name', val);
-            }}
-            showValidation={showValidation}
-          />
-        </div>
-        {!isCreateMode && (
-          
-            <Tags
-            key={'tags-' + businessEntityId + '-' + businessEntityVersionId + '-' + uuid()}
-            tags={tags}
-              isReadOnly={isReadOnly}
-              onTagAdded={(tagName: string) => tagAddedHandler(tagName, businessEntityId, 'business_entity', data.metadata.state ?? '', tags, setLoading, setTags, '/business-entities/edit/', navigate)}
-              onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, businessEntityId, 'business_entity', data.metadata.state ?? '', setLoading, setTags, '/business-entities/edit/', navigate)}
-            />
-        )}
-        {!isCreateMode && (
-            <div className={styles.data_row}>
-              <FieldEditor
-                isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${i18n('Техническое название')} `}
-                defaultValue={data.entity.tech_name}
-                className={styles.editor}
-                valueSubmitted={(val) => {
-                  updateBEField('tech_name', val.toString());
-                }}
-              />
-            </div>
-        )}
-        {!isCreateMode && (
-            <div className={styles.data_row}>
-              <FieldEditor
-                isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${i18n('Формула расчета (Бизнес-алгоритм)')} `}
-                defaultValue={data.entity.formula}
-                className={styles.editor}
-                valueSubmitted={(val) => {
-                  updateBEField('formula', val.toString());
-                }}
-              />
-            </div>
-        )}
-        {!isCreateMode && (
-            <div className={styles.data_row}>
-              <FieldEditor
-                isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${i18n('Примеры значений')} `}
-                defaultValue={data.entity.examples}
-                className={styles.editor}
-                valueSubmitted={(val) => {
-                  updateBEField('examples', val.toString());
-                }}
-              />
-            </div>
-        )}
-        {!isCreateMode && (
-            <div className={styles.data_row}>
-              <FieldEditor
-                isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${i18n('Ссылка на справочник')} `}
-                defaultValue={data.entity.link}
-                className={styles.editor}
-                valueSubmitted={(val) => {
-                  updateBEField('link', val.toString());
-                }}
-              />
-            </div>
-        )}
-        {!isCreateMode && (
-            <div className={styles.data_row}>
-              <FieldEditor
-                isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${i18n('Законодательные ограничения')} `}
-                defaultValue={data.entity.limits}
-                className={styles.editor}
-                valueSubmitted={(val) => {
-                  updateBEField('limits', val.toString());
-                }}
-              />
-            </div>
-        )}
-        {!isCreateMode && (
-            <div className={styles.data_row}>
-              <FieldEditor
-                isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${i18n('Ключевые роли процесса')} `}
-                defaultValue={data.entity.roles}
-                className={styles.editor}
-                valueSubmitted={(val) => {
-                  updateBEField('roles', val.toString());
-                }}
-              />
-            </div>
-        )}
+    <>
+      <EditPage objectId={businessEntityId} objectVersionId={businessEntityVersionId} data={data} restoreVersion={restoreBusinessEntityVersion} urlSlug='business-entities' setData={setData} isReadOnly={isReadOnly} setReadOnly={setReadOnly}
+        archiveObject={archiveBusinessEntity} artifactType='business_entity' setTags={setTags} getObjectVersion={getBusinessEntityVersion} getObjectVersions={getBusinessEntityVersions} getObject={getBusinessEntity} deleteObject={deleteBusinessEntity}
+        restoreObject={restoreBusinessEntity} updateObject={updateBusinessEntity} tabs={[
+        {
+          key: 'tab-gen',
+          title: i18n('Сведения'),
+          unscrollable: true,
+          content: <div className={styles.tab_2col}>
+            <div className={classNames(styles.col, styles.scrollable)}>
+              <h2>Общая информация</h2>
 
-            <div className={styles.data_row} data-uitest="be_definition">
-                <FieldVisualEditor
+              <FieldTextEditor
                   isReadOnly={isReadOnly}
-                  labelPrefix={`${i18n('Определение')}`}
-                  isRequired
-                  showValidation={showValidation}
-                  defaultValue={data.entity.definition}
-                  className={styles.editor}
+                  label={i18n('Название')}
+                  defaultValue={data.entity.name}
+                  className=''
                   valueSubmitted={(val) => {
-                    updateBEField('definition', val.toString());
+                    updateBEField('name', val);
                   }}
                 />
-            </div>
-          {!isCreateMode && (
-            <div className={styles.data_row} data-uitest="be_parent">
+
               <FieldAutocompleteEditor
-                className={styles.editor}
-                label={i18n('Родитель')}
-                defaultValue={data.entity.parent_id}
-                valueSubmitted={(i) => updateBEField('parent_id', i)}
-                getDisplayValue={getBusinessEntityDisplayValue}
-                getObjects={getParentBEAutocompleteObjects}
-                showValidation={showValidation}
-                artifactType="business_entity"
-                isReadOnly={isReadOnly}
-                allowClear
-              />
-            </div>
-            )}
-        
-            <div className={styles.data_row} data-uitest="be_domain">
-              <FieldAutocompleteEditor
-                className={styles.editor}
                 label={i18n('Домен')}
                 defaultValue={data.entity.domain_id}
                 valueSubmitted={(i) => updateBEField('domain_id', i)}
@@ -484,196 +164,209 @@ export function BusinessEntity() {
                 isReadOnly={isReadOnly}
                 allowClear
               />
-            </div>
-          {!isCreateMode && (
-          <div className={styles.data_row}>
-            <FieldAutocompleteEditor
-              className={styles.editor}
-              label={i18n('Тип данных')}
-              defaultValue={data.entity.datatype_id}
-              valueSubmitted={(i) => updateBEField('datatype_id', i)}
-              getDisplayValue={getDataTypeDisplayValue}
-              getObjects={getDataTypeAutocompleteObjects}
-              showValidation={showValidation}
-              artifactType="datatype"
-              isReadOnly={isReadOnly}
-              allowClear
-            />
-          </div>
-          )}
-        {!isCreateMode && (
-            <div className={styles.data_row}>
+
               <FieldTextareaEditor
+                  isReadOnly={isReadOnly}
+                  label={i18n('Описание')}
+                  defaultValue={data.entity.short_description}
+                  valueSubmitted={(val) => {
+                    updateBEField('short_description', val ?? '');
+                  }}
+                />
+
+              <div data-uitest="be_tag" className={styles.tags_block}>
+                <div className={styles.label}>{i18n('Теги')}</div>
+                <Tags
+                  key={'tags-' + businessEntityId + '-' + businessEntityVersionId + '-' + uuid()}
+                  isReadOnly={isReadOnly}
+                  tags={tags}
+                  tagPrefix='#'
+                  onTagAdded={(tagName: string) => tagAddedHandler(tagName, businessEntityId, 'business_entity', data.metadata.state ?? '', tags, setLoading, setTags, '/business-entities/edit/', navigate)}
+                  onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, businessEntityId, 'business_entity', data.metadata.state ?? '', setLoading, setTags, '/business-entities/edit/', navigate)}
+                />
+              </div>
+            </div>
+            <div className={classNames(styles.col, styles.scrollable)}>
+              <h2>Дополнительные параметры</h2>
+
+              <FieldTextEditor
                 isReadOnly={isReadOnly}
-                labelPrefix={`${i18n('Нормативные документы')}`}
-                isMultiline
-                defaultValue={data.entity.regulation}
-                className={styles.editor}
+                label={i18n('Техническое название')}
+                defaultValue={data.entity.tech_name}
                 valueSubmitted={(val) => {
-                  updateBEField('regulation', val);
+                  updateBEField('tech_name', val);
                 }}
               />
-            </div>
-            )}
-        {!isCreateMode && (
-            <div className={styles.data_row}>
+
+              <FieldTextEditor
+                isReadOnly={isReadOnly}
+                label={i18n('Формула расчета (Бизнес-алгоритм)')}
+                defaultValue={data.entity.formula}
+                valueSubmitted={(val) => {
+                  updateBEField('formula', val);
+                }}
+              />
+
+              <FieldTextEditor
+                isReadOnly={isReadOnly}
+                label={i18n('Примеры значений')}
+                defaultValue={data.entity.examples}
+                valueSubmitted={(val) => {
+                  updateBEField('examples', val);
+                }}
+              />
+
+              <FieldTextEditor
+                isReadOnly={isReadOnly}
+                label={i18n('Ссылка на справочник')}
+                defaultValue={data.entity.link}
+                valueSubmitted={(val) => {
+                  updateBEField('link', val);
+                }}
+              />
+
+              <FieldTextEditor
+                isReadOnly={isReadOnly}
+                label={i18n('Законодательные ограничения')}
+                defaultValue={data.entity.limits}
+                valueSubmitted={(val) => {
+                  updateBEField('limits', val);
+                }}
+              />
+
+              <FieldTextEditor
+                isReadOnly={isReadOnly}
+                label={i18n('Ключевые роли процесса')}
+                defaultValue={data.entity.roles}
+                valueSubmitted={(val) => {
+                  updateBEField('roles', val);
+                }}
+              />
+
+              <FieldAutocompleteEditor
+                label={i18n('Родитель')}
+                defaultValue={data.entity.parent_id}
+                valueSubmitted={(i) => updateBEField('parent_id', i)}
+                getDisplayValue={getBusinessEntityDisplayValue}
+                getObjects={getParentBEAutocompleteObjects}
+                showValidation={showValidation}
+                artifactType="business_entity"
+                isReadOnly={isReadOnly}
+                allowClear
+              />
+
+              <FieldAutocompleteEditor
+                label={i18n('Тип данных')}
+                defaultValue={data.entity.datatype_id}
+                valueSubmitted={(i) => updateBEField('datatype_id', i)}
+                getDisplayValue={getDataTypeDisplayValue}
+                getObjects={getDataTypeAutocompleteObjects}
+                showValidation={showValidation}
+                artifactType="datatype"
+                isReadOnly={isReadOnly}
+                allowClear
+              />
+
+              <FieldTextareaEditor
+                isReadOnly={isReadOnly}
+                label={`${i18n('Нормативные документы')}`}
+                defaultValue={data.entity.regulation}
+                valueSubmitted={(val) => {
+                  updateBEField('regulation', val ?? '');
+                }}
+              />
+
               <FieldArrayEditor
                 isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${i18n('Альтернативные наименования')}`}
+                label={`${i18n('Альтернативные наименования')}`}
                 defaultValue={data.entity.alt_names}
-                className={styles.editor}
                 valueSubmitted={(val) => {
                   updateBEField('alt_names', val);
                 }}
-                isRequired
                 showValidation={showValidation}
                 inputPlaceholder={i18n('Введите наименование')}
                 addBtnText={i18n('Добавить наименование')}
+                displayValueSeparator='; '
               />
+
+              <FieldArrayEditor
+                key={`ed-syn-${businessEntityId}`}
+                getOptions={getBEObjects}
+                isReadOnly={isReadOnly}
+                label={i18n('Синонимы')}
+                defaultValue={selectedSynonymNames}
+                inputPlaceholder={i18n('Выберите')}
+                addBtnText={i18n('Добавить')}
+                valueSubmitted={() => { updateBEField('synonym_ids', data.entity.synonym_ids); }}
+                onValueIdAdded={(id: string) => {
+                  setData((prev:any) => ({ ...prev, entity: { ...prev.entity, synonym_ids: [...prev.entity.synonym_ids, id] } }));
+                }}
+                onValueIdRemoved={(id: string) => {
+                  const arr = [...data.entity.synonym_ids];
+                  arr.splice(parseInt(id), 1);
+                  setData((prev) => ({ ...prev, entity: { ...prev.entity, synonym_ids: arr } }));
+                }}
+              />
+
+              <FieldArrayEditor
+                key={`ed-belnk-${businessEntityId}`}
+                getOptions={getBELinkObjects}
+                isReadOnly={isReadOnly}
+                label={i18n('Ссылки на другие Термины')}
+                defaultValue={selectedBELinkNames}
+                inputPlaceholder={i18n('Выберите')}
+                addBtnText={i18n('Добавить')}
+                valueSubmitted={() => { updateBEField('be_link_ids', data.entity.be_link_ids); }}
+                onValueIdAdded={(id: string) => {
+                  setData((prev:any) => ({ ...prev, entity: { ...prev.entity, be_link_ids: [...prev.entity.be_link_ids, id] } }));
+                }}
+                onValueIdRemoved={(id: string) => {
+                  const arr = [...data.entity.be_link_ids];
+                  arr.splice(parseInt(id), 1);
+                  setData((prev) => ({ ...prev, entity: { ...prev.entity, be_link_ids: arr } }));
+                }}
+              />
+              
             </div>
-            )}
-        {!isCreateMode && (
-            <div className={classNames(styles.data_row, styles.synonyms_row)}>
-              <div className={styles.synonyms_head}>
-                <label>{`${i18n('Синонимы')}:`}</label>
-                {!isReadOnly && (<PlusInCircle onClick={addSynonym} />)}
-              </div>
-              {data.entity.synonym_ids.map((sId, k) => (
-                <div key={`si${k}-${sId}`} className={styles.synonym_item}>
-                  <FieldAutocompleteEditor
-                    key={`se${k}`}
-                    className={styles.long_input}
-                    isReadOnly={isReadOnly}
-                    label=""
-                    defaultValue={sId}
-                    valueSubmitted={(identity) => updateBESynonymId(k, identity)}
-                    getDisplayValue={getBusinessEntityDisplayValue}
-                    getObjects={getBEObjects}
-                  />
-                  {!isReadOnly && (<Close key={`ds${k}`} onClick={() => delSynonym(k)} />)}
-                </div>
-              ))}
-            </div>
+          </div>
+        },
+        {
+          key: 'tab-related',
+          title: i18n('Связи'),
+          content: <div className={styles.tab_white}>
+            <RelatedObjectsControl artifactId={businessEntityId} artifactType='business_entity'></RelatedObjectsControl>
+          </div>
+        },
+        {
+          key: 'tab-desc',
+          title: i18n('Расширенное описание'),
+          content: <div className={styles.tab_transparent}>
 
-        )}
-        {!isCreateMode && (
-            <div className={classNames(styles.data_row, styles.synonyms_row)}>
-              <div className={styles.synonyms_head}>
-                <label>{`${i18n('Ссылки на другие Термины')}:`}</label>
-                {!isReadOnly && (<PlusInCircle onClick={addBELink} />)}
-              </div>
-              {data.entity.be_link_ids.map((sId, k) => (
-                <div key={`si22${k}-${sId}`} className={styles.synonym_item}>
-                  <FieldAutocompleteEditor
-                    key={`se22${k}`}
-                    className={styles.long_input}
-                    isReadOnly={isReadOnly}
-                    label=""
-                    defaultValue={sId}
-                    valueSubmitted={(identity) => updateBELink(k, identity)}
-                    getDisplayValue={getBusinessEntityDisplayValue}
-                    getObjects={getBELinkObjects}
-                  />
-                  {!isReadOnly && (<Close key={`ds22${k}`} onClick={() => delBELink(k)} />)}
-                </div>
-              ))}
-            </div>
-
-        )}
-
-        <RelatedObjectsControl artifactId={businessEntityId} artifactType='business_entity'></RelatedObjectsControl>
-      </div>
-      {!isCreateMode && (
-        <div className={styles.rightBar}>
-          {(data.metadata.state == 'PUBLISHED' || data.metadata.state == 'ARCHIVED') && (
-            <Versions
-              rating={ratingData.rating}
-              ownRating={ownRating}
-              version_id={businessEntityVersionId || data.metadata.version_id}
-              versions={versions}
-              version_url_pattern={`/business-entities/${encodeURIComponent(businessEntityId)}/version/{version_id}`}
-              root_object_url={`/business-entities/edit/${encodeURIComponent(businessEntityId)}`}
-              onRateClick={r => rateClickedHandler(r, businessEntityId, 'business_entity', setOwnRating, setRatingData)}
-            />
-          )}
-          {data.metadata.state === 'PUBLISHED' && (
-            <Responsibles domain_id={(data && data.entity && data.entity.domain_id) ? data.entity.domain_id : null}></Responsibles>
-          )}
-        </div>
-      )}
-
-      <Modal
-        show={showAddEntityDlg}
-        backdrop={false}
-        onHide={handleAddEntityDlgClose}
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Создание новой бизнес-сущности</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Input
-            label={i18n('Название')}
-            value={newEntityData.name}
-            onChange={(e) => {
-              setNewEntityData((prev: any) => ({ ...prev, name: e.target.value }));
-            }}
-          />
-          <Textarea
-            label={i18n('Описание')}
-            value={newEntityData.description}
-            onChange={(e) => {
-              setNewEntityData((prev: any) => ({ ...prev, description: e.target.value }));
-            }}
-          />
-        </Modal.Body>
-        <Modal.Footer>
-          <Button
-            variant="primary"
-            onClick={addEntityDlgSubmit}
-          >
-            Создать
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={handleAddEntityDlgClose}
-          >
-            Отмена
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      <Modal
-        show={showDelEntityDlg}
-        backdrop={false}
-        onHide={handleDelEntityDlgClose}
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>
-            Вы действительно хотите удалить
-            {' '}
-            {delEntityData.name}
-            ?
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body />
-        <Modal.Footer>
-          <Button
-            variant="primary"
-            onClick={() => delEntityDlgSubmit(delEntityData.id)}
-          >
-            Удалить
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={handleDelEntityDlgClose}
-          >
-            Отмена
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      <DeleteObjectModal show={showDelDlg} objectTitle={delObjectData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />
-    </div>
+            <FieldVisualEditor
+                isReadOnly={isReadOnly}
+                defaultValue={data.entity.description}
+                className=''
+                valueSubmitted={(val) => {
+                  updateBEField('description', val);
+                }}
+              />  
+          
+          </div>
+        }, 
+        {
+          key: 'tab-def',
+          title: i18n('Определение'),
+          content: <div className={styles.tab_transparent}>
+            <FieldVisualEditor
+                  isReadOnly={isReadOnly}
+                  defaultValue={data.entity.definition}
+                  valueSubmitted={(val) => {
+                    updateBEField('definition', val);
+                  }}
+                />
+          </div>
+        }
+      ]} />
+    </>
   );
 }

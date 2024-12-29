@@ -19,7 +19,8 @@ import ExportToolIcon from '../../assets/icons/export.svg';
 import CreateToolIcon from '../../assets/icons/create-obj-white.svg';
 import { Button } from '../../components/Button';
 import classNames from 'classnames';
-import Modal from 'react-bootstrap/Modal';import { Input } from '../../components/Input';
+import Modal from 'react-bootstrap/Modal';
+import { Input } from '../../components/Input';
 import { Textarea } from '../../components/Textarea';
 import { createComment, getComments } from '../../services/pages/comments';
 import { Tags } from '../../components/Tags';
@@ -48,6 +49,7 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
     const [linkDlgData, setLinkDlgData] = useState<any>({});
     const [linkTags, setLinkTags] = useState<string[]>([]);
     const [filterLinkTags, setFilterLinkTags] = useState<any>({});
+    const [nodeSearch, setNodeSearch] = useState<string>('');
 
     const diagramRef = useCallback((ref: ReactDiagram | null) => {
         if (ref != null) {
@@ -74,7 +76,7 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
 
     const loadComments = () => {
         getComments('00000000-0000-0000-0000-000000000000').then(json => {
-            console.log('ccc', json);
+            
             setComments(json);
         })
     };
@@ -104,6 +106,14 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
             setLinkDlgData({ id: (e as any).link.data.id, tags: (e as any).link.data.tags });
         })
     }, []);
+
+    useEffect(() => {
+        
+        diagram?.startTransaction('search nodes');
+        setNodeDataArray((prev:any) => (prev.map((n:any) => ({...n, isHighlighted: nodeSearch && (n.name.toLowerCase().indexOf(nodeSearch.toLowerCase()) != -1 || prev.some((n2:any) => n2.group == n.id && n2.name.toLowerCase().indexOf(nodeSearch.toLowerCase()) != -1)), highlightText: nodeSearch}))));
+        diagram?.commitTransaction();
+        
+    }, [ nodeSearch ]);
 
     useEffect(() => {
         getEntitiesModel().then((json:any) => {
@@ -168,7 +178,6 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
                     }
                 }
 
-                console.log('alreadyDroppedElement', alreadyDroppedElement);
                 if (alreadyDroppedElement != null) {
                     diagram?.select(alreadyDroppedElement);
                     diagram?.scrollToRect(alreadyDroppedElement.actualBounds);
@@ -178,7 +187,6 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
 
                     nodeData = getNewNodeDataFromRepo(nodeData, point);
 
-                    console.log('new node data', nodeData);
 
                     getEntityAttributes(nodeData.id).then(json => {
 
@@ -217,8 +225,7 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
 
              setDiagramIsLoading(false);
 
-             setTimeout(function () { filterNodes(); }, 500);
-             
+        
 
         }).catch(handleHttpError);
     }, [ diagram ]);
@@ -306,22 +313,26 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
     };
 
     const filterNodes = () => {
+        diagram?.startTransaction('filter');
         var it = diagram?.nodes;
         while (it?.next()) {
             if (it.value.data.artifactType == 'entity') {
                 let isVisible = true;
-                //if (filterTagNames.length > 0) {
-                    if (!it.value.data.tagNames || it.value.data.tagNames.filter((x:string) => filterTagNames.indexOf(x) !== -1).length == 0)
-                        isVisible = false;
-                //}
+                if (!it.value.data.tagNames || it.value.data.tagNames.filter((x:string) => filterTagNames.indexOf(x) !== -1).length == 0)
+                    isVisible = false;
                 it.value.visible = isVisible;
             }
         }
+        diagram?.commitTransaction();
     };
 
     useEffect(() => {
         filterNodes();
     }, [ filterTagNames ]);
+
+    useEffect(() => {
+        setFilterTagNames(tagNames);
+    }, [ tagNames ]);
 
     useEffect(() => {
         var it = diagram?.links;
@@ -441,21 +452,27 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
                 </div>))}
             </div>)}
             <div className={styles.dg_wrap}>
-                <div className={styles.filter_tags}>
-                    <label>Теги ЛО</label>
-                    <div className={styles.tags_list}>
-                        {tagNames.map((tn, index) => (<Button key={'btn-tag-' + index} className={classNames(styles.btn_filter_tag, { [styles.active]: filterTagNames.indexOf(tn) !== -1 })} onClick={() => clickTagFilter(tn)}>{tn}</Button>))}
+                <div className={styles.topbar}>
+                    <div className={styles.nodes_search}>
+                        <label>Поиск</label>
+                        <Input value={nodeSearch} placeholder={i18n('Искать...')} findBtn onChange={(e) => { setNodeSearch((e.target as any).value); }} enterKeyBlursInput onBlur={(e) => { setNodeSearch((e.target as any).value); }} />
                     </div>
-                </div>
-                {linkTags.length > 0 && (
-                    <div className={styles.lnk_tags_filter}>
-                        <label>Теги связей</label>
+                    <div className={styles.filter_tags}>
+                        <label>Теги моделей</label>
                         <div className={styles.tags_list}>
-                            <Button key={'lnk-tag-filter-empty'} className={classNames(styles.btn_filter, styles.shown, { [styles.active]: filterLinkTags[''] })} onClick={() => { setFilterLinkTags((prev:any) => ({...prev, '': !filterLinkTags[''] })) }}>(без тега)</Button>
-                            {linkTags.map((tn, index) => <Button key={'lnk-tag-filter-' + index} className={classNames(styles.btn_filter, styles.shown, { [styles.active]: filterLinkTags[tn] })} onClick={() => { setFilterLinkTags((prev:any) => ({...prev, [tn]: !filterLinkTags[tn] })) }}>{tn}</Button>)}
+                            {tagNames.map((tn, index) => (<Button key={'btn-tag-' + index} className={classNames(styles.btn_filter_tag, { [styles.active]: filterTagNames.indexOf(tn) !== -1 })} onClick={() => clickTagFilter(tn)}>{tn}</Button>))}
                         </div>
                     </div>
-                )}
+                    {linkTags.length > 0 && (
+                        <div className={styles.lnk_tags_filter}>
+                            <label>Теги связей</label>
+                            <div className={styles.tags_list}>
+                                <Button key={'lnk-tag-filter-empty'} className={classNames(styles.btn_filter, styles.shown, { [styles.active]: filterLinkTags[''] })} onClick={() => { setFilterLinkTags((prev:any) => ({...prev, '': !filterLinkTags[''] })) }}>(без тега)</Button>
+                                {linkTags.map((tn, index) => <Button key={'lnk-tag-filter-' + index} className={classNames(styles.btn_filter, styles.shown, { [styles.active]: filterLinkTags[tn] })} onClick={() => { setFilterLinkTags((prev:any) => ({...prev, [tn]: !filterLinkTags[tn] })) }}>{tn}</Button>)}
+                            </div>
+                        </div>
+                    )}
+                </div>
                 <ReactDiagram ref={diagramRef} initDiagram={initEntitiesDiagram} divClassName={classNames('diagram-div', styles.diagram_div)} nodeDataArray={nodeDataArray} linkDataArray={linkDataArray} modelData={modelData} onModelChange={onModelChange} />
                 <div className={styles.rightToolBar}>
                     <a onClick={() => { diagram?.commandHandler.increaseZoom(); }}><img src={PlusIcon} /></a>
@@ -487,11 +504,11 @@ export function EntitiesModel({ artifactType } : EntitiesModelProps) {
                     <Modal.Title>Связь</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <Tags tags={(linkDlgData.tags ?? []).map((t:any) => ({ id: t.id, value: t.name }))} onTagIdAdded={linkTagIdAdded} onTagIdDeleted={linkTagIdDeleted} />
+                    <Tags tagPrefix='#' tags={(linkDlgData.tags ?? []).map((t:any) => ({ id: t.id, value: t.name }))} onTagIdAdded={linkTagIdAdded} onTagIdDeleted={linkTagIdDeleted} />
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button onClick={onSaveLinkDlg}>OK</Button>
-                    <Button onClick={handleLinkDlgClose}>Отмена</Button>
+                    <Button background='blue' onClick={onSaveLinkDlg}>OK</Button>
+                    <Button background='outlined-blue' onClick={handleLinkDlgClose}>Отмена</Button>
                 </Modal.Footer>
             </Modal>
         </div>

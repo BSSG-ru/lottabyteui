@@ -68,19 +68,10 @@ export const Pagination: FC<PaginationProps> = ({
 
   return (
     <div className={classNames(styles.wrapper, { [className]: className })}>
-      <div className={styles.page_size}>
-        <span>{i18n('Показывать по:')}</span>
-        <select value={paginationPageSize} onChange={(e) => { setPaginationPageSize(parseInt(e.target.value)); setPageSize(parseInt(e.target.value)); }}>
-          <option value="5">5</option>
-          <option value="10">10</option>
-          <option value="25">25</option>
-          <option value="50">50</option>
-        </select>
-      </div>
       <div className={styles.sep}></div>
       {inTotal > 1 ? (
         <>
-          <span className={styles.label}>{label}</span>
+          {label && (<span className={styles.label}>{label}</span>)}
           {inTotal > 1 ? (
             <span>
               <Button
@@ -127,6 +118,16 @@ export const Pagination: FC<PaginationProps> = ({
       ) : (
         ''
       )}
+      
+      <div className={styles.page_size}>
+        <select value={paginationPageSize} onChange={(e) => { setPaginationPageSize(parseInt(e.target.value)); setPageSize(parseInt(e.target.value)); }}>
+          <option value="5">5 / стр.</option>
+          <option value="10">10 / стр.</option>
+          <option value="25">25 / стр.</option>
+          <option value="50">50 / стр.</option>
+        </select>
+      </div>
+      
     </div>
   );
 };

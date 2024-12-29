@@ -5,37 +5,41 @@ import { useNavigate, useParams } from 'react-router-dom';
 import classNames from 'classnames';
 import { v4 } from 'uuid';
 import styles from './Products.module.scss';
-import { doNavigate, getQueryAutocompleteObjects, getQueryDisplayValue, getArtifactUrl, getDQRuleAutocompleteObjects, getDQRuleDisplayValue, getDQRuleSettings, getDomainAutocompleteObjects, getDomainDisplayValue, handleHttpError, i18n, setDataModified, updateArtifactsCount, uuid, getBusinessEntityDisplayValue, loadEditPageData, tagAddedHandler, tagDeletedHandler, rateClickedHandler, updateEditPageReadOnly, setBreadcrumbEntityName, setCookie, getEntityQueryAutocompleteObjects } from '../../utils';
+import { doNavigate, getQueryAutocompleteObjects, getQueryDisplayValue, getArtifactUrl, getDQRuleAutocompleteObjects, getDQRuleDisplayValue, getDQRuleSettings, getDomainAutocompleteObjects, getDomainDisplayValue, handleHttpError, i18n, setDataModified, updateArtifactsCount, uuid, getBusinessEntityDisplayValue, loadEditPageData, tagAddedHandler, tagDeletedHandler, rateClickedHandler, updateEditPageReadOnly, setBreadcrumbEntityName, setCookie, getEntityQueryAutocompleteObjects, getDataModified } from '../../utils';
 import { Tags, TagProp } from '../../components/Tags';
 import { Versions, VersionData } from '../../components/Versions';
 import { FieldArrayEditor } from '../../components/FieldArrayEditor/FieldArrayEditor';
-import { FieldEditor } from '../../components/FieldEditor';
 import { setRecentView } from '../../services/pages/recentviews';
 import { WFItemControl } from '../../components/WFItemControl/WFItemControl';
 import { ReactComponent as CloseIcon } from '../../assets/icons/close.svg';
-import { ReactComponent as PlusInCircle } from '../../assets/icons/plus-in-circle.svg';
+import { ReactComponent as PlusBlue } from '../../assets/icons/plus-blue.svg';
 import {
-  createProduct, searchProducts, getProduct, getProductSupplyVariant, getProductType, getProductVersion, getProductVersions, searchProductSupplyVariants, searchProductTypes, updateProduct, deleteProduct, restoreProductVersion, archiveProduct, restoreProduct,
+  searchProducts, getProduct, getProductSupplyVariant, getProductType, getProductVersion, getProductVersions, searchProductSupplyVariants, searchProductTypes, updateProduct, deleteProduct, restoreProductVersion, archiveProduct, restoreProduct,
 } from '../../services/pages/products';
 import { getIndicator, searchIndicators } from '../../services/pages/indicators';
 import { ProductData, TDQRule, TData } from '../../types/data';
-import { ReactComponent as OrangePencilIcon } from '../../assets/icons/pencil_org.svg';
 import { ReactComponent as PlusIcon } from '../../assets/icons/plus.svg';
 import { ReactComponent as CrossIcon } from '../../assets/icons/cross.svg';
-import { ReactComponent as Close } from '../../assets/icons/close.svg';
 import { Table } from '../../components/Table';
 import { getEntity, getEntityAttribute, getEntityAttributes, searchEntities } from '../../services/pages/dataEntities';
 import { Autocomplete2 } from '../../components/Autocomplete2';
 import { FieldAutocompleteEditor } from '../../components/FieldAutocompleteEditor';
 import { getAsset, searchAssets } from '../../services/pages/dataAssets';
 import { FieldCheckboxEditor } from '../../components/FieldCheckboxEditor/FieldCheckboxEditor';
-import { getBusinessEntities } from '../../services/pages/businessEntities';
+import { getBusinessEntities, getBusinessEntity } from '../../services/pages/businessEntities';
 import { userInfoRequest } from '../../services/auth';
 import { RelatedObjectsControl } from '../../components/RelatedObjectsControl';
-import { Responsibles } from '../../components/Responsibles';
 import { DeleteObjectModal } from '../../components/DeleteObjectModal';
 import { Button } from '../../components/Button';
 import { FieldVisualEditor } from '../../components/FieldVisualEditor';
+import { ArtifactInfo } from '../../components/ArtifactInfo';
+import { Tabs } from '../../components/Tabs';
+import { FieldTextEditor } from '../../components/FieldTextEditor';
+import { FieldTextareaEditor } from '../../components/FieldTextareaEditor';
+import useUrlState from '@ahooksjs/use-url-state';
+import { StaticNoticesArea } from '../../components/StaticNoticesArea';
+import { RatingBlock } from '../../components/RatingBlock';
+import { ArtifactAuthor } from '../../components/ArtifactAuthor';
 
 export type AttribData = {
   id: string;
@@ -45,10 +49,10 @@ export type AttribData = {
 export function Product() {
   const navigate = useNavigate();
 
-  const [, setLoading] = useState(true);
+  const [state, setState] = useUrlState({ sc: 1 }, { navigateMode: 'replace' });
   const [data, setData] = useState<ProductData>({
     entity: {
-      name: '', description: '', indicator_ids: [], entity_attribute_ids: [], domain_id: null, entity_query_id: null, product_ids: [], problem: '', consumer: '', value: '', finance_source: '', product_type_ids: [],
+      name: '', description: '', short_description: '', indicator_ids: [], entity_attribute_ids: [], domain_id: null, entity_query_id: null, product_ids: [], problem: '', consumer: '', value: '', finance_source: '', product_type_ids: [],
       product_supply_variant_ids: [], data_asset_ids: [], dq_rules: [], link: '', limits: '', limits_internal: '', term_link_ids: [], roles: ''
     },
     metadata: { id: '', artifact_type: 'product', version_id: '', tags: [], state: 'PUBLISHED', ancestor_draft_id: '' },
@@ -58,21 +62,24 @@ export function Product() {
   const [versions, setVersions] = useState<VersionData[]>([]);
   const [tags, setTags] = useState<TagProp[]>([]);
 
-  const [isCreateMode, setCreateMode] = useState(false);
+  
   const [showValidation, setShowValidation] = useState(false);
   const [selectedProductNames, setSelectedProductNames] = useState<any[]>([]);
   const [selectedIndicatorNames, setSelectedIndicatorNames] = useState<any[]>([]);
   const [selectedDataAssetNames, setSelectedDataAssetNames] = useState<any[]>([]);
+  const [selectedTermLinkNames, setSelectedTermLinkNames] = useState<any[]>([]);
   const [allowedEntityIds, setAllowedEntityIds] = useState<any[]>([]);
   const [selectedProductTypeNames, setSelectedProductTypeNames] = useState<any[]>([]);
   const [selectedProductSupplyVariantNames, setSelectedProductSupplyVariantNames] = useState<any[]>([]);
-  const [linkedAttribs, setLinkedAttribs] = useState<any>({ items: [] });
+  const [linkedAttribs, setLinkedAttribs] = useState<any[]>([]);
   const [isAttribsEditMode, setAttribsEditMode] = useState<boolean>(false);
   const [attribsEntity, setAttribsEntity] = useState<any>(null);
   const [entitiesCache, setEntityCache] = useState<any>({});
 
   const [isReadOnly, setReadOnly] = useState(true);
+  const [, setLoading] = useState(true);
   const [isLoaded, setLoaded] = useState(false);
+  const [isWFLoading, setWFLoading] = useState<boolean>(false);
 
   const { id, version_id } = useParams();
 
@@ -89,8 +96,8 @@ export function Product() {
     setDataModified(false);
   }, [id, version_id]);
 
-  useEffect(() => {
-    setCreateMode(productId === '');
+  const loadData = () => {
+    
     if (productId) {
       if (!productVersionId) { setRecentView('product', productId); }
 
@@ -102,7 +109,6 @@ export function Product() {
 
       userInfoRequest().then(resp => {
         resp.json().then(data => {
-          //console.log('set userp', data.permissions);
           setCookie('userp', data.permissions.join(','), { path: '/' });
           setData((prev) => ({ ...prev, metadata: { ...prev.metadata, state: 'DRAFT' }, entity: { ...prev.entity, domain_id: data.steward_domains ? data.steward_domains[0] : null } }));
           setDataModified(false);
@@ -112,32 +118,11 @@ export function Product() {
       });
 
     }
-  }, [productId, productVersionId]);
+  }
 
   useEffect(() => {
-    if (isCreateMode) {
-      if (data.entity.name) {
-        createProduct({
-          name: data.entity.name,
-          description: data.entity.description,
-          domain_id: data.entity.domain_id
-        })
-          .then((json) => {
-            setDataModified(false);
-            if (json.metadata.id) {
-              updateArtifactsCount();
-              setProductId(json.metadata.id);
-              window.history.pushState(
-                {},
-                '',
-                `/products/edit/${encodeURIComponent(json.metadata.id)}`,
-              );
-            }
-          })
-          .catch(handleHttpError);
-      }
-    }
-  }, [data]);
+    loadData();
+  }, [productId, productVersionId]);
 
   useEffect(() => {
     setSelectedIndicatorNames(data.entity.indicator_ids.map(x => ''));
@@ -176,6 +161,18 @@ export function Product() {
 
   useEffect(() => {
     const a = [];
+    for (let i = 0; i < data.entity.term_link_ids.length; i++) { a.push(''); }
+    setSelectedTermLinkNames(a);
+
+    data.entity.term_link_ids.forEach((id, index) => {
+      getBusinessEntity(id).then((json) => {
+        setSelectedTermLinkNames((prev) => ([...prev.slice(0, index), `<div><a href="${getArtifactUrl(json.metadata.id, 'business_entity')}">${json.entity.name}</a></div>`, ...prev.slice(index + 1)]));
+      }).catch(handleHttpError);
+    });
+  }, [data.entity.term_link_ids]);
+
+  useEffect(() => {
+    const a = [];
     for (let i = 0; i < data.entity.product_type_ids.length; i++) { a.push(''); }
     setSelectedProductTypeNames(a);
 
@@ -198,44 +195,49 @@ export function Product() {
     });
   }, [data.entity.product_supply_variant_ids]);
 
-  const resetLinkedAttribs = () => {
-    setLinkedAttribs({ items: [] });
+  useEffect( () => {
+    setLinkedAttribs([]);
     (data.entity.entity_attribute_ids ?? []).forEach((aid) => {
       getEntityAttribute(aid).then((json) => {
-        setLinkedAttribs((prev: any) => ({ ...prev, items: [...prev.items, { ...json.entity, id: json.metadata.id }] }));
+        setLinkedAttribs((prev) => ([...prev, { ...json.entity, id: json.metadata.id }]));
       });
     });
-  };
-
-  useEffect(() => {
-    resetLinkedAttribs();
   }, [data.entity.entity_attribute_ids]);
 
   const removeLinkedAttrib = (id: string) => {
-    setLinkedAttribs((prev: any) => ({ ...prev, items: prev.items.filter((x: any) => x.id != id) }));
+    //setLinkedAttribs((prev: any) => ([ ...prev.filter((x: any) => x.id != id) ]));
+
+    updateProductField('entity_attribute_ids', [...data.entity.entity_attribute_ids.filter((x:any) => x != id)]);
+
     setDataModified(true);
   };
 
   useEffect(() => {
-    linkedAttribs.items.filter((i: any) => !i.entity_name).map((item: any) => (item.entity_id)).forEach((eid: string) => {
+    linkedAttribs.filter((i: any) => !i.entity_name).map((item: any) => (item.entity_id)).forEach((eid: string) => {
       if (entitiesCache[eid]) {
-        setLinkedAttribs((prev: any) => ({ ...prev, items: prev.items.map((itm: any) => (itm.entity_id == eid ? { ...itm, entity_name: entitiesCache[eid].entity.name } : itm)) }));
+        const la = [...linkedAttribs.map((itm: any) => (itm.entity_id == eid ? { ...itm, entity_name: entitiesCache[eid].entity.name } : itm)) ];
+        setLinkedAttribs(la);
+        
       } else {
         getEntity(eid).then((jsone) => {
           setEntityCache((prev: any) => ({ ...prev, [eid]: jsone }));
-          setLinkedAttribs((prev: any) => ({ ...prev, items: prev.items.map((itm: any) => (itm.entity_id == eid ? { ...itm, entity_name: jsone.entity.name } : itm)) }));
+          const la = [ ...linkedAttribs.map((itm: any) => (itm.entity_id == eid ? { ...itm, entity_name: jsone.entity.name } : itm)) ];
+          setLinkedAttribs(la);
+          
         }).catch(handleHttpError);
       }
     });
+
+    
   }, [linkedAttribs]);
 
   const addLinkedAttrib = async (id: string) => {
-    if (linkedAttribs.items.filter((attr: AttribData) => attr.id == id).length > 0) {
+    if (linkedAttribs.filter((attr: AttribData) => attr.id == id).length > 0) {
       (window as any).notices.addNotice('error', 'Этот атрибут уже привязан');
       return;
     }
 
-    getEntityAttribute(id).then((json) => {
+    /*getEntityAttribute(id).then((json) => {
       if (entitiesCache[json.entity.entity_id]) {
         const newItems = linkedAttribs.items;
         newItems.push({ ...json.entity, id: json.metadata.id, entity_name: entitiesCache[json.entity.entity_id].entity.name });
@@ -252,32 +254,89 @@ export function Product() {
           setDataModified(true);
         }).catch(handleHttpError);
       }
-    }).catch(handleHttpError);
+    }).catch(handleHttpError);*/
+
+    
+    updateProductField('entity_attribute_ids', [...data.entity.entity_attribute_ids, id]);
   };
 
   const addAllLinkedAttribs = async (entity_id: string) => {
 
-    const newItems = linkedAttribs.items;
+    const newItems = linkedAttribs;
     getEntityAttributes(entity_id).then(json => {
-      console.log('attribs', json);
       if (entitiesCache[entity_id]) {
         json.resources.forEach((attr: any) => {
-          if (linkedAttribs.items.filter((a: AttribData) => a.id == attr.metadata.id).length == 0) {
+          if (linkedAttribs.filter((a: AttribData) => a.id == attr.metadata.id).length == 0) {
             newItems.push({ ...attr.entity, id: attr.metadata.id, entity_name: entitiesCache[entity_id].entity.name });
           }
         });
-        setLinkedAttribs((prev: any) => ({ ...prev, items: newItems }));
+        //setLinkedAttribs(newItems);
+        var ids = [...data.entity.entity_attribute_ids];
+        newItems.forEach(item => {
+          if (data.entity.entity_attribute_ids.indexOf(item.id) == -1)
+            ids.push(item.id);
+        });
+        updateProductField('entity_attribute_ids', ids);
+        
         setDataModified(true);
       } else {
         getEntity(entity_id).then(jsone => {
           setEntityCache((prev: any) => ({ ...prev, [entity_id]: jsone }));
 
           json.resources.forEach((attr: any) => {
-            if (linkedAttribs.items.filter((a: AttribData) => a.id == attr.metadata.id).length == 0) {
+            if (linkedAttribs.filter((a: AttribData) => a.id == attr.metadata.id).length == 0) {
               newItems.push({ ...attr.entity, id: attr.metadata.id, entity_name: jsone.entity.name });
             }
           });
-          setLinkedAttribs((prev: any) => ({ ...prev, items: newItems }));
+          //setLinkedAttribs(newItems);
+          var ids = [...data.entity.entity_attribute_ids];
+          newItems.forEach(item => {
+            if (data.entity.entity_attribute_ids.indexOf(item.id) == -1)
+              ids.push(item.id);
+          });
+          updateProductField('entity_attribute_ids', ids);
+
+          setDataModified(true);
+        }).catch(handleHttpError);
+      }
+    }).catch(handleHttpError);
+
+  };
+
+  const removeAllLinkedAttribs = async (entity_id: string) => {
+
+    const newItems = linkedAttribs;
+    getEntityAttributes(entity_id).then(json => {
+      if (entitiesCache[entity_id]) {
+        json.resources.forEach((attr: any) => {
+          if (linkedAttribs.filter((a: AttribData) => a.id == attr.metadata.id).length == 0) {
+            newItems.push({ ...attr.entity, id: attr.metadata.id, entity_name: entitiesCache[entity_id].entity.name });
+          }
+        });
+        //setLinkedAttribs(newItems);
+        var ids = [...data.entity.entity_attribute_ids];
+        newItems.forEach(item => {
+          ids = ids.filter(x => x != item.id);
+        });
+        updateProductField('entity_attribute_ids', ids);
+        
+        setDataModified(true);
+      } else {
+        getEntity(entity_id).then(jsone => {
+          setEntityCache((prev: any) => ({ ...prev, [entity_id]: jsone }));
+
+          json.resources.forEach((attr: any) => {
+            if (linkedAttribs.filter((a: AttribData) => a.id == attr.metadata.id).length == 0) {
+              newItems.push({ ...attr.entity, id: attr.metadata.id, entity_name: jsone.entity.name });
+            }
+          });
+          //setLinkedAttribs(newItems);
+          var ids = [...data.entity.entity_attribute_ids];
+          newItems.forEach(item => {
+            ids = ids.filter(x => x != item.id);
+          });
+          updateProductField('entity_attribute_ids', ids);
+
           setDataModified(true);
         }).catch(handleHttpError);
       }
@@ -304,8 +363,37 @@ export function Product() {
 
   const getEntityOptions = async (search: string) => searchEntities({ filters: [], filters_for_join: [], global_query: search, limit: 99999, offset: 0, sort: 'name+', state: 'PUBLISHED' }).then((json) => json.items.map((item: any) => ({ value: item.id, id: item.id, label: item.name, name: item.name })).filter((data: any) => allowedEntityIds.indexOf(data.id) != -1));
 
-  const updateProductField = (field: string, value: string | string[] | [] | TDQRule[]) => {
+  const postSaveRequest = async () => {
     if (productId) {
+      
+      return await updateProduct(productId, data.entity)
+        .then((json) => {
+          return json;
+        })
+        .catch(handleHttpError).finally(() => setWFLoading(false));
+    } else
+      return undefined;
+  }
+
+  const saveData = async () => {
+    setWFLoading(true);
+
+    await postSaveRequest().then((json:any) => {
+      setDataModified(false);
+      
+      if (json && json.metadata.id && json.metadata.id !== productId) {
+        navigate(`/products/edit/${encodeURIComponent(json.metadata.id)}`);
+      }
+      
+    }).catch(handleHttpError);
+
+  }
+
+  const updateProductField = (field: string, value: string | undefined | string[] | [] | TDQRule[]) => {
+    setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } }));
+    setDataModified(true);
+
+    /*if (productId) {
       const d: any = {};
       d[field] = value;
       updateProduct(productId, d)
@@ -320,20 +408,11 @@ export function Product() {
       setShowValidation(true);
       setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } }));
       setDataModified(false);
-    }
-  };
-
-  const editAttribsClicked = () => {
-    if (isAttribsEditMode) {
-      setAttribsEditMode(false);
-      resetLinkedAttribs();
-    } else {
-      setAttribsEditMode(true);
-    }
+    }*/
   };
 
   const saveAttribsClicked = () => {
-    updateProductField('entity_attribute_ids', linkedAttribs.items.map((attr: AttribData) => attr.id));
+    updateProductField('entity_attribute_ids', linkedAttribs.map((attr: AttribData) => attr.id));
     setAttribsEditMode(false);
   };
 
@@ -415,15 +494,15 @@ export function Product() {
     filters: [...data.entity.term_link_ids, data.metadata.id, data.metadata.published_id ?? ''].filter((id) => id).map((id) => ({ column: 'id', value: id, operator: 'NOT_EQUAL' })),
     filters_for_join: [],
     state: 'PUBLISHED',
-  }).then((json) => json.items);
+  }).then((json) => json.items.map((item: any) => ({ value: item.id, label: item.name, name: item.name })));
 
   const delDlgSubmit = () => {
     setShowDelDlg(false);
-    setLoading(true);
+    //setLoading(true);
     deleteProduct(delObjectData.id)
       .then(json => {
         updateArtifactsCount();
-        setLoading(false);
+        //setLoading(false);
 
         if (json.metadata && json.metadata.id)
           navigate('/products/edit/' + encodeURIComponent(json.metadata.id));
@@ -432,11 +511,15 @@ export function Product() {
     setDelObjectData({ id: '', name: '' });
   };
 
-  const archiveBtnClicked = () => { archiveProduct(data.metadata.id).then(json => {
+  const archiveBtnClicked = () => { 
+    setWFLoading(true);
+    
+    archiveProduct(data.metadata.id).then(json => {
     if (json.metadata.id && json.metadata.id != productId) {
       navigate(`/products/edit/${encodeURIComponent(json.metadata.id)}`);
     }
     setDataModified(false);
+    setWFLoading(false);
   }).catch(handleHttpError); };
 
   const restoreBtnClicked = () => { restoreProduct(data.metadata.id).then(json => {
@@ -447,169 +530,182 @@ export function Product() {
   }).catch(handleHttpError); };
 
   return (
-    <div className={classNames(styles.page, styles.productPage, { [styles.loaded]: isLoaded })}>
-      <div className={styles.mainContent}>
-        {productVersionId && (
-          <Button onClick={() => {
-            restoreProductVersion(productId, productVersionId).then(json => {
-              setDataModified(false);
-              if (json.metadata.id && json.metadata.id !== productId) {
-                navigate(`/products/edit/${encodeURIComponent(json.metadata.id)}`);
-              } else { setData(json); }
-            }).catch(handleHttpError);
-          }}>{i18n('Восстановить')}</Button>
-        )}
-        {!productVersionId && (
-          <WFItemControl
-            key={`wfc-prod-` + data?.metadata?.workflow_task_id}
-            itemMetadata={data.metadata}
-            itemIsReadOnly={isReadOnly}
-            onEditClicked={() => { setReadOnly(false); }}
-            onArchiveClicked={archiveBtnClicked}
-            onRestoreClicked={restoreBtnClicked}
-            onDeleteClicked={() => { setDelObjectData({ id: data.metadata.id, name: data.entity.name }); setShowDelDlg(true); }}
-            onObjectIdChanged={(id) => {
-              if (id) {
-                setProductId(id);
-                window.history.pushState(
-                  {},
-                  '',
-                  `/products/edit/${encodeURIComponent(id)}`,
-                );
-              } else navigate('/products/');
-            }}
-            onObjectDataChanged={(d) => {
-              setData(d);
-              setDataModified(false);
-              setBreadcrumbEntityName(productId, d.entity.name);
-              setTags(d.metadata.tags ? d.metadata.tags.map((x: any) => ({ value: x.name })) : []);
-              updateEditPageReadOnly(d, setReadOnly, () => { setLoading(false); setLoaded(true); });
-            }}
-          />
-        )}
-        <div className={styles.title}>
-          <FieldEditor
-            isReadOnly={isReadOnly}
-            labelPrefix={`${i18n('ПРОДУКТ')}: `}
-            defaultValue={data.entity.name}
-            className={styles.title}
-            valueSubmitted={(val) => {
-              updateProductField('name', val.toString());
-            }}
-            isRequired
-            onBlur={(val) => {
-              updateProductField('name', val.toString());
-            }}
-            showValidation={showValidation}
-          />
-        </div>
-        {!isCreateMode && data.metadata.state != 'ARCHIVED' && (
-          <button className={styles.btn_scheme} onClick={() => { doNavigate(`/products-model/${encodeURIComponent(productId)}`, navigate); }}>{i18n('Схема')}</button>
-        )}
-        {!isCreateMode && (
-          <div data-uitest="product_tag">
-            <Tags
-              key={'tags-' + productId + '-' + productVersionId + '-' + uuid()}
-              isReadOnly={isReadOnly}
-              tags={tags}
-              onTagAdded={(tagName: string) => tagAddedHandler(tagName, productId, 'product', data.metadata.state ?? '', tags, setLoading, setTags, '/products/edit/', navigate)}
-              onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, productId, 'product', data.metadata.state ?? '', setLoading, setTags, '/products/edit/', navigate)}
+    <div className={classNames(styles.page, styles.transparent, { [styles.loaded]: isLoaded })}>
+      <div className={styles.title_row}>
+        <h1 className={styles.title}>{data.entity.name}</h1>
+        <div className={styles.buttons}>
+          {productVersionId && (
+            <Button onClick={() => {
+              restoreProductVersion(productId, productVersionId).then(json => {
+                setDataModified(false);
+                if (json.metadata.id && json.metadata.id !== productId) {
+                  navigate(`/products/edit/${encodeURIComponent(json.metadata.id)}`);
+                } else { setData(json); }
+              }).catch(handleHttpError);
+            }}>{i18n('Восстановить')}</Button>
+          )}
+          {!productVersionId && (
+            <WFItemControl
+              key={`wfc-prod-` + data?.metadata?.workflow_task_id}
+              itemMetadata={data.metadata}
+              itemIsReadOnly={isReadOnly}
+              saveItem={postSaveRequest}
+              isLoading={isWFLoading}
+              onEditClicked={() => { setReadOnly(false); setDataModified(true); }}
+              onArchiveClicked={archiveBtnClicked}
+              onRestoreClicked={restoreBtnClicked}
+              onDeleteClicked={() => { setDelObjectData({ id: data.metadata.id, name: data.entity.name }); setShowDelDlg(true); }}
+              onCancelEditClicked={() => { loadData(); }}
+              onSaveClicked={saveData}
+              onObjectIdChanged={(id) => {
+                if (id) {
+                  navigate(`/products/edit/${id}`);
+                  /*setProductId(id);
+                  window.history.pushState(
+                    {},
+                    '',
+                    `/products/edit/${encodeURIComponent(id)}`,
+                  );*/
+                } else navigate('/products/');
+              }}
+              onObjectDataChanged={(d) => {
+                setData(d);
+                setDataModified(false);
+                setBreadcrumbEntityName(productId, d.entity.name);
+                setTags(d.metadata.tags ? d.metadata.tags.map((x: any) => ({ value: x.name })) : []);
+                updateEditPageReadOnly(d, setReadOnly, () => {  });
+              }}
             />
-          </div>
-        )}
-        <div className={styles.domain} data-uitest="product_domain">
-          <FieldAutocompleteEditor
-            className={styles.long_input}
-            label={`${i18n('Домен')}: `}
-
-            defaultValue={data.entity.domain_id}
-            valueSubmitted={(i) => updateProductField('domain_id', i)}
-            getDisplayValue={getDomainDisplayValue}
-            getObjects={getDomainAutocompleteObjects}
-            showValidation={showValidation}
-            artifactType="domain"
-            isReadOnly={isReadOnly}
-            allowClear
-          />
+          )}
         </div>
-        {!isCreateMode && (
-          <>
-            <div className={styles.description} data-uitest="product_description">
-              <FieldVisualEditor
-                isReadOnly={isReadOnly}
-                labelPrefix={`${i18n('Описание')}:`}
-                defaultValue={data.entity.description}
-                className={styles.editor}
-                valueSubmitted={(val) => {
-                  updateProductField('description', val.toString());
-                }}
-              />
-            </div>
+      </div>
+      <div className={styles.artifact_info_row}>
+        <ArtifactInfo artifactType='product' state={data.metadata.state} favControl artifactId={productId} />
+        {(data.metadata.state == 'PUBLISHED' || data.metadata.state == 'ARCHIVED') && (
+          <Versions
+            version_id={productVersionId || data.metadata.version_id}
+            versions={versions}
+            version_url_pattern={`/products/${encodeURIComponent(productId)}/version/{version_id}`}
+            root_object={{id: productId, artifact_type: 'product'}}
+          />
+        )}
+        {(data.metadata.state == 'PUBLISHED' || data.metadata.state == 'ARCHIVED') && (
+          <RatingBlock rating={ratingData.rating} ownRating={ownRating} showRating 
+            onRateClick={r => rateClickedHandler(r, productId, 'product', setOwnRating, setRatingData)}
+          />
+        )}
+        <ArtifactAuthor userId={data.metadata.created_by} />
+      </div>
+      <StaticNoticesArea />
+      <Tabs onTabChange={(t: number) => { setState(() => ({ sc: t })); }} tabNumber={state.sc} tabs={[
+        {
+          key: 'tab-gen',
+          title: i18n('Сведения'),
+          unscrollable: true,
+          content: <div className={styles.tab_2col}>
+            <div className={classNames(styles.col, styles.scrollable)}>
+              <h2>Общая информация</h2>
+              {data.metadata.state != 'ARCHIVED' && (
+                <div>
+                <button className={styles.btn_scheme} onClick={() => { doNavigate(`/products-model/${encodeURIComponent(productId)}`, navigate); }}>{i18n('Смотреть схему')}</button>
+                </div>
+              )}
 
-            <div className={styles.problem}>
-              <FieldEditor
+              
+
+              <FieldTextEditor
+                  isReadOnly={isReadOnly}
+                  label={i18n('Название')}
+                  defaultValue={data.entity.name}
+                  className=''
+                  valueSubmitted={(val) => {
+                    updateProductField('name', val);
+                  }}
+                />
+
+              <FieldAutocompleteEditor
+                className=''
+                label={i18n('Домен')}
+                defaultValue={data.entity.domain_id}
+                valueSubmitted={(i) => updateProductField('domain_id', i)}
+                getDisplayValue={getDomainDisplayValue}
+                getObjects={getDomainAutocompleteObjects}
+                showValidation={showValidation}
+                artifactType="domain"
                 isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${`${i18n('Решаемая проблема')}:`} `}
+                allowClear
+              />
+
+              <FieldTextareaEditor
+                  isReadOnly={isReadOnly}
+                  label={i18n('Описание')}
+                  defaultValue={data.entity.short_description}
+                  className=''
+                  valueSubmitted={(val) => {
+                    updateProductField('short_description', val ?? '');
+                  }}
+                />
+
+              
+              <div data-uitest="product_tag" className={styles.tags_block}>
+                <div className={styles.label}>{i18n('Теги')}</div>
+                <Tags
+                  key={'tags-' + productId + '-' + productVersionId + '-' + uuid()}
+                  isReadOnly={isReadOnly}
+                  tags={tags}
+                  tagPrefix='#'
+                  onTagAdded={(tagName: string) => tagAddedHandler(tagName, productId, 'product', data.metadata.state ?? '', tags, setLoading, setTags, '/products/edit/', navigate)}
+                  onTagDeleted={(tagName: string) => tagDeletedHandler(tagName, productId, 'product', data.metadata.state ?? '', setLoading, setTags, '/products/edit/', navigate)}
+                />
+              </div>
+            
+            </div>
+            <div className={classNames(styles.col, styles.scrollable)}>
+              <h2>Дополнительные параметры</h2>
+
+              <FieldTextEditor
+                isReadOnly={isReadOnly}
+                label={i18n('Решаемая проблема')}
                 defaultValue={data.entity.problem}
-                className={styles.long_input}
+                className=''
                 valueSubmitted={(val) => {
-                  updateProductField('problem', val.toString());
-                }}
-                onBlur={(val) => {
                   updateProductField('problem', val);
                 }}
               />
-            </div>
-            <div className={styles.consumer}>
-              <FieldEditor
+
+              <FieldTextEditor
                 isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${`${i18n('Потребитель')}:`} `}
+                label={i18n('Потребитель')}
                 defaultValue={data.entity.consumer}
-                className={styles.long_input}
+                className=''
                 valueSubmitted={(val) => {
-                  updateProductField('consumer', val.toString());
-                }}
-                onBlur={(val) => {
                   updateProductField('consumer', val);
                 }}
               />
-            </div>
-            <div className={styles.value}>
-              <FieldEditor
+
+              <FieldTextEditor
                 isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${`${i18n('Ценность')}:`} `}
+                label={i18n('Ценность')}
                 defaultValue={data.entity.value}
-                className={styles.long_input}
+                className=''
                 valueSubmitted={(val) => {
-                  updateProductField('value', val.toString());
-                }}
-                onBlur={(val) => {
                   updateProductField('value', val);
                 }}
               />
-            </div>
-            <div className={styles.finance_source}>
-              <FieldEditor
+
+              <FieldTextEditor
                 isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${`${i18n('Источник финансирования')}:`} `}
+                label={i18n('Источник финансирования')}
                 defaultValue={data.entity.finance_source}
-                className={styles.long_input}
+                className=''
                 valueSubmitted={(val) => {
-                  updateProductField('finance_source', val.toString());
-                }}
-                onBlur={(val) => {
                   updateProductField('finance_source', val);
                 }}
               />
-            </div>
-            <div className={styles.entity_query} data-uitest="product_entity_query">
+
               <FieldAutocompleteEditor
-                className={styles.long_input}
-                label={`${i18n('Запрос')}:`}
+                className=''
+                label={i18n('Запрос')}
                 defaultValue={data.entity.entity_query_id}
                 valueSubmitted={(i) => updateProductField('entity_query_id', i)}
                 getDisplayValue={getQueryDisplayValue}
@@ -619,14 +715,12 @@ export function Product() {
                 isReadOnly={isReadOnly}
                 allowClear
               />
-            </div>
-            <div className={styles.products} data-uitest="product_product">
+
               <FieldArrayEditor
                 key={`ed-prod-${productId}`}
                 getOptions={getProductOptions}
                 isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${i18n('Продукты')}: `}
+                label={i18n('Продукты')}
                 className={styles.long_input}
                 defaultValue={selectedProductNames}
                 inputPlaceholder={i18n('Выберите продукт')}
@@ -641,14 +735,12 @@ export function Product() {
                   setData((prev) => ({ ...prev, entity: { ...prev.entity, product_ids: arr } }));
                 }}
               />
-            </div>
-            <div className={styles.indicators} data-uitest="product_indicator">
+
               <FieldArrayEditor
                 key={`ed-ind-${productId}`}
                 getOptions={getIndicatorOptions}
                 isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${i18n('Содержит показатели')}: `}
+                label={i18n('Содержит показатели')}
                 className={styles.long_input}
                 defaultValue={selectedIndicatorNames}
                 inputPlaceholder={i18n('Выберите показатель')}
@@ -663,15 +755,13 @@ export function Product() {
                   setData((prev) => ({ ...prev, entity: { ...prev.entity, indicator_ids: arr } }));
                 }}
               />
-            </div>
-            <div className={styles.product_type}>
+
               <FieldArrayEditor
                 key={`ed-ptype-${productId}`}
                 getOptions={getProductTypeOptions}
                 isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${i18n('Тип')}: `}
-                className={styles.long_input}
+                label={i18n('Тип')}
+                className=''
                 defaultValue={selectedProductTypeNames}
                 inputPlaceholder={i18n('Выберите тип продукта')}
                 addBtnText={i18n('Добавить')}
@@ -685,15 +775,13 @@ export function Product() {
                   setData((prev) => ({ ...prev, entity: { ...prev.entity, product_type_ids: arr } }));
                 }}
               />
-            </div>
-            <div className={styles.product_supply_variant}>
+
               <FieldArrayEditor
                 key={`ed-psv-${productId}`}
                 getOptions={getProductSupplyVariantOptions}
                 isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${i18n('Варианты поставки')}: `}
-                className={styles.long_input}
+                label={i18n('Варианты поставки')}
+                className=''
                 defaultValue={selectedProductSupplyVariantNames}
                 inputPlaceholder={i18n('Выберите вариант поставки')}
                 addBtnText={i18n('Добавить')}
@@ -707,15 +795,13 @@ export function Product() {
                   setData((prev) => ({ ...prev, entity: { ...prev.entity, product_supply_variant_ids: arr } }));
                 }}
               />
-            </div>
-            <div className={styles.data_assets} data-uitest="product_da">
+
               <FieldArrayEditor
                 key={`ed-dass-${productId}`}
                 getOptions={getDataAssetOptions}
                 isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${i18n('Источники данных (активы)')}: `}
-                className={styles.long_input}
+                label={i18n('Источники данных (активы)')}
+                className=''
                 defaultValue={selectedDataAssetNames}
                 inputPlaceholder={i18n('Выберите актив')}
                 addBtnText={i18n('Добавить')}
@@ -729,262 +815,236 @@ export function Product() {
                   setData((prev) => ({ ...prev, entity: { ...prev.entity, data_asset_ids: arr } }));
                 }}
               />
-            </div>
-            {!isCreateMode && (
-              <FieldEditor
-                isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${i18n('Ссылка на справочник')}:`}
-                defaultValue={data.entity.link}
-                className={styles.long_input}
-                valueSubmitted={(val) => {
-                  updateProductField('link', val.toString());
-                }}
-              />
-            )}
-            {!isCreateMode && (
-              <FieldEditor
-                isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${i18n('Законодательные ограничения')}:`}
-                defaultValue={data.entity.limits}
-                className={styles.long_input}
-                valueSubmitted={(val) => {
-                  updateProductField('limits', val.toString());
-                }}
-              />
-            )}
-            {!isCreateMode && (
-              <FieldEditor
-                isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${i18n('Внутренние ограничения')}:`}
-                defaultValue={data.entity.limits_internal}
-                className={styles.long_input}
-                valueSubmitted={(val) => {
-                  updateProductField('limits_internal', val.toString());
-                }}
-              />
-            )}
-            {!isCreateMode && (
-              <FieldEditor
-                isReadOnly={isReadOnly}
-                layout="separated"
-                labelPrefix={`${i18n('Ключевые роли процесса')}:`}
-                defaultValue={data.entity.roles}
-                className={styles.long_input}
-                valueSubmitted={(val) => {
-                  updateProductField('roles', val.toString());
-                }}
-              />
-            )}
-            {!isCreateMode && (
-              <div className={classNames(styles.data_row, styles.synonyms_row)}>
-                <div className={styles.synonyms_head}>
-                  <label>{`${i18n('Ссылки на другие Термины')}:`}</label>
-                  {!isReadOnly && (<PlusInCircle onClick={addTermLink} />)}
-                </div>
-                {(data.entity.term_link_ids ?? []).map((sId, k) => (
-                  <div key={`si22${k}-${sId}`} className={styles.synonym_item}>
-                    <FieldAutocompleteEditor
-                      key={`se22${k}`}
-                      className={styles.long_input}
-                      isReadOnly={isReadOnly}
-                      label=""
-                      defaultValue={sId}
-                      valueSubmitted={(identity) => updateTermLink(k, identity)}
-                      getDisplayValue={getBusinessEntityDisplayValue}
-                      getObjects={getTermLinkObjects}
-                    />
-                    {!isReadOnly && (<Close key={`ds22${k}`} onClick={() => delTermLink(k)} />)}
+
+                <FieldTextEditor
+                  isReadOnly={isReadOnly}
+                  label={i18n('Ссылка на справочник')}
+                  defaultValue={data.entity.link}
+                  className=''
+                  valueSubmitted={(val) => {
+                    updateProductField('link', val);
+                  }}
+                />
+                <FieldTextEditor
+                  isReadOnly={isReadOnly}
+                  label={`${i18n('Законодательные ограничения')}:`}
+                  defaultValue={data.entity.limits}
+                  className=''
+                  valueSubmitted={(val) => {
+                    updateProductField('limits', val);
+                  }}
+                />
+                <FieldTextEditor
+                  isReadOnly={isReadOnly}
+                  label={i18n('Внутренние ограничения')}
+                  defaultValue={data.entity.limits_internal}
+                  className=''
+                  valueSubmitted={(val) => {
+                    updateProductField('limits_internal', val);
+                  }}
+                />
+                <FieldTextEditor
+                  isReadOnly={isReadOnly}
+                  label={i18n('Ключевые роли процесса')}
+                  defaultValue={data.entity.roles}
+                  className=''
+                  valueSubmitted={(val) => {
+                    updateProductField('roles', val);
+                  }}
+                />
+
+                <FieldArrayEditor
+                  key={`ed-syn-${productId}`}
+                  getOptions={getTermLinkObjects}
+                  isReadOnly={isReadOnly}
+                  label={i18n('Ссылки на другие Термины')}
+                  defaultValue={selectedTermLinkNames}
+                  inputPlaceholder={i18n('Выберите')}
+                  addBtnText={i18n('Добавить')}
+                  valueSubmitted={() => { updateProductField('term_link_ids', data.entity.term_link_ids); }}
+                  onValueIdAdded={(id: string) => {
+                    setData((prev) => ({ ...prev, entity: { ...prev.entity, term_link_ids: [...prev.entity.term_link_ids, id] } }));
+                  }}
+                  onValueIdRemoved={(id: string) => {
+                    const arr = [...data.entity.term_link_ids];
+                    arr.splice(parseInt(id), 1);
+                    setData((prev) => ({ ...prev, entity: { ...prev.entity, term_link_ids: arr } }));
+                  }}
+                />
+
+              <div className={styles.attributes}>
+                <div className={styles.field_editor}>
+                  <div className={styles.row_h} data-uitest="product_lo_attr">
+                    <div className={styles.value}>{i18n('Атрибуты в связанных дата-активах')}</div>
+                    {!isReadOnly && (
+                      <Autocomplete2
+                        getOptions={getEntityOptions}
+                        defaultOptions
+                        className={styles.select_entity}
+                        placeholder={i18n('Выберите модель...')}
+                        onChanged={(data: any) => { setAttribsEntity(data); }}
+                        defaultInputValue={attribsEntity ? attribsEntity.name : ''}
+                      />
+                    )}
+                    
+
                   </div>
-                ))}
-              </div>
+                  <div className={classNames(styles.row_linked_attribs, { [styles.hidden]: isReadOnly })}>
 
-            )}
-            <div className={styles.attributes}>
-              <div className={`${styles.field_editor} ${styles.long_input}`}>
-                <div className={styles.row_value} data-uitest="product_lo_attr">
-                  <div className={styles.value}>{i18n('Атрибуты в связанных дата-активах') + ':'}</div>
-                  {!isReadOnly && isAttribsEditMode && (
-                    <Autocomplete2
-                      getOptions={getEntityOptions}
-                      defaultOptions
-                      className={styles.select_entity}
-                      placeholder={i18n('Выберите логический объект...')}
-                      onChanged={(data: any) => { setAttribsEntity(data); }}
-                      defaultInputValue={attribsEntity ? attribsEntity.name : ''}
-                    />
-                  )}
-                  {!isReadOnly && (
-                    <a
-                      className={styles.btn_edit}
-                      onClick={editAttribsClicked}
-                    />
-                  )}
-
-                </div>
-                <div className={classNames(styles.row_linked_attribs, { [styles.hidden]: !isAttribsEditMode })}>
-
-                  <div className={styles.tbl}>
-                    <Table
-                      cookieKey='prod-attrs-linked'
-                      key={`tbl-la-${productId}`}
-                      columns={[
-                        { property: 'name', header: i18n('Название') },
-                        { property: 'attribute_type', header: i18n('Тип') },
-                        { property: 'entity_name', header: i18n('Логический объект') },
-                        { property: 'id', header: '', sortDisabled: true, filterDisabled: true, render: (item: any) => { return <div><a onClick={() => removeLinkedAttrib(item.id)} className={classNames(styles.btn_remove_attrib)}><CrossIcon /></a></div>; return <div />; } },
-                      ]}
-                      paginate
-                      dataUrl=""
-                      initialData={linkedAttribs.items}
-                      initialFetchRequest={{ offset: 0, limit: 5, filters: [] }}
-                      fullWidthLayout
-                      columnSearch
-                      subtitle={isAttribsEditMode ? (i18n('Привязанные атрибуты') + (linkedAttribs.items.length == 0 ? ` (${i18n('нет')})` : '')) : ''}
-                      tableButtons={isAttribsEditMode ? [
-                        {
-                          text: 'Отвязать все атрибуты',
-                          onClick: () => {
-                            setLinkedAttribs((prev: any) => ({ ...prev, items: [] }));
-                            setDataModified(true);
+                    <div className={styles.tbl}>
+                      <Table
+                        cookieKey='prod-attrs-linked'
+                        key={`tbl-la-${productId}-${linkedAttribs.length}`}
+                        columns={[
+                          { property: 'name', header: i18n('Название') },
+                          { property: 'attribute_type', header: i18n('Тип') },
+                          { property: 'entity_name', header: i18n('Модель') },
+                          { property: 'id', header: '', sortDisabled: true, filterDisabled: true, render: (item: any) => { return <div><a onClick={() => removeLinkedAttrib(item.id)} className={classNames(styles.btn_remove_attrib)}><CrossIcon /></a></div>; return <div />; } },
+                        ]}
+                        paginate
+                        dataUrl=""
+                        initialData={linkedAttribs ?? []}
+                        initialFetchRequest={{ offset: 0, limit: 5, filters: [] }}
+                        fullWidthLayout
+                        columnSearch
+                        subtitle={isAttribsEditMode ? (i18n('Привязанные атрибуты') + (linkedAttribs.length == 0 ? ` (${i18n('нет')})` : '')) : ''}
+                        tableButtons={isAttribsEditMode ? [
+                          {
+                            text: 'Отвязать все атрибуты',
+                            onClick: () => {
+                              setLinkedAttribs([]);
+                              setDataModified(true);
+                            }
                           }
-                        }
-                      ] : []}
-                    />
+                        ] : []}
+                      />
+                    </div>
                   </div>
-                  {!isReadOnly && isAttribsEditMode && (<a className={styles.btn_save} onClick={saveAttribsClicked}><OrangePencilIcon /></a>)}
+                  {!isReadOnly && attribsEntity && (
+                    <div className={styles.row_entity_attribs}>
+                      <div className={styles.btns}>
+                        <Button background='outlined-blue' onClick={() => { addAllLinkedAttribs(attribsEntity.value); }}>{i18n('Привязать все')}</Button>
+                        <Button background='outlined-blue' onClick={() => { removeAllLinkedAttribs(attribsEntity.value); }}>{i18n('Отвязать все')}</Button>
+                      </div>
+                      <Table
+                        cookieKey='prods-attrs-unlinked'
+                        key={uuid()}
+                        columns={[
+                          { property: 'name', header: i18n('Название') },
+                          { property: 'attribute_type', header: i18n('Тип'), sortDisabled: true, filterDisabled: true },
+                          { property: 'entity_id', header: i18n('Модель'), sortDisabled: true, filterDisabled: true, render: (item: any) => <div>{attribsEntity ? attribsEntity.name : ''}</div> },
+                          { property: 'id', header: '', sortDisabled: true, filterDisabled: true, render: (item: any) => <div><a key={`a${linkedAttribs.length}${item.id}`} onClick={() => { addLinkedAttrib(item.id); }} className={styles.btn_add_attrib}><PlusIcon /></a></div> },
+                        ]}
+                        paginate
+                        dataUrl={attribsEntity ? `/v1/entities/search_attributes_by_entity_id/${encodeURIComponent(attribsEntity.value)}` : ''}
+                        initialFetchRequest={{ sort: 'name+', global_query: '', limit: 5, offset: 5 * (table2page - 1), filters: linkedAttribs.map((la: any) => ({ column: 'id', operator: 'NOT_EQUAL', value: la.id })), filters_preset: [], filters_for_join: [] }}
+                        showCreateBtn={false}
+                        fullWidthLayout
+                        columnSearch
+                        onPageChange={(page) => { setTable2Page(page); }}
+                        subtitle={i18n('Не привязанные атрибуты')}
+                      />
+                    </div>
+                  )}
                 </div>
-                {!isReadOnly && isAttribsEditMode && attribsEntity && (
-                  <div className={styles.row_entity_attribs}>
-                    <Table
-                      cookieKey='prods-attrs-unlinked'
-                      key={uuid()}
-                      columns={[
-                        { property: 'name', header: i18n('Название') },
-                        { property: 'attribute_type', header: i18n('Тип'), sortDisabled: true, filterDisabled: true },
-                        { property: 'entity_id', header: i18n('Логический объект'), sortDisabled: true, filterDisabled: true, render: (item: any) => <div>{attribsEntity ? attribsEntity.name : ''}</div> },
-                        { property: 'id', header: '', sortDisabled: true, filterDisabled: true, render: (item: any) => <div><a key={`a${linkedAttribs.length}${item.id}`} onClick={() => { addLinkedAttrib(item.id); }} className={styles.btn_add_attrib}><PlusIcon /></a></div> },
-                      ]}
-                      paginate
-                      dataUrl={attribsEntity ? `/v1/entities/search_attributes_by_entity_id/${encodeURIComponent(attribsEntity.value)}` : ''}
-                      initialFetchRequest={{ sort: 'name+', global_query: '', limit: 5, offset: 5 * (table2page - 1), filters: linkedAttribs.items.map((la: any) => ({ column: 'id', operator: 'NOT_EQUAL', value: la.id })), filters_preset: [], filters_for_join: [] }}
-                      showCreateBtn={false}
-                      fullWidthLayout
-                      columnSearch
-                      onPageChange={(page) => { setTable2Page(page); }}
-                      subtitle={i18n('Не привязанные атрибуты')}
-                      tableButtons={[
-                        {
-                          text: 'Привязать все', onClick: () => {
-                            addAllLinkedAttribs(attribsEntity.value);
-                          }
-                        }
-                      ]}
-                    />
-                  </div>
-                )}
               </div>
+             
             </div>
-
-          </>
-        )}
-        {!isCreateMode && (
-          <div className={styles.dqrule_wrap}>
-            <div className={styles.dqrule_head}>
-              <label>{`${i18n('Правила проверки качества')}:`}</label>
-              {!isReadOnly && (<PlusInCircle onClick={addDQRule} />)}
-            </div>
-            {data.entity.dq_rules && data.entity.dq_rules.map((v, index) => (
-              <div key={`d${(v as TData).metadata.id}`} className={styles.dqrule_item}>
-                <FieldAutocompleteEditor
-                  key={`se${(v as TData).metadata.id}`}
-                  className={styles.long_input}
-                  isReadOnly={isReadOnly}
-                  label=""
-                  defaultValue={(v as TData).entity.dq_rule_id}
-                  valueSubmitted={(val) => updateDQRuleField(index, (v as TData).metadata.id, 'dq_rule_id', val)}
-                  getDisplayValue={getDQRuleDisplayValue}
-                  getObjects={getDQRuleAutocompleteObjects}
-                  artifactType="dq_rule"
-                />
-                <FieldEditor
-                  key={`fe${(v as TData).metadata.id}`}
-                  isReadOnly={isReadOnly}
-                  labelPrefix={`${i18n('Настройки')}: `}
-                  defaultValue={(v as TData).entity.settings}
-                  className={styles.long_input}
-                  valueSubmitted={(val) => {
-                    updateDQRuleField(index, (v as TData).metadata.id, 'settings', (val as string));
-                  }}
-                  isRequired
-                  isMultiline
-                  onBlur={(val) => {
-                    updateDQRuleField(index, (v as TData).metadata.id, 'settings', (val as string));
-                  }}
-                  showValidation={showValidation}
-                />
-                <FieldCheckboxEditor
-                  key={`ce1${(v as TData).metadata.id}`}
-                  isReadOnly={isReadOnly}
-                  labelPrefix={i18n('Выключена')}
-                  defaultValue={Boolean((v as TData).entity.disabled)}
-                  className=""
-                  layout="separated"
-                  valueSubmitted={(val) => {
-                    updateDQRuleField(index, (v as TData).metadata.id, 'disabled', String(val));
-                  }}
-                  isRequired
-                  showValidation={showValidation}
-                />
-                <FieldCheckboxEditor
-                  key={`ce2${(v as TData).metadata.id}`}
-                  isReadOnly={isReadOnly}
-                  labelPrefix={i18n('Рассылать уведомления об ошибках')}
-                  defaultValue={Boolean((v as TData).entity.send_mail)}
-                  className=""
-                  layout="separated"
-                  valueSubmitted={(val) => {
-                    updateDQRuleField(index, (v as TData).metadata.id, 'send_mail', String(val));
-                  }}
-                  isRequired
-                  showValidation={showValidation}
-                />
-                {!isReadOnly && (
-                  <div key={`d${(v as TData).metadata.id}`} className={styles.dqrule_close}>
-                    <CloseIcon key={`fec${(v as TData).metadata.id}`} onClick={() => delDQRule(index, (v as TData).metadata.id)} />
-                  </div>
-                )}
-              </div>
-            ))}
-
           </div>
-        )}
+        },
+        {
+          key: 'tab-related',
+          title: i18n('Связи'),
+          content: <div className={styles.tab_white}>
+            <RelatedObjectsControl artifactId={productId} artifactType='product'></RelatedObjectsControl>
+          </div>
+        },
+        {
+          key: 'tab-dq',
+          title: i18n('Настройки качества'),
+          content: (
+            <div className={classNames(styles.dqrule_wrap, styles.tab_white)}>
+                  <div className={styles.dqrule_head}>
+                    <label>{`${i18n('Правила проверки качества')}:`}</label>
+                    {!isReadOnly && (<PlusBlue onClick={addDQRule} />)}
+                  </div>
+                  {data.entity.dq_rules && data.entity.dq_rules.map((v, index) => (
+                    <div key={`d${(v as TData).metadata.id ? (v as TData).metadata.id : uuid()}`} className={styles.dqrule_item}>
+                      <FieldAutocompleteEditor
+                        key={`se${(v as TData).metadata.id}`}
+                        className={styles.col1}
+                        isReadOnly={isReadOnly}
+                        label={i18n('Правило')}
+                        defaultValue={(v as TData).entity.dq_rule_id}
+                        valueSubmitted={(val) => updateDQRuleField(index, (v as TData).metadata.id, 'dq_rule_id', val)}
+                        getDisplayValue={getDQRuleDisplayValue}
+                        getObjects={getDQRuleAutocompleteObjects}
+                        artifactType="dq_rule"
+                      />
+                      <FieldTextEditor
+                        key={`fe${(v as TData).metadata.id}`}
+                        isReadOnly={isReadOnly}
+                        className={styles.col2}
+                        label={i18n('Настройки')}
+                        defaultValue={(v as TData).entity.settings}
+                        valueSubmitted={(val) => {
+                          updateDQRuleField(index, (v as TData).metadata.id, 'settings', (val as string));
+                        }}
+                        isRequired
+                        showValidation={showValidation}
+                      />
+                      <FieldCheckboxEditor
+                        key={`ce1${(v as TData).metadata.id}`}
+                        className={styles.col3}
+                        isReadOnly={isReadOnly}
+                        label={i18n('Выключена')}
+                        defaultValue={Boolean((v as TData).entity.disabled)}
+                        valueSubmitted={(val) => {
+                          updateDQRuleField(index, (v as TData).metadata.id, 'disabled', String(val));
+                        }}
+                        isRequired
+                        showValidation={showValidation}
+                      />
+                      <FieldCheckboxEditor
+                        key={`ce2${(v as TData).metadata.id}`}
+                        isReadOnly={isReadOnly}
+                        label={i18n('Рассылать уведомления об ошибках')}
+                        defaultValue={Boolean((v as TData).entity.send_mail)}
+                        className={styles.col4}
+                        valueSubmitted={(val) => {
+                          updateDQRuleField(index, (v as TData).metadata.id, 'send_mail', String(val));
+                        }}
+                        isRequired
+                        showValidation={showValidation}
+                      />
+                      {!isReadOnly && (
+                        <div key={`d${(v as TData).metadata.id}`} className={styles.dqrule_close}>
+                          <CloseIcon key={`fec${(v as TData).metadata.id}`} onClick={() => delDQRule(index, (v as TData).metadata.id)} />
+                        </div>
+                      )}
+                    </div>
+                  ))}
 
-        <RelatedObjectsControl artifactId={productId} artifactType='product'></RelatedObjectsControl>
-      </div>
-      {!isCreateMode && (
-        <div className={styles.rightBar}>
+                </div>
+          )
+        },
+        {
+          key: 'tab-desc',
+          title: i18n('Расширенное описание'),
+          content: <div className={styles.tab_transparent}>
+
+            <FieldVisualEditor
+                isReadOnly={isReadOnly}
+                defaultValue={data.entity.description}
+                className=''
+                valueSubmitted={(val) => {
+                  updateProductField('description', val.toString());
+                }}
+              />  
           
-          {(data.metadata.state == 'PUBLISHED' || data.metadata.state == 'ARCHIVED') && (
-            
-
-            <Versions
-              rating={ratingData.rating}
-              ownRating={ownRating}
-              version_id={productVersionId || data.metadata.version_id}
-              versions={versions}
-              version_url_pattern={`/products/${encodeURIComponent(productId)}/version/{version_id}`}
-              root_object_url={`/products/edit/${encodeURIComponent(productId)}`}
-              onRateClick={r => rateClickedHandler(r, productId, 'product', setOwnRating, setRatingData)}
-            />
-          )}
-          {data.metadata.state === 'PUBLISHED' && (
-            <Responsibles domain_id={(data && data.entity && data.entity.domain_id) ? data.entity.domain_id : null}></Responsibles>
-          )}
-        </div>
-      )}
+          </div>
+        }
+      ]} />
 
       <DeleteObjectModal show={showDelDlg} objectTitle={delObjectData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />
     </div>

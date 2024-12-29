@@ -1,6 +1,6 @@
 {
   "name": "lottabyte-ui",
-  "version": "1.3.0",
+  "version": "0.1.0",
   "private": true,
   "dependencies": {
     "@ahooksjs/use-url-state": "3.5.1",
@@ -30,11 +30,14 @@
     "jquery": "3.7.1",
     "lodash.debounce": "4.0.8",
     "lucide-react": "^0.414.0",
+    "moment": "^2.30.1",
     "primereact": "10.7.0",
     "react": "^18.2.0",
     "react-bootstrap": "2.7.0",
     "react-d3": "0.4.0",
+    "react-datepicker": "^7.5.0",
     "react-dom": "^18.2.0",
+    "react-multi-carousel": "^2.8.5",
     "react-redux": "8.0.4",
     "react-router": "6.4.3",
     "react-router-dom": "6.4.3",

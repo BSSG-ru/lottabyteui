@@ -1,12 +1,11 @@
 
 import './App.css';
 import {
-  Route, BrowserRouter as Router, Routes, Navigate,
+  Route, BrowserRouter as Router, Routes, Navigate, redirect, useNavigate,
 } from 'react-router-dom';
 import { Provider, useSelector } from 'react-redux';
 import React from 'react';
 import { Layout } from './hoc/Layout';
-import { Controls } from './pages/Controls';
 import { SignIn } from './pages/SignIn';
 import { SignUp } from './pages/SignUp';
 import { Domains, Domain } from './pages/Domains';
@@ -23,14 +22,9 @@ import { authValidate } from './redux/selectors';
 import { Loading } from './pages/Loading';
 import { DataAsset, DataAssets } from './pages/DataAssets';
 import { Error } from './pages/Error';
-import { SettingsUsers } from './pages/SettingsUsers';
 import { SettingsUser } from './pages/SettingsUsers/SettingsUser';
-import { SettingsConnections } from './pages/SettingsConnections';
 import { SettingsConnection } from './pages/SettingsConnections/SettingsConnection';
-import { SettingsRoles } from './pages/SettingsRoles';
 import { SettingsRole } from './pages/SettingsRoles/SettingsRole';
-import { SettingsStewards } from './pages/SettingsStewards';
-import { SettingsSteward } from './pages/SettingsStewards/SettingsSteward';
 import { Indicators } from './pages/Indicators';
 import { Indicator } from './pages/Indicators/Indicator';
 import { BusinessEntities } from './pages/BusinessEntities';
@@ -39,7 +33,6 @@ import { Settings } from './pages/Settings';
 import { Products } from './pages/Products';
 import { Product } from './pages/Products/Product';
 import { SettingsGroup } from './pages/SettingsGroups/SettingsGroup';
-import { SettingsGroups } from './pages/SettingsGroups/SettingsGroups';
 import { Account } from './pages/Account/Account';
 import { EntitiesModel } from './pages/EntitiesModel/EntitiesModel';
 import { DQRules } from './pages/DQRules';
@@ -47,8 +40,9 @@ import { DQRule } from './pages/DQRules/DQRule';
 import { ArtifactModel } from './pages/ArtifactModel';
 import { FrontPage } from './pages/FrontPage';
 import { Drafts } from './pages/Drafts';
-import { SettingsWorkflow } from './pages/SettingsWorkflow';
 import { SettingsWorkflowEdit } from './pages/SettingsWorkflow/SettingsWorkflowEdit';
+import { MetaDataList } from './pages/MetaData';
+import { MetaDatabase } from './pages/MetaData/MetaDatabase';
 
 function APP() {
   let validate = useSelector(authValidate);
@@ -116,32 +110,12 @@ function APP() {
               element={<Settings />}
             />
             <Route
-              path="/settings/connections"
-              element={<SettingsConnections />}
-            />
-            <Route
               path="/settings/connections/edit/:id"
               element={<SettingsConnection />}
             />
             <Route
               path="/settings/connections/edit/"
               element={<SettingsConnection />}
-            />
-            <Route
-              path="/settings/stewards"
-              element={<SettingsStewards />}
-            />
-            <Route
-              path="/settings/stewards/edit/:id"
-              element={<SettingsSteward />}
-            />
-            <Route
-              path="/settings/stewards/edit/"
-              element={<SettingsSteward />}
-            />
-            <Route
-              path="/settings/users"
-              element={<SettingsUsers />}
             />
             <Route
               path="/settings/users/edit/:id"
@@ -152,10 +126,6 @@ function APP() {
               element={<SettingsUser />}
             />
             <Route
-              path="/settings/groups"
-              element={<SettingsGroups />}
-            />
-            <Route
               path="/settings/groups/edit/:id"
               element={<SettingsGroup />}
             />
@@ -163,20 +133,11 @@ function APP() {
               path="/settings/groups/edit/"
               element={<SettingsGroup />}
             />
-            <Route path="/settings/workflows" element={<SettingsWorkflow />} />
             <Route path="/settings/workflows/edit" element={<SettingsWorkflowEdit />} />
             <Route path="/settings/workflows/edit/:id" element={<SettingsWorkflowEdit />} />
             <Route
               path="/domains"
               element={<Domains />}
-            />
-            <Route
-              path="/controls"
-              element={<Controls />}
-            />
-            <Route
-              path="/settings/roles"
-              element={<SettingsRoles />}
             />
             <Route
               path="/settings/roles/edit/"
@@ -289,11 +250,11 @@ function APP() {
               element={<BusinessEntity />}
             />
             <Route
-              path="/quality-tasks"
+              path="/dq_rule/quality-tasks"
               element={<QualityTasks />}
             />
             <Route
-              path="/quality-schedule-tasks"
+              path="/dq_rule/quality-schedule-tasks"
               element={<QualityTaskSchedule />}
             />
             <Route
@@ -368,6 +329,9 @@ function APP() {
               path="/data_assets/edit/"
               element={<DataAsset />}
             />
+            <Route path="/metadata" element={<MetaDataList />} />
+            <Route path="/metadata/:id" element={<MetaDatabase />} />
+            <Route path="/metadata/:id/version/:version_id" element={<MetaDatabase />} />
             <Route
               path="/search"
               element={<Search />}

@@ -38,7 +38,7 @@ export const archiveSystem = async (systemId: string) => fetchWithRefresh(`${URL
   handleHttpResponse,
 );
 
-export const restoreSysten = async (systemId: string) => fetchWithRefresh(`${URL}/v1/systems/restore/${encodeURIComponent(systemId)}`, optionsPost()).then(
+export const restoreSystem = async (systemId: string) => fetchWithRefresh(`${URL}/v1/systems/restore/${encodeURIComponent(systemId)}`, optionsPost()).then(
   handleHttpResponse,
 );
 

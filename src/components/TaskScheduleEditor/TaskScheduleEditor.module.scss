@@ -1,11 +1,9 @@
-.tr_date, .tr_time, .tr_wday, .tr_cron {
-    th {
-        text-align: right;
+.label {
+    font-size: 14px;
+    color: #717681;
+}
 
-        label {
-            text-transform: none !important;
-        }
-    }
+.tr_date, .tr_time, .tr_wday, .tr_cron {
 
     td {
         display: flex;

@@ -1,23 +1,28 @@
 
 import React, { useEffect, useState } from 'react';
-import Modal from 'react-bootstrap/Modal';
-import Button from 'react-bootstrap/Button';
 import useUrlState from '@ahooksjs/use-url-state';
 import styles from './Domains.module.scss';
 import { getTablePageSize, handleHttpError, i18n, updateArtifactsCount } from '../../utils';
 import { renderDate, Table, TableDataRequest } from '../../components/Table';
 import { Loader } from '../../components/Loader';
-import { deleteDomain } from '../../services/pages/domains';
+import { createDomain, deleteDomain } from '../../services/pages/domains';
 import { useNavigate } from "react-router-dom";
+import classNames from 'classnames';
+import { Button } from '../../components/Button';
+import { DeleteObjectModal } from '../../components/DeleteObjectModal';
+import { ModalDlg } from '../../components/ModalDlg';
+import { FieldTextEditor } from '../../components/FieldTextEditor';
 
 export function Domains() {
   const navigate = useNavigate();
   const [state, setState] = useUrlState({ p: '1', q: undefined }, { navigateMode: 'replace' });
-  const [loading, setLoading] = useState(false);
-  const [data] = useState([]);
+  const [loaded, setLoaded] = useState(true);
 
   const [showDelDlg, setShowDelDlg] = useState(false);
   const [delDomainData, setDelDomainData] = useState<any>({ id: '', name: '' });
+  const [showCreateDlg, setShowCreateDlg] = useState(false);
+  const [showCreateValidation, setShowCreateValidation] = useState(false);
+  const [createData, setCreateData] = useState({ name: '' });
 
   const columns = [
     { property: 'id', header: 'ID', isHidden: true },
@@ -26,12 +31,12 @@ export function Domains() {
       header: i18n('Koд'),
       sortDisabled: true,
       filterDisabled: true,
+      width: '55px'
     },
     {
       property: 'name',
       header: i18n('Название'),
     },
-    //{ property: 'description', header: i18n('Описание') },
     {
       property: 'modified',
       header: i18n('Дата создания'),
@@ -41,7 +46,8 @@ export function Domains() {
       property: 'stewards',
       header: i18n('Ответственный'),
       sortDisabled: true,
-      render: (row: any) => row.stewards.map((x:any) => { return x.name; }).join(', '),
+      
+      render: (row: any) => <div className={styles.pills}>{row.stewards.map((st:any, i:number) => <span key={`st-pill-${row.id}-${i}`} className={styles.pill}>{st.name}</span>)}</div>,
     },
     {
       property: 'workflow_state',
@@ -56,7 +62,7 @@ export function Domains() {
       header: i18n('Теги'),
       filterDisabled: false,
       sortDisabled: true,
-      render: (row: any) => row.tags.join(', '),
+      render: (row: any) => <div className={styles.pills}>{row.tags.map((tag:any, i:number) => <span key={`tag-pill-${row.id}-${i}`} className={styles.pill}>#{tag}</span>)}</div>,
     }
   ];
 
@@ -67,11 +73,9 @@ export function Domains() {
 
   const delDlgSubmit = () => {
     setShowDelDlg(false);
-    setLoading(true);
     deleteDomain(delDomainData.id)
       .then(json => {
         updateArtifactsCount();
-        setLoading(false);
 
         if (json.metadata && json.metadata.id)
           navigate('/domains/edit/' + encodeURIComponent(json.metadata.id));
@@ -79,6 +83,19 @@ export function Domains() {
       .catch(handleHttpError);
     setDelDomainData({ id: '', name: '' });
   };
+
+  const submitCreate = () => {
+    if (createData.name) {
+      setShowCreateDlg(false);
+
+      createDomain(createData).then(json => {
+        if (json && json.metadata.id) {
+          navigate(`/domains/edit/${encodeURIComponent(json.metadata.id)}`);
+        }
+      }).catch(handleHttpError)
+    } else
+      setShowCreateValidation(true);
+  }
 
   const [limitSteward, setLimitSteward] = useState((window as any).limitStewardSwitch ? (window as any).limitStewardSwitch.getLimitSteward() : true);
 
@@ -89,108 +106,55 @@ export function Domains() {
   }, []);
 
   return (
-    <div className={styles.page}>
-      {loading ? (
+    <div className={classNames(styles.page, styles.scrollable, { [styles.loaded]: loaded })}>
+      {!loaded ? (
         <Loader className="centrify" />
       ) : (
         <>
-          <div className={styles.title}>{`${i18n('ДОМЕНЫ')}`}</div>
-          {data ? (
-            <Table
-              cookieKey='domains'
-              className={styles.table}
-              columns={columns}
-              paginate
-              columnSearch
-              globalSearch
-              dataUrl="/v1/domains/search"
-              limitSteward={limitSteward}
-              supportsWorkflow
-              initialFetchRequest={{
-                sort: 'name+',
-                global_query: state.q !== undefined ? state.q : '',
-                limit: getTablePageSize(),
-                offset: (state.p - 1) * getTablePageSize(),
-                filters: [],
-                filters_preset: [],
-                filters_for_join: [],
-              }}
-              showCreateBtn
-              onCreateBtnClick={() => {
-                navigate("/domains/edit/");
-              }}
-              onRowClick={(row: any) => {
-                navigate(`/domains/edit/${encodeURIComponent(row.id)}`);
-              }}
-              renderActionsPopup={(row: any) => (
-                <div>
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      navigate('/domains/edit/');
-                      return false;
-                    }}
-                    className={styles.btn_create}
-                  />
-                  <a
-                    href={`/domains/edit/${encodeURIComponent(row.id)}`}
-                    className={styles.btn_edit}
-                    onClick={(e) => { e.preventDefault(); navigate(`/domains/edit/${encodeURIComponent(row.id)}`); }}
-                  />
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      setDelDomainData({ id: row.id, name: row.name });
-                      setShowDelDlg(true);
-                      return false;
-                    }}
-                    className={styles.btn_del}
-                  />
-                </div>
-              )}
-              onPageChange={(page: number) => (
-                setState(() => ({ p: page }))
-              )}
-              onQueryChange={(query: string) => (
-                setState(() => ({ p: undefined, q: query }))
-              )}
-            />
-          ) : (
-            ''
-          )}
+          <div className={styles.title}>{`${i18n('Домены')}`}<Button background='blue' onClick={() => { setShowCreateValidation(false); setShowCreateDlg(true); }}>Создать домен</Button></div>
+          
+          <Table
+            artifactType='domain'
+            cookieKey='domains'
+            className={styles.table}
+            columns={columns}
+            paginate
+            columnSearch
+            globalSearch
+            dataUrl="/v1/domains/search"
+            limitSteward={limitSteward}
+            supportsWorkflow
+            initialFetchRequest={{
+              sort: 'name+',
+              global_query: state.q !== undefined ? state.q : '',
+              limit: getTablePageSize(),
+              offset: (state.p - 1) * getTablePageSize(),
+              filters: [],
+              filters_preset: [],
+              filters_for_join: [],
+            }}
+            onRowClick={(row: any) => {
+              navigate(`/domains/edit/${encodeURIComponent(row.id)}`);
+            }}
+            onDeleteClicked={(row:any) => {
+              setDelDomainData({ id: row.id, name: row.name });
+              setShowDelDlg(true);
+            }}
+            onPageChange={(page: number) => (
+              setState(() => ({ p: page }))
+            )}
+            onQueryChange={(query: string) => (
+              setState(() => ({ p: undefined, q: query }))
+            )}
+          />
+          
 
-          <Modal
-            show={showDelDlg}
-            backdrop={false}
-            onHide={handleDelDlgClose}
-          >
-            <Modal.Header closeButton>
-              <Modal.Title>
-                Вы действительно хотите удалить
-                {` ${delDomainData.name}`}
-                ?
-              </Modal.Title>
-            </Modal.Header>
-            <Modal.Body />
-            <Modal.Footer>
-              <Button
-                variant="primary"
-                onClick={() => delDlgSubmit()}
-              >
-                Удалить
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={handleDelDlgClose}
-              >
-                Отмена
-              </Button>
-            </Modal.Footer>
-          </Modal>
+          <DeleteObjectModal show={showDelDlg} objectTitle={delDomainData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />
+          <ModalDlg show={showCreateDlg} title={i18n('Создать домен')} cancelBtnText={i18n('Отменить')} submitBtnText={i18n('Создать')} onClose={() => setShowCreateDlg(false)} dialogClassName={styles.dlg_create} onSubmit={submitCreate}>
+            <div className={styles.fields}>
+                <FieldTextEditor label={i18n('Название домена')} isRequired showValidation={showCreateValidation} className='' defaultValue='' valueSubmitted={(v) => setCreateData((prev) => ({...prev, name: v ?? ''}))} />
+            </div>
+          </ModalDlg>
         </>
       )}
     </div>
