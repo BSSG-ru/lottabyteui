@@ -1,6 +1,6 @@
 /* eslint-disable react/require-default-props */
 import classNames from 'classnames';
-import React, { FC, KeyboardEvent, useState } from 'react';
+import React, { FC, FocusEvent, KeyboardEvent, useState } from 'react';
 import { ReactComponent as SearchSmaller } from '../../assets/icons/search-smaller.svg';
 import { ReactComponent as Filters } from '../../assets/icons/filters.svg';
 import styles from './Input.module.scss';
@@ -14,6 +14,7 @@ export type InputProps = {
   customKeyDownHandler?: CustomKeyDownHandler;
   customKeyUpHandler?: CustomKeyUpHandler;
   customSelectHandler?: CustomSelectHandler;
+  customFocusHandler?: CustomFocusHandler;
   placeholder?: string;
   label?: string;
   className?: string;
@@ -26,11 +27,13 @@ export type InputProps = {
   inputStyle?: string;
   readonly?: boolean;
   enterKeyBlursInput?: boolean;
+  disableAutocomplete?: boolean;
 };
 
 type CustomKeyDownHandler = (e: KeyboardEvent) => void;
 type CustomKeyUpHandler = (e: KeyboardEvent) => void;
 type CustomSelectHandler = (e: any) => void;
+type CustomFocusHandler = (e: FocusEvent) => void;
 
 const keyDownHandler = (e: KeyboardEvent, customKeyDownHandler: CustomKeyDownHandler) => {
   customKeyDownHandler(e);
@@ -54,11 +57,13 @@ export const Input: FC<InputProps> = ({
   customKeyDownHandler = () => {},
   customKeyUpHandler = () => {},
   customSelectHandler = () => {},
+  customFocusHandler = () => {},
   onBlur = () => {},
   label = '',
   className,
   readonly = false,
-  enterKeyBlursInput = true
+  enterKeyBlursInput = true,
+  disableAutocomplete
 }) => {
   const localClassName = className ?? '';
 
@@ -97,8 +102,10 @@ export const Input: FC<InputProps> = ({
         onKeyDown={(e) => enterKeyBlursInput ? keyDownHandler(e, customKeyDownHandler) : customKeyDownHandler(e)}
         onKeyUp={(e) => customKeyUpHandler(e)}
         onSelect={(e) => customSelectHandler(e)}
+        onFocus={(e) => customFocusHandler(e)}
         onBlur={onBlur}
         id={id ?? ''}
+        autoComplete={disableAutocomplete ? 'off': ''}
       />
       {type === 'password' ? (
         <Checkbox

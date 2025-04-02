@@ -117,6 +117,29 @@ export type IndicatorData = {
     metadata: ArtifactMetaData;
 };
 
+export type ArtifactData = {
+    id: string;
+    artifact_type: string;
+}
+
+export type ETLEntityData = {
+    name: string;
+    description: string;
+    short_description: string;
+    code: string;
+    algorithm: string;
+    system_id: string | null;
+    etl_type_id: string;
+    business_entity_ids: string[];
+    source_ids: ArtifactData[];
+    target_ids: ArtifactData[];
+};
+
+export type ETLData = {
+    entity: ETLEntityData;
+    metadata: ArtifactMetaData;
+};
+
 export type DQRuleEntityData = {
     name: string;
     description: string;

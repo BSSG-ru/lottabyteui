@@ -1,3 +1,5 @@
+@import '../../assets/css/common.scss';
+
 .content {
     display: flex;
     position: relative;
@@ -31,4 +33,68 @@
 .crumbs_placeholder {
     display: block;
     height: 20px;
+}
+
+
+
+.smartchat {
+    @include white-block;
+    margin-top: 20px;
+
+    .chat_head {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        margin-bottom: 12px;
+        gap: 12px;
+
+        .title {
+            flex: 1 1;
+            font-weight: 700;
+        }
+
+        .right {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 12px;
+
+            .btn_close {
+                line-height: 0;
+                display: block;
+            }
+
+            .sep {
+                background: #D5D8DE;
+                width: 1px;
+                height: 20px;
+                flex: 0 0 1px;
+            }
+        }
+    }
+
+    .chat_body {
+        position: relative;
+
+        .chat_stub {
+            background: url(../../assets/images/chat.png) no-repeat;
+            width: 272px;
+            height: 520px;
+            background-size: contain;
+            opacity: 0.3;
+        }
+
+        .slogan {
+            font-size: 46px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+    }
 }

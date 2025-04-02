@@ -1,0 +1,29 @@
+@import '../../assets/css/common.scss';
+
+.display_value {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+
+    > div {
+        @include pill-grey-big;
+
+        display: flex;
+        align-items: center;
+
+        a {
+            color: var(--neutral50);
+            display: block;
+        }
+    }
+}
+
+.value {
+    a {
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 150px;
+    }
+}

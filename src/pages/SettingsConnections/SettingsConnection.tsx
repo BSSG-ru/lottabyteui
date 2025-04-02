@@ -15,6 +15,7 @@ import useUrlState from '@ahooksjs/use-url-state';
 import classNames from 'classnames';
 import { FieldTextEditor } from '../../components/FieldTextEditor';
 import { EditPage } from '../../components/EditPage';
+import { userInfoRequest } from '../../services/auth';
 
 export function SettingsConnection() {
   const navigate = useNavigate();
@@ -41,6 +42,15 @@ export function SettingsConnection() {
     if (!connectionId && id) setConnectionId(id);
   }, [id]);
 
+  useEffect(() => {
+    userInfoRequest().then(resp => {
+      resp.json().then(data => {
+        if (data.permissions.filter((x:String) => x == 'settings_r').length > 0)
+          setLoaded(true);
+      });
+    }).catch(handleHttpError);
+  }, []);
+
   const loadData = () => {
     if (connectionId) {
       getSystemConnection(connectionId)
@@ -57,7 +67,6 @@ export function SettingsConnection() {
           const el = document.getElementById(`crumb_${connectionId}`);
           if (el) el.innerText = json.entity.name;
           setLoading(false);
-          setLoaded(true);
         })
         .catch(handleHttpError);
     }
@@ -102,7 +111,7 @@ export function SettingsConnection() {
 
   return (
     <>
-      <EditPage noRecentViews noRating data={data} objectId={connectionId} objectVersionId='' urlSlug='settings/connections' setData={setData} isReadOnly={false} setReadOnly={() => {}} artifactType='system_connection' 
+      {isLoaded && (<EditPage noRecentViews noRating data={data} objectId={connectionId} objectVersionId='' urlSlug='settings/connections' setData={setData} isReadOnly={false} setReadOnly={() => {}} artifactType='system_connection' 
         updateObject={updateSystemConnection}
         getObject={getSystemConnection} tabs={[
         {
@@ -142,7 +151,7 @@ export function SettingsConnection() {
               
           </div>
         }
-      ]} />
+      ]} />)}
       
     </>
   );

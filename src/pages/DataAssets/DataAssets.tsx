@@ -140,6 +140,7 @@ export function DataAssets() {
             onRowClick={(row: any) => {
               navigate(`/data_assets/edit/${encodeURIComponent(row.id)}`);
             }}
+            onEditClicked={(row:any) => { navigate(`/data_assets/edit/${encodeURIComponent(row.id)}`); }}
             onDeleteClicked={(row: any) => {
               setDelObjectData({ id: row.id, name: row.name });
               setShowDelDlg(true);
@@ -150,6 +151,7 @@ export function DataAssets() {
             onQueryChange={(query: string) => (
               setState(() => ({ p: undefined, q: query }))
             )}
+            allowTilesView
           />
           
           <DeleteObjectModal show={showDelDlg} objectTitle={delObjectData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />

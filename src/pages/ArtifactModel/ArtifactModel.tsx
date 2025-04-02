@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import * as go from 'gojs';
 import styles from './ArtifactModel.module.scss';
 import { ReactDiagram } from 'gojs-react';
-import { initArtifactDiagram, initEntitiesDiagram, SaveRequestData } from '../../gojs-utils';
+import { initArtifactDiagram, SaveRequestData } from '../../gojs-utils';
 import '../../gojs-controls';
 import { getEntitiesModel } from '../../services/pages/dataEntities';
 import { handleHttpError, i18n, uuid, getArtifactTypeDisplayName, getCookie, setCookie } from '../../utils';
@@ -47,7 +47,8 @@ export function ArtifactModel({ artifactType } : ArtifactModelProps) {
         entity_sample: { left: [ 'system', 'meta_object' ], right: [ 'product', 'indicator', 'data_asset' ] },
         entity: { left: [], right: [ 'data_asset', 'product', 'indicator' ] },
         entity_query: { left: [ 'system' ], right: [ 'domain', 'product', 'indicator', 'data_asset' ] },
-        system: { left: [], right: [ 'product', 'indicator', 'data_asset' ] }
+        system: { left: [], right: [ 'product', 'indicator', 'data_asset' ] },
+        etl: { left: [], right: [] }
     };
 
     const [filterArtifactTypes, setFilterArtifactTypes] = useState<any>({
@@ -60,7 +61,8 @@ export function ArtifactModel({ artifactType } : ArtifactModelProps) {
         product: true,
         business_entity: true,
         domain: true,
-        meta_object: true
+        meta_object: true,
+        etl: true
       });
 
     const { id } = useParams();
@@ -393,7 +395,7 @@ export function ArtifactModel({ artifactType } : ArtifactModelProps) {
                             key={uuid()} 
                             className={classNames(styles.btn_filter, { 
                                 [styles.active]: filterArtifactTypes[at], 
-                                [styles.shown]: ([ artifactType, 'domain', 'entity', 'entity_query', 'business_entity', 'entity_sample', 'meta_object' ].some(x => (x == at)) || (filterLineageDirs.right && lineageStruct[artifactType]['right'].some((e:string) => e == at)) || (filterLineageDirs.left && lineageStruct[artifactType]['left'].some((e:string) => e == at))) 
+                                [styles.shown]: ([ artifactType, 'domain', 'entity', 'entity_query', 'business_entity', 'entity_sample', 'meta_object', 'etl' ].some(x => (x == at)) || (filterLineageDirs.right && lineageStruct[artifactType]['right'].some((e:string) => e == at)) || (filterLineageDirs.left && lineageStruct[artifactType]['left'].some((e:string) => e == at))) 
                             })} 
                             onClick={() => { setFilterArtifactTypes((prev:any) => ({...prev, [at]: !filterArtifactTypes[at]})) }}
                             >{getArtifactTypeDisplayName(at)}</Button>

@@ -11,12 +11,11 @@ import styles from './RadioButton.module.scss';
 
 type RadioButtonProps = {
   checked?: boolean;
-  name: string;
   id: string;
   label?: string;
   value?: string;
   className?: string;
-  onChange?: (e: ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (check: boolean) => void;
 };
 
 export const RadioButton: FC<RadioButtonProps> = ({
@@ -24,42 +23,23 @@ export const RadioButton: FC<RadioButtonProps> = ({
   checked,
   className = '',
   id,
-  name,
   value,
   label = '',
 }) => {
-  const [check, setCheck] = useState(false);
 
   useEffect(() => {
-    setCheck(checked ?? false);
+    console.log('ch', checked);
   }, [checked]);
 
   return (
     <span
       className={classNames(
         styles.wrapper,
-        { [styles.wrapper_active]: check },
+        { [styles.wrapper_active]: checked },
         { [className]: className },
       )}
     >
-      <input
-        className={styles.input}
-        name={name}
-        type="radio"
-        checked={check}
-        id={id}
-        value={value}
-        onChange={(e) => {
-          onChange(e);
-          setCheck((prev) => (prev = e.target.checked));
-        }}
-      />
-      <label
-        className={styles.label}
-        htmlFor={id}
-      >
-        {i18n(label)}
-      </label>
+      <label className={styles.label} onClick={() => { onChange(!checked); }}>{i18n(label)}</label>
     </span>
   );
 };

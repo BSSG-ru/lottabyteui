@@ -21,12 +21,8 @@ export function FrontPage() {
 
   return (
     <div className={styles.page}>
-      {!showAdvanced && (
         <Dashboard />
-      )}
-      {showAdvanced && (<div className={styles.domains}>
-        <Domains />
-      </div>)}
+      
     </div>
   );
 }

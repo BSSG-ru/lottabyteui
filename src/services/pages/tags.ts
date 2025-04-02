@@ -23,6 +23,6 @@ export const createTag = async(name: string) => fetchWithRefresh(`${URL}/v1/tags
 
 export const getTags = async () => fetchWithRefresh(`${URL}/v1/tags/?limit=20&offset=0`, optionsGet()).then(handleHttpResponse);
 
-export const searchTags = async (search: string) => fetchWithRefresh(`${URL}/v1/tags/search2`, optionsPost({ query: search, offset: 0, limit: 15 })).then(handleHttpResponse);
+export const searchTags = async (search: string, limit: number = 15) => fetchWithRefresh(`${URL}/v1/tags/search2`, optionsPost({ query: search, offset: 0, limit: limit })).then(handleHttpResponse);
 
 export const getTagsForArtifact = async (artifactId: string) => fetchWithRefresh(`${URL}/v1/tags/artifacts/${encodeURIComponent(artifactId)}?limit=10000`, optionsGet()).then(handleHttpResponse);

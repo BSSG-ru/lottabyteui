@@ -1,4 +1,4 @@
-import { FC, useCallback, useEffect, useRef, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 
 import styles from './Dashboard.module.scss';
 import React from 'react';
@@ -60,7 +60,7 @@ export const Dashboard: FC<DashboardProps> = ({}) => {
     useEffect(() => {
         
         getDashboardRecommended().then(json => {
-            setRecommendedItems(json.slice(0, 10));
+            setRecommendedItems(json);
         }).catch(handleHttpError);
 
         getDashboardPopular().then(json => {
@@ -78,26 +78,34 @@ export const Dashboard: FC<DashboardProps> = ({}) => {
     }, []);
 
     return <div className={styles.dashboard}>
-        <div className={styles.col1}>
-            <div className={classNames(styles.block, styles.popular)}>
-                <h2>{i18n('Популярное')}</h2>
-                <Carousel key={key1} responsive={{ desktop: { breakpoint: { max: 5000, min: 0 }, items: 1, slidesToSlide: 1 }}} className={styles.carousel} swipeable draggable showDots arrows={false} customDot={<CustomDot />} autoPlay autoPlaySpeed={8000}>
-                    {popularItems.map(item => <div key={'pop-' + item.id} className={styles.popular_item}>
-                        <a href={getArtifactUrl(item.id, item.artifactType)} className={styles.lnk}>
-                            <h3>{item.name}</h3>
-                            {item.description && (<div className={styles.desc}>{item.description}</div>)}
-                            <div className={styles.info}>
-                                <ArtifactInfo artifactType={item.artifactType} />
-                                <RatingBlock rating={item.rating ?? 0} showRating />
-                                <ArtifactAuthor userId={item.createdBy} />
-                            </div>
-                        </a>
-                    </div>)}
-                </Carousel>
+        <div className={styles.row1}>
+
+        
+            <div className={styles.col1}>
+                <div className={classNames(styles.block, styles.popular)}>
+                    <h2>{i18n('Популярное')}</h2>
+                    <Carousel key={key1} responsive={{ desktop: { breakpoint: { max: 5000, min: 0 }, items: 1, slidesToSlide: 1 }}} className={styles.carousel} swipeable draggable showDots arrows={false} customDot={<CustomDot />} autoPlay autoPlaySpeed={8000}>
+                        {popularItems.map(item => <div key={'pop-' + item.id} className={styles.popular_item}>
+                            <a href={getArtifactUrl(item.id, item.artifactType)} className={styles.lnk}>
+                                <h3>{item.name}</h3>
+                                {item.description && (<div className={styles.desc}>{item.description}</div>)}
+                                <div className={styles.info}>
+                                    <ArtifactInfo artifactType={item.artifactType} artifactId={item.id} favControl />
+                                    <RatingBlock rating={item.rating ?? 0} showRating />
+                                    <ArtifactAuthor userId={item.createdBy} />
+                                </div>
+                            </a>
+                        </div>)}
+                    </Carousel>
+                </div>
+                
             </div>
+            <FavsList className={classNames(styles.col2, styles.block)} title={i18n('Избранное')} />
+        </div>
+        <div className={styles.row2}>
             <div className={classNames(styles.block, styles.recommended)}>
                 <h2>{i18n('Рекомендации')}</h2>
-                <Carousel key={key2} responsive={{ desktop: { breakpoint: { max: 5000, min: 0 }, items: 6, slidesToSlide: 1 }}} className={styles.carousel} swipeable draggable arrows={false} customButtonGroup={<CustomArrows />} renderButtonGroupOutside>
+                <Carousel key={key2} responsive={{ desktop: { breakpoint: { max: 5000, min: 0 }, items: 8, slidesToSlide: 1 }}} className={styles.carousel} swipeable draggable arrows={false} customButtonGroup={<CustomArrows />} renderButtonGroupOutside>
                     {recommendedItems.map(item => <a key={'rec-' + item.id} href={getArtifactUrl(item.id, item.artifactType)} className={styles.rec_item}>
                         <div className={styles.top}>
                             <ArtifactInfo artifactType={item.artifactType} type='transparent' />
@@ -111,6 +119,6 @@ export const Dashboard: FC<DashboardProps> = ({}) => {
                 </Carousel>
             </div>
         </div>
-        <FavsList className={classNames(styles.col2, styles.block)} title={i18n('Избранное')} />
+        
     </div>;
 };

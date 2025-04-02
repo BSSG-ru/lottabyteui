@@ -1,21 +1,35 @@
 .search {
     display: flex;
-    
+    align-items: center;
     position: relative;
-}
-.search_input input {
-    width: 320px;
-    height: 32px;
+    width: 500px;
+    background: #fff;
     border-radius: 8px;
-    padding: 13px 16px;
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    
-    &::placeholder {
-        font-weight: 400;
+
+    .sep {
+        display: block;
+        width: 1px;
+        height: 20px;
+        flex: 0 0 1px;
+        background: var(--neutral20);
     }
-    &:focus {
-        box-shadow: none;
-        border-color: var(--blue-main);
+}
+.search_input {
+    flex: 1 1;
+    input, input:hover, input:focus-visible {
+        height: 32px;
+        border: none;
+        background: none;
+        padding: 13px 16px;
+        
+        
+        &::placeholder {
+            font-weight: 400;
+        }
+        &:focus {
+            box-shadow: none;
+            border-color: var(--blue-main);
+        }
     }
 }
 button.search_button {
@@ -35,6 +49,12 @@ button.search_button {
     &_active {
         background-color: transparent;
     }
+}
+.input_wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1 1;
 }
 .tags_popup {
     position: absolute;
@@ -69,6 +89,64 @@ button.search_button {
             }
 
             
+        }
+    }
+}
+
+.dd_search {
+    .dd_toggle {
+        &, &:hover, &:focus-visible {
+            background: none;
+            border: none;
+            color: var(--neutral90);
+        }
+
+        &::after {
+            background: url(../../assets/icons/dd-down-16.svg) no-repeat center center;
+        }
+    }
+}
+
+.search_dropdown {
+    background: #fff;
+    padding: 4px;
+    border-radius: 8px;
+    box-shadow: 0px 3.2px 9px 0px #00000029;
+    position: absolute;
+    left: 0;
+    top: 100%;
+    width: 100%;
+    z-index: 120;
+
+    .dd_sec_head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px;
+        font-weight: 700;
+        color: var(--neutral90);
+    }
+
+    .item {
+        line-height: 32px;
+        padding: 0;
+        margin: 0;
+        color: var(--neutral90);
+        border-radius: 6px;
+        padding: 0 8px;
+        cursor: pointer;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+
+        &:hover {
+            background: #F2F2F2;
+        }
+
+        em {
+            color: var(--primary60);
+            font-style: normal;
+            font-weight: 700;
         }
     }
 }

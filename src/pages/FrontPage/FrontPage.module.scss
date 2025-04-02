@@ -2,4 +2,10 @@
     width: 100%;
     padding: 0;
     flex: 1;
+    display: flex;
+    min-height: 0;
+
+    > div {
+        width: 100%;
+    }
 }

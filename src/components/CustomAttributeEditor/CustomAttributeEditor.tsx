@@ -187,14 +187,11 @@ export const CustomAttributeEditor: FC<CustomAttributeEditorProps> = ({
                   <RadioButton
                     key={`ca_${custom_attr_definition.id}_${def_elem.id}`}
                     id={`ca_${custom_attr_definition.id}_${def_elem.id}`}
-                    name={`ca_rb_${custom_attr_definition.id}`}
                     label={def_elem.name}
                     className={styles.radiobutton}
                     checked={getSingleValue(value) === def_elem.id}
                     value={def_elem.id}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                      radioValueChanged(e);
-                    }}
+                    
                   />
                 ))}
               </>

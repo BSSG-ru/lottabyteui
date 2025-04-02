@@ -24,6 +24,15 @@
     }
 }
 
+.btn_edit {
+    display: inline-block;
+    background: url(../../assets/icons/edit2.svg);
+    width: 20px;
+    height: 20px;
+    background-size: contain;
+    margin: 0 5px;
+}
+
 .btn_del {
     display: inline-block;
     background: url(../../assets/icons/delete.svg);

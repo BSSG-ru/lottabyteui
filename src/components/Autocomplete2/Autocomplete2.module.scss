@@ -22,7 +22,8 @@
     width: 100%;
     border-radius: 6px;
     padding: 0px 15px;
-    border: 1px solid #9BA0AA;
+    padding-right: 25px;
+    border: 1px solid var(--neutral40);
     transition: border 0.3s linear;
     line-height: 30px;
     outline: none !important;
@@ -33,7 +34,7 @@
 }
 
 .dropdown {
-    position: fixed;
+    position: absolute;
     z-index: 9999;
     background: #fff;
     display: none;
@@ -42,7 +43,7 @@
     box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.05);
     padding: 6px 0;
     width: 200px;
-    margin-top: 10px;
+    margin-top: 4px;
     max-height: 200px;
     overflow: auto;
 
@@ -57,9 +58,9 @@
     position: absolute;
     cursor: pointer;
     display: block;
-    top: 50%;
-    margin-top: -10px;
-    right: 10px;
+    top: 3px;
+    margin-top: 4px;
+    right: 4px;
     z-index: 100;
     background: url(/assets/icons/dropdown.svg) no-repeat center center;
     background-size: 12px 8px;
@@ -74,5 +75,14 @@
 
     &:hover {
         background: rgba(151, 165, 235, 0.15);
+    }
+
+    &.link {
+        font-weight: 800;
+        color: var(--primary70);
+
+        &:hover {
+            background: none;
+        }
     }
 }

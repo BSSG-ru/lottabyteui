@@ -43,6 +43,8 @@ import { Drafts } from './pages/Drafts';
 import { SettingsWorkflowEdit } from './pages/SettingsWorkflow/SettingsWorkflowEdit';
 import { MetaDataList } from './pages/MetaData';
 import { MetaDatabase } from './pages/MetaData/MetaDatabase';
+import { ETLs } from './pages/ETL';
+import { ETL } from './pages/ETL/ETL';
 
 function APP() {
   let validate = useSelector(authValidate);
@@ -101,6 +103,7 @@ function APP() {
             <Route path="/samples-model/:id" element={<ArtifactModel artifactType="entity_sample" />} />
             <Route path="/systems-model/:id" element={<ArtifactModel artifactType="system" />} />
             <Route path="/tasks-model/:id" element={<ArtifactModel artifactType="task" />} />
+            <Route path="/etl-model/:id" element={<ArtifactModel artifactType="etl" />} />
             <Route
               path="/account"
               element={<Account />}
@@ -232,6 +235,22 @@ function APP() {
             <Route
               path="/indicators/edit/"
               element={<Indicator />}
+            />
+            <Route
+              path="/etl"
+              element={<ETLs />}
+            />
+            <Route
+              path="/etl/edit/:id"
+              element={<ETL />}
+            />
+            <Route
+              path="/etl/:id/version/:version_id"
+              element={<ETL />}
+            />
+            <Route
+              path="/etl/edit/"
+              element={<ETL />}
             />
             <Route
               path="/business-entities"

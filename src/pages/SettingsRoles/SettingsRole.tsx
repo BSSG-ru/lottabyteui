@@ -9,6 +9,7 @@ import useUrlState from '@ahooksjs/use-url-state';
 import classNames from 'classnames';
 import { FieldTextEditor } from '../../components/FieldTextEditor';
 import { EditPage } from '../../components/EditPage';
+import { userInfoRequest } from '../../services/auth';
 
 export const SettingsRole = () => {
   const navigate = useNavigate();
@@ -37,6 +38,15 @@ export const SettingsRole = () => {
   useEffect(() => {
     if (!roleId && id) setRoleId(id);
   }, [id]);
+
+  useEffect(() => {
+    userInfoRequest().then(resp => {
+      resp.json().then(data => {
+        if (data.permissions.filter((x:String) => x == 'settings_r').length > 0)
+          setLoaded(true);
+      });
+    }).catch(handleHttpError);
+  }, []);
 
   useEffect(() => {
     getPermissions().then((json) => {
@@ -68,6 +78,7 @@ export const SettingsRole = () => {
       }
     }
     setData((prev: any) => ({ ...prev, permissions: p }));
+    setDataModified(true);
     /*const dataPerm: any = {};
     dataPerm.permissions = p;
     updateRole(roleId, dataPerm)
@@ -84,8 +95,7 @@ export const SettingsRole = () => {
 
   return (
     <>
-
-      <EditPage noRecentViews noRating data={data} objectId={roleId} objectVersionId='' urlSlug='settings/roles' setData={setData} isReadOnly={false} setReadOnly={() => {}} artifactType='role' 
+      {isLoaded && (<EditPage noRecentViews noRating data={data} objectId={roleId} objectVersionId='' urlSlug='settings/roles' setData={setData} isReadOnly={false} setReadOnly={() => {}} artifactType='role' 
         updateObject={async (id, data) => { return await updateRole(id, {...data}).then(json => ({ entity: {...json}, metadata: { id: json.id, state: 'PUBLISHED' }})) }}
         getObject={async (id) => { return await getRole(id).then(json => ({ entity: {...json}, metadata: { id: json.id, state: 'PUBLISHED' }})) }} tabs={[
         {
@@ -146,7 +156,7 @@ export const SettingsRole = () => {
             </div>
           </div>
         }
-      ]} />
+      ]} />)}
 
     </>
   );

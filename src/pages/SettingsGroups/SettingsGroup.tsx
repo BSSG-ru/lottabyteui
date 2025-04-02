@@ -14,6 +14,7 @@ import classNames from 'classnames';
 import { FieldTextEditor } from '../../components/FieldTextEditor';
 import { getGroup, updateGroup } from '../../services/pages/groups';
 import { EditPage } from '../../components/EditPage';
+import { userInfoRequest } from '../../services/auth';
 
 export function SettingsGroup() {
   const navigate = useNavigate();
@@ -42,6 +43,15 @@ export function SettingsGroup() {
     if (!groupId && id) setGroupId(id);
   }, [id]);
 
+  useEffect(() => {
+    userInfoRequest().then(resp => {
+      resp.json().then(data => {
+        if (data.permissions.filter((x:String) => x == 'settings_r').length > 0)
+          setLoaded(true);
+      });
+    }).catch(handleHttpError);
+  }, []);
+
   const loadData = () => {
     if (groupId) {
       getGroup(groupId)
@@ -50,7 +60,7 @@ export function SettingsGroup() {
           const el = document.getElementById(`crumb_${groupId}`);
           if (el) el.innerText = json.entity.name;
           setLoading(false);
-          setLoaded(true);
+          
         })
         .catch(handleHttpError);
     }
@@ -102,8 +112,7 @@ export function SettingsGroup() {
 
   return (
     <>
-
-      <EditPage noRecentViews noRating data={data} objectId={groupId} objectVersionId='' urlSlug='settings/groups' setData={setData} isReadOnly={false} setReadOnly={() => {}} artifactType='group' 
+      {isLoaded && (<EditPage noRecentViews noRating data={data} objectId={groupId} objectVersionId='' urlSlug='settings/groups' setData={setData} isReadOnly={false} setReadOnly={() => {}} artifactType='group' 
         updateObject={updateGroup}
         getObject={getGroup} tabs={[
         {
@@ -171,7 +180,7 @@ export function SettingsGroup() {
               
           </div>
         }
-      ]} />
+      ]} />)}
 
     </>
   );

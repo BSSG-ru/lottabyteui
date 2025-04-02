@@ -72,21 +72,13 @@
         &, * { cursor: pointer; }
         display: flex;
         align-items: center;
-        gap: 4px;
-        @include pill-grey;
-        background: #fff;
-
-        label {
-            font-weight: 400;
-            font-size: 14px;
-        }
-
-        svg {
-            fill: var(--neutral10);
-        }
+        border-right: 1px solid var(--neutral20);
+        padding-right: 8px;
+        margin-right: 4px;
+        
 
         &.active svg {
-            fill: #FFCC00;
+            &, path { fill: #FFCC00; }
         }
     }
 }

@@ -4,13 +4,15 @@ import React, { FC, useEffect, useState } from 'react';
 
 import { useLocation } from 'react-router';
 import { Header } from '../../components/Header';
-import { Footer } from '../../components/Footer';
 import { Aside } from '../../components/Aside';
 import { Crumbs } from '../../components/Crumbs';
 import styles from './Layout.module.scss';
 import { LimitStewardSwitch } from '../../components/LimitStewardSwitch/LimitStewardSwitch';
-import { uuid } from '../../utils';
+import { i18n, uuid } from '../../utils';
 import { Notices } from '../../components/Notices/Notices';
+import { ReactComponent as Minimize } from '../../assets/icons/aside-minimize.svg';
+import { ReactComponent as ClockIcon } from '../../assets/icons/clock.svg';
+import { ReactComponent as CrossIcon } from '../../assets/icons/cross.svg';
 
 type LayoutProps = {
   children: React.ReactNode;
@@ -19,6 +21,7 @@ type LayoutProps = {
 export const Layout: FC<LayoutProps> = ({ children }) => {
   const { pathname } = useLocation();
   const [showCrumbs, setShowCrumbs] = useState(true);
+  const [showChat, setShowChat] = useState(false);
 
   const navParts = pathname.split('/');
   const slug = navParts[navParts.length - 1];
@@ -36,7 +39,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
         <>{children}</>
         ) : (
           <>
-            <Header />
+            <Header showChat={showChat} setShowChat={setShowChat} />
             
             <div className={styles.content}>
               <aside className={styles.aside}>
@@ -51,6 +54,21 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
                 </div>
                 {children}
               </main>
+              {showChat && (<div className={styles.smartchat}>
+                <div className={styles.chat_head}>
+                  <a href="#" className={styles.btn_expand}><Minimize /></a>
+                  <div className={styles.title}>{i18n('Смартчат')}</div>
+                  <div className={styles.right}>
+                    <ClockIcon />
+                    <div className={styles.sep}></div>
+                    <a href="#" className={styles.btn_close} onClick={() => setShowChat(false)}><CrossIcon /></a>
+                  </div>
+                </div>
+                <div className={styles.chat_body}>
+                    <div className={styles.chat_stub}></div>
+                    <div className={styles.slogan}>СКОРО</div>
+                </div>
+              </div>)}
             </div>
             
             <Notices />

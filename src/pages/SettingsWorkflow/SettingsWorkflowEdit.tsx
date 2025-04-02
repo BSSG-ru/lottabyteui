@@ -9,6 +9,7 @@ import { getWorkflowSettings, updateWorkflowSettings } from '../../services/page
 import { FieldAutocompleteEditor } from '../../components/FieldAutocompleteEditor';
 import { FieldTextEditor } from '../../components/FieldTextEditor';
 import { EditPage } from '../../components/EditPage';
+import { userInfoRequest } from '../../services/auth';
 
 export function SettingsWorkflowEdit() {
   const navigate = useNavigate();
@@ -33,6 +34,15 @@ export function SettingsWorkflowEdit() {
     setDataModified(true);
   }, [id]);
 
+  useEffect(() => {
+    userInfoRequest().then(resp => {
+      resp.json().then(data => {
+        if (data.permissions.filter((x:String) => x == 'settings_r').length > 0)
+          setLoaded(true);
+      });
+    }).catch(handleHttpError);
+  }, []);
+
   const updateSettingsField = (field: string, value: string | string[] | undefined) => {
     setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } }));
     setDataModified(true);
@@ -41,7 +51,7 @@ export function SettingsWorkflowEdit() {
   return (
     <>
 
-      <EditPage noRecentViews noRating data={data} objectId={settingsId} objectVersionId='' urlSlug='settings/workflows' setData={setData} isReadOnly={false} setReadOnly={() => {}} artifactType='workflow_settings' 
+      {isLoaded && (<EditPage noRecentViews noRating data={data} objectId={settingsId} objectVersionId='' urlSlug='settings/workflows' setData={setData} isReadOnly={false} setReadOnly={() => {}} artifactType='workflow_settings' 
         updateObject={async (id, data) => { return await updateWorkflowSettings(id, {...data}).then(json => ({ entity: {...json}, metadata: { id: json.id, state: 'PUBLISHED' }})) }}
         getObject={async (id) => { return await getWorkflowSettings(id).then(json => ({ entity: {...json, name: json.artifact_type + ' ' + json.artifact_action}, metadata: { id: json.id, state: 'PUBLISHED' }})) }} tabs={[
         {
@@ -92,7 +102,7 @@ export function SettingsWorkflowEdit() {
               
           </div>
         }
-      ]} />
+      ]} />)}
 
 
     </>

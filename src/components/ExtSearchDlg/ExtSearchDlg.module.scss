@@ -1,0 +1,46 @@
+@import '../../assets/css/common.scss';
+
+.dlg {
+    > div {
+        width: 1056px;
+        max-height: 720px;
+        display: flex;
+        flex-direction: column;
+        .table {
+        overflow: auto;
+        }
+    }
+
+    div:global(.modal-body) {
+        overflow: auto;
+    }
+}
+
+.radio {
+    display: block;
+    width: 20px;
+    height: 20px;
+    background: none;
+    border-radius: 10px;
+    border: 1px solid var(--gray-100);
+}
+
+.radio_checked {
+    display: block;
+    width: 20px;
+    height: 20px;
+    background: var(--primary60);
+    border-radius: 10px;
+    position: relative;
+
+    .check {
+        display: block;
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        width: 10px;
+        height: 10px;
+        background: #fff;
+        border-radius: 5px;
+    }
+}

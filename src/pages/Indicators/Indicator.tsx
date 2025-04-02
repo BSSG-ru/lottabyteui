@@ -112,14 +112,17 @@ export function Indicator() {
 
   useEffect(() => {
     const a = [];
-    for (let i = 0; i < data.entity.term_link_ids.length; i++) { a.push(<></>); }
+    if (data.entity.term_link_ids)
+      for (let i = 0; i < data.entity.term_link_ids.length; i++) { a.push(<></>); }
     setSelectedTermLinksNames(a);
 
-    data.entity.term_link_ids.forEach((id, index) => {
-      getBusinessEntity(id).then((json) => {
-        setSelectedTermLinksNames((prev) => ([...prev.slice(0, index), `<div><a href="${getArtifactUrl(json.metadata.id, 'business_entity')}">${json.entity.name}</a></div>`, ...prev.slice(index + 1)]));
-      }).catch(handleHttpError);
-    });
+    if (data.entity.term_link_ids) {
+      data.entity.term_link_ids.forEach((id, index) => {
+        getBusinessEntity(id).then((json) => {
+          setSelectedTermLinksNames((prev) => ([...prev.slice(0, index), `<div><a href="${getArtifactUrl(json.metadata.id, 'business_entity')}">${json.entity.name}</a></div>`, ...prev.slice(index + 1)]));
+        }).catch(handleHttpError);
+      });
+    }
   }, [data.entity.term_link_ids]);
 
   const updateIndicatorField = (field: string, value: string | string[] | [] | TDQRule[] | undefined) => {
@@ -353,6 +356,8 @@ export function Indicator() {
 
                     <FieldArrayEditor
                         key={`ed-terms-${indicatorId}`}
+                        artifactType='business_entity'
+                        useExtSearch
                         getOptions={getTermLinkOptions}
                         isReadOnly={isReadOnly}
                         label={i18n('Ссылки на другие Термины')}
@@ -361,7 +366,9 @@ export function Indicator() {
                         addBtnText={i18n('Добавить')}
                         valueSubmitted={() => { updateIndicatorField('term_link_ids', data.entity.term_link_ids); }}
                         onValueIdAdded={(id: string, name: string) => {
-                          setData((prev) => ({ ...prev, entity: { ...prev.entity, term_link_ids: [...prev.entity.term_link_ids, id] } }));
+                          let d = {...data};
+                          d.entity.term_link_ids.push(id);
+                          setData(d);
                         }}
                         onValueIdRemoved={(id: string) => {
                           const arr = [...data.entity.term_link_ids];
@@ -371,6 +378,9 @@ export function Indicator() {
                       />
 
                     <FieldArrayEditor
+                      key='i-sel-dq'
+                      artifactType='dq_rule'
+                      useExtSearch
                       isReadOnly={isReadOnly}
                       label={i18n('Проверка')}
                       defaultValue={data.entity.dq_checks}
@@ -385,6 +395,8 @@ export function Indicator() {
 
                     <FieldArrayEditor
                       key={`ed-dass-${indicatorId}`}
+                      artifactType='data_asset'
+                      useExtSearch
                       getOptions={getDataAssetOptions}
                       isReadOnly={isReadOnly}
                       label={i18n('Активы')}
@@ -393,7 +405,9 @@ export function Indicator() {
                       addBtnText={i18n('Добавить')}
                       valueSubmitted={() => { updateIndicatorField('data_asset_ids', data.entity.data_asset_ids); }}
                       onValueIdAdded={(id: string, name: string) => {
-                        setData((prev) => ({ ...prev, entity: { ...prev.entity, data_asset_ids: [...prev.entity.data_asset_ids, id] } }));
+                        let d = {...data};
+                        d.entity.data_asset_ids.push(id);
+                        setData(d);
                       }}
                       onValueIdRemoved={(id: string) => {
                         const arr = [...data.entity.data_asset_ids];

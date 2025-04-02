@@ -1,0 +1,122 @@
+@import '../../assets/css/common.scss';
+
+.pill {
+    @include pill-grey-big;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    align-items: center;
+    padding-left: 0;
+    position: relative;
+    overflow: visible;
+
+    .btn_del {
+        padding: 0;
+    }
+
+    .btn_name {
+        font-weight: 400;
+        display: flex;
+        align-items: center;
+        flex: 1 1;
+        min-width: 0;
+        padding-right: 0;
+
+        span {
+            display: block;
+        }
+
+        .artifact_name {
+            display: block;
+            font-weight: 800;
+            flex: 1 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+        }
+    }
+
+    .dropdown {
+        @include white-block;
+        position: absolute;
+        padding: 4px;
+        top: 100%;
+        left: 0;
+        margin-top: 8px;
+        width: 240px;
+        overflow: visible;
+        box-shadow: 0px 3.2px 9px 0px #00000029;
+        border-radius: 8px;
+        z-index: 99;
+
+        .inp_search { 
+            margin: 8px;
+
+            input {
+                background: url(../../assets/icons/search.svg) no-repeat  right 5px center;
+            }
+        }
+
+        .item {
+            line-height: 32px;
+            cursor: pointer;
+            padding: 0 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            border-radius: 6px;
+            position: relative;
+
+            &.has_children {
+                overflow: visible;
+                color: var(--primary60);
+            }
+
+            &.has_children::after {
+                display: block;
+                content: ' ';
+                position: absolute;
+                right: 5px;
+                top: 50%;
+                margin-top: -5px;
+                width: 10px;
+                height: 10px;
+                border: 5px solid transparent;
+                border-left: 5px solid var(--gray-100);
+            }
+
+            &:hover {
+                background: #F2F2F2;
+            }
+
+            &.item_ext_srch {
+                color: var(--primary60);
+                font-weight: 800;
+
+                &:hover {
+                    background: none;
+                }
+            }
+
+            .dd_submenu {
+                display: none;
+                background: #fff;
+                border-radius: 8px;
+                padding: 4px;
+                position: absolute;
+                left: 100%;
+                top: 0;
+                box-shadow: 0px 3.2px 9px 0px #00000029;
+                z-index: 100;
+                min-height: 30px;
+                min-width: 100px;
+                max-height: 300px;
+                overflow: auto;
+            }
+
+            &:hover .dd_submenu {
+                display: block;
+            }
+        }
+    }
+}

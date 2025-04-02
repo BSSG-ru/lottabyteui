@@ -5,12 +5,12 @@ import React, { CSSProperties, FC, useEffect, useState } from 'react';
 import classNames from 'classnames';
 import styles from './Table.module.scss';
 import {
-  i18n, uuid, handleHttpResponse, handleHttpError, setTablePageSize,
+  i18n, uuid, handleHttpResponse, handleHttpError, setTablePageSize, getCookie, getArtifactTypeDisplayName,
 } from '../../utils';
 import { Button } from '../Button';
 import { Input } from '../Input';
 import { HeaderCell } from './HeaderCell';
-import { BodyRow } from './BodyRow';
+import { BodyRow, RowButton } from './BodyRow';
 import { ReactComponent as Filters } from '../../assets/icons/filters.svg';
 import { Pagination } from '../Pagination';
 import { fetchWithRefresh } from '../../services/auth';
@@ -20,6 +20,7 @@ import {
 import { TableFilters } from '../../types/redux/states';
 import Cookies from 'js-cookie';
 import { addToFav, delFromFav } from '../../services/pages/userfav';
+import { ArtifactTile } from '../ArtifactTile';
 
 type TableFilterRequest = {
   column: string;
@@ -68,6 +69,7 @@ type TableProps = {
   onRowDoubleClick?: (row: any) => void;
   onCreateBtnClick?: () => void;
   onDeleteClicked?: (row: any) => void;
+  onEditClicked?: (row: any) => void;
   onPageChange?: (page: number) => void;
   onQueryChange?: (query: string) => void;
   limitSteward?: boolean;
@@ -81,6 +83,8 @@ type TableProps = {
   cookieKey?: string;
   pageSizeCookieSuffix?: string;
   artifactType?: string;
+  rowButtons?: RowButton[];
+  allowTilesView?: boolean;
 };
 
 export type Column = {
@@ -102,6 +106,11 @@ export const renderDate = (row: any, dateField: string) => {
   return new Date(row[dateField]).toLocaleDateString('ru-RU');
 };
 
+export const renderArtifactType = (row: any, field: string) => {
+  if (!row[field]) return '-';
+  return getArtifactTypeDisplayName(row[field], false);
+}
+
 export const Table: FC<TableProps> = ({
   className = '',
   columns,
@@ -114,6 +123,7 @@ export const Table: FC<TableProps> = ({
   showCreateBtn = false,
   onCreateBtnClick = () => { },
   onDeleteClicked,
+  onEditClicked,
   onRowClick,
   onRowDoubleClick,
   onPageChange = () => { },
@@ -129,7 +139,9 @@ export const Table: FC<TableProps> = ({
   rowStyle,
   cookieKey,
   pageSizeCookieSuffix,
-  artifactType
+  artifactType,
+  rowButtons,
+  allowTilesView
 }) => {
   
 
@@ -143,6 +155,15 @@ export const Table: FC<TableProps> = ({
   const [rows, setRows] = useState<any[]>([]);
   const [fetchRequest, setFetchRequest] = useState<TableDataRequest>(initialFetchRequest ? { ...initialFetchRequest, limit_steward: limitSteward, state: supportsWorkflow ? 'PUBLISHED' : undefined, global_query: tableState.global_query ? tableState.global_query.toLowerCase().trim() : initialFetchRequest.global_query, sort: tableState.sort ? tableState.sort : initialFetchRequest.sort, filters: tableState.filters ? tableState.filters : initialFetchRequest.filters } : {});
   const [wfStatus, setWfStatus] = useState('PUBLISHED');
+  const [useTilesLayout, setUseTilesLayout] = useState(allowTilesView ? (getCookie('top-dash-adv') != 'true') : false);
+
+  if (allowTilesView) {
+    useEffect(() => {
+      window.addEventListener('dashboardModeChanged', function (e) {
+        setUseTilesLayout(!(e as any).showAdvanced);
+      })
+    }, [])
+  }
 
   const onFavClicked = (row: any) => {
     if (artifactType) {
@@ -162,7 +183,15 @@ export const Table: FC<TableProps> = ({
     if (dataUrl.length === 0) {
       return [];
     }
-    if (request.filters_preset) request.filters = [...request.filters, ...request.filters_preset];
+    if (request.filters_preset) {
+      request.filters_preset.forEach((fpr:any) => {
+        if (!request.filters)
+          request.filters = [];
+        if (!request.filters.some((f:any) => (f.column == fpr.column && f.value == fpr.value && f.operator == fpr.operator)))
+          request.filters.push(fpr);
+      })
+    }
+    //if (request.filters_preset) request.filters = [...request.filters, ...request.filters_preset];
 
     if (isGet) {
       return fetchWithRefresh(
@@ -264,7 +293,7 @@ export const Table: FC<TableProps> = ({
         ''
       )}
 
-      {columnSearch ? (
+      {columnSearch && !useTilesLayout ? (
         <Button
           key={uuid()}
           background="outlined-blue"
@@ -301,6 +330,11 @@ export const Table: FC<TableProps> = ({
       {tableButtons ? (tableButtons.map((tb) => <Button key={uuid()} background="outlined-blue" className={styles.table_button} onClick={tb.onClick}>{tb.text}</Button>)) : ('')}
 
       <div key={uuid()} className={styles.clear} />
+      {useTilesLayout ? (
+        <div key={uuid()} className={classNames(styles.tiles_wrap)}>
+          {rows.map(row => <ArtifactTile key={'t-tile-' + row.id} artifactId={row.id} artifactName={row.name} artifactType={artifactType ?? row.artifact_type} isInFav={row.is_in_fav} />)}
+        </div>
+      ) : (
       <div key={uuid()} className={classNames(styles.table_wrap, { [styles.full_width]: fullWidthLayout })}>
         <div key={uuid()} className={styles.flex}>
           <table
@@ -386,14 +420,17 @@ export const Table: FC<TableProps> = ({
                 && rows.map((item) => (
                   <BodyRow
                     key={uuid()}
+                    rowId={uuid()}
                     row={item}
                     columns={columnsList}
                     onDeleteClicked={onDeleteClicked}
-                    onFavClicked={onFavClicked}
+                    onEditClicked={onEditClicked}
+                    onFavClicked={artifactType ? onFavClicked : undefined}
                     onClick={onRowClick}
                     onDoubleClick={onRowDoubleClick}
                     rowClassName={rowClassName}
                     rowStyle={rowStyle}
+                    rowButtons={rowButtons}
                   />
                 ))}
             </tbody>
@@ -444,7 +481,9 @@ export const Table: FC<TableProps> = ({
           ''
         )}
       </div>
+      )}
       <div className={styles.clear} />
     </div>
+    
   );
 };

@@ -369,6 +369,8 @@ export function LogicObject() {
 
               <FieldArrayEditor
                 key={`ed-sys-${logicObjectId}`}
+                artifactType='system'
+                useExtSearch
                 getOptions={getSystemOptions}
                 isReadOnly={isReadOnly}
                 label={i18n('Системы')}
@@ -377,7 +379,9 @@ export function LogicObject() {
                 addBtnText={i18n('Добавить')}
                 valueSubmitted={() => { updateLogicObjectField('system_ids', data.entity.system_ids); }}
                 onValueIdAdded={(id: string) => {
-                  setData((prev:any) => ({ ...prev, entity: { ...prev.entity, system_ids: [...prev.entity.system_ids, id] } }));
+                  let d = {...data};
+                  (d.entity.system_ids as string[]).push(id);
+                  setData(d);
                 }}
                 onValueIdRemoved={(id: string) => {
                   const arr = [...data.entity.system_ids];

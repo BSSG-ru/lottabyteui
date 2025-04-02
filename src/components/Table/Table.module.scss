@@ -180,19 +180,21 @@
 }
 
 .body_cell {
-    padding: 8px 8px;
+    padding: 4px 8px;
     position: relative;
 
     .actions_popup {
-        background: none;
+        background: #F2F2F2;
         padding: 3px;
         position: absolute;
         align-items: center;
-        height: 30px;
-        top: 50%;
-        margin-top: -15px;
+        height: 31px;
+        top: 0;
         right: 0;
         display: none;
+        
+        box-shadow: 0px 0px 4px 0px #B0B0B0;
+
     }
 }
 
@@ -279,24 +281,75 @@
     clear: both;
 }
 
+.btn_edit {
+    display: inline-block;
+    background: url(../../assets/icons/edit2.svg) no-repeat center center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background-size: 20px;
+    margin: 0 5px;
+
+    &:hover {
+        background-color: #E6E6E6;
+    }
+}
+
+.btn_sep {
+    display: inline-block;
+    width: 1px;
+    height: 24px;
+    background: #D5D8DE;
+    margin: 0 8px;
+}
+
 .btn_del {
     display: inline-block;
-    background: url(../../assets/icons/delete.svg);
-    width: 20px;
-    height: 20px;
-    background-size: contain;
+    background: url(../../assets/icons/delete.svg) no-repeat center center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background-size: 20px;
     margin: 0 5px;
+    
+    &:hover {
+        background-color: #E6E6E6;
+    }
 }
 
 .btn_fav {
     display: inline-block;
-    background: url(../../assets/icons/star-grey.svg);
-    width: 20px;
-    height: 20px;
-    background-size: contain;
+    background: url(../../assets/icons/star-grey.svg) no-repeat center center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background-size: 20px;
     margin: 0 5px;
 
     &.active {
         background-image: url(../../assets/icons/star-y.svg);
     }
+
+    &:hover {
+        background-color: #E6E6E6;
+    }
+}
+
+.row_btn {
+    display: inline-flex;
+    width: 28px;
+    height: 28px;
+    justify-content: center;
+    align-items: center;
+    border-radius: 8px;
+
+    &:hover {
+        background: #E5E7E9;
+    }
+}
+
+.tiles_wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
 }

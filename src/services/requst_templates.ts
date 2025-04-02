@@ -64,7 +64,7 @@ export const optionsGetSimple = (): CustomRequest => ({
   },
 });
 
-export const optionsPost = (body: object | null = null, signal?: AbortSignal | null) => {
+export const optionsPost = (body: object | string | null = null, signal?: AbortSignal | null) => {
   const options: CustomRequest = {
     method: 'POST',
     cache: 'no-cache',
@@ -77,7 +77,10 @@ export const optionsPost = (body: object | null = null, signal?: AbortSignal | n
     signal: signal
   };
   if (body) {
-    options.body = JSON.stringify(body);
+    if (typeof body == 'string')
+      options.body = body;
+    else
+      options.body = JSON.stringify(body);
   }
   return options;
 };

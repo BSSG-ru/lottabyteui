@@ -32,6 +32,7 @@ export const Aside: FC = () => {
   const navigate = useNavigate();
   const [isMinimized, setMinimized] = useState(getCookie('side-min') === 'true');
   const [recentViews, setRecentViews] = useState<any[]>([]);
+  const [showSettings, setShowSettings] = useState(false);
 
   const [count, setCount] = useState({
     data_asset: '',
@@ -47,6 +48,7 @@ export const Aside: FC = () => {
     dq_rule: '',
     draft: '',
     meta_database: '',
+    etl: ''
   });
 
   const nav = useLocation();
@@ -63,7 +65,7 @@ export const Aside: FC = () => {
     });
   };
 
-  const [isAdvancedMode, setAdvancedMode] = useState((window as any).dashboardSwitch ? (window as any).dashboardSwitch.getShowAdvanced() : true);
+  const [isAdvancedMode, setAdvancedMode] = useState(getCookie('top-dash-adv') == 'true');
   const [currPath, setCurrPath] = useState('/');
   const [links, setLinks] = useState<any[]>([]);
   useEffect(() => {
@@ -145,6 +147,13 @@ export const Aside: FC = () => {
             count: count.indicator,
           },
           {
+            icon: <Indicators />,
+            title: urls[1].etls,
+            href: 'etl',
+            count: count.etl,
+            advanced: true
+          },
+          {
             icon: <BusinessEntities />,
             title: urls[1]['business-entities'],
             href: 'business-entities',
@@ -179,6 +188,7 @@ export const Aside: FC = () => {
             href: 'drafts',
             count: count.draft
           });
+        setShowSettings(data.permissions.filter((x:String) => x == 'settings_r').length > 0);
 
         setLinks(arr);
       });
@@ -260,11 +270,11 @@ export const Aside: FC = () => {
                 ))}
               </>
             )}
-            {isAdvancedMode && (
+            {isAdvancedMode && showSettings && (
               <li key="/settings">
                 <NavLink
                   id="iconsettings"
-                  data-tooltip-content={i18n('Настройки')}
+                  data-tooltip-content={i18n('Администрирование')}
                   to="/settings"
                   className={classNames(styles.link, styles.settings_link, {
                     [styles.link_active]: currPath === '/settings',
@@ -273,7 +283,7 @@ export const Aside: FC = () => {
                   <span className={styles.icon}>
                     <Settings />
                   </span>
-                  {!isMinimized && (<span className={styles.title}>{i18n('Настройки')}</span>)}
+                  {!isMinimized && (<span className={styles.title}>{i18n('Администрирование')}</span>)}
                 </NavLink>
                 <Tooltip anchorId="iconsettings" noArrow className="tooltip mob-only" place="right" />
               </li>

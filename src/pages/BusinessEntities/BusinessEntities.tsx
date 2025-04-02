@@ -179,6 +179,15 @@ export function BusinessEntities() {
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
+            doNavigate('/business-entities/edit/' + node.key, navigate);
+          }}
+          className={styles.btn_edit}
+        />
+        <a
+          href="#"
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
             setDelObjectData({ id: node.key, name: node.data.name });
             setShowDelDlg(true);
           }}

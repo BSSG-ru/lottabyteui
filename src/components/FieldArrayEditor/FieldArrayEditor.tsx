@@ -6,11 +6,14 @@ import React, {
   FC, useEffect, useState,
 } from 'react';
 import styles from './FieldArrayEditor.module.scss';
-import { setDataModified, uuid } from '../../utils';
+import { i18n, setDataModified, uuid } from '../../utils';
 import { Tags } from '../Tags';
 import classNames from 'classnames';
+import { ExtSearchDlg } from '../ExtSearchDlg';
 
 export type FieldArrayEditorProps = {
+  artifactType?: string;
+  useExtSearch?: boolean;
   className?: string;
   isReadOnly?: boolean;
   isCreateMode?: boolean;
@@ -24,10 +27,11 @@ export type FieldArrayEditorProps = {
   getOptions?: (search: string) => Promise<any[]>;
   onValueIdAdded?: (id: string, name: string) => void;
   onValueIdRemoved?: (id: string) => void;
-  displayValueSeparator?: string;
 };
 
 export const FieldArrayEditor: FC<FieldArrayEditorProps> = ({
+  artifactType,
+  useExtSearch,
   className = '',
   isReadOnly,
   label,
@@ -40,9 +44,10 @@ export const FieldArrayEditor: FC<FieldArrayEditorProps> = ({
   getOptions,
   onValueIdAdded,
   onValueIdRemoved,
-  displayValueSeparator = ' '
 }) => {
   const [value, setValue] = useState<string[]>([]);
+  const [showExtSearch, setShowExtSearch] = useState(false);
+  const [extSearchCookieKey, setExtSearchCookieKey] = useState('ext-s-' + (artifactType ?? ''));
 
   useEffect(() => {
     setValue(defaultValue ?? []);
@@ -60,8 +65,8 @@ export const FieldArrayEditor: FC<FieldArrayEditorProps> = ({
     const newVal = [...value.filter(x => x != s)];
     if (valueSubmitted)
       valueSubmitted(newVal);
-      setValue(newVal);
-      setDataModified(true);
+    setValue(newVal);
+    setDataModified(true);
   };
   const delValueId = (id: string) => {
     if (id) {
@@ -75,17 +80,25 @@ export const FieldArrayEditor: FC<FieldArrayEditorProps> = ({
     }
   };
 
+  const getOptionsFunc = useExtSearch ? 
+    async (s:string) => {
+      var a = getOptions ? await getOptions(s) : []; 
+      return ([{id: '', name: i18n('Расширенный поиск'), isLink: true, onClick: () => setShowExtSearch(true)}, ...a]);
+    } 
+  : getOptions;
+
   return (
     <div className={classNames(styles.field_editor, className, { [styles.error]: isRequired && showValidation && !value })}>
       {label && (<div className={styles.label}>{label}{isRequired && (<span className={styles.req}>*</span>)}</div>)}
       <div className={styles.value}>
           {isReadOnly ? (
-            
-            <Tags isReadOnly getOptions={getOptions} disableCreate={true} tagPrefix={''} tags={[...value]/*.sort(sortComparer)*/.map((x, k) => { return { id: k.toString(), value: x }; })} onTagAdded={addValue} onTagIdAdded={onValueIdAdded} onTagDeleted={delValue} onTagIdDeleted={delValueId} inputPlaceholder={inputPlaceholder} addBtnText={addBtnText} />
+            <Tags isReadOnly getOptions={getOptionsFunc} disableCreate={true} tagPrefix={''} tags={[...value]/*.sort(sortComparer)*/.map((x, k) => { return { id: k.toString(), value: x }; })} onTagAdded={addValue} onTagIdAdded={onValueIdAdded} onTagDeleted={delValue} onTagIdDeleted={delValueId} inputPlaceholder={inputPlaceholder} addBtnText={addBtnText} />
           ) : (
-            <Tags getOptions={getOptions} disableCreate={true} tagPrefix={''} tags={[...value]/*.sort(sortComparer)*/.map((x, k) => { return { id: k.toString(), value: x }; })} onTagAdded={addValue} onTagIdAdded={onValueIdAdded} onTagDeleted={delValue} onTagIdDeleted={delValueId} inputPlaceholder={inputPlaceholder} addBtnText={addBtnText} />
+            <Tags getOptions={getOptionsFunc} disableCreate={true} tagPrefix={''} tags={[...value]/*.sort(sortComparer)*/.map((x, k) => { return { id: k.toString(), value: x }; })} onTagAdded={addValue} onTagIdAdded={onValueIdAdded} onTagDeleted={delValue} onTagIdDeleted={delValueId} inputPlaceholder={inputPlaceholder} addBtnText={addBtnText} />
           )}
       </div>
+      {useExtSearch && (<ExtSearchDlg cookieKey={extSearchCookieKey} show={showExtSearch} onClose={() => setShowExtSearch(false)} showArtifactType filter={ artifactType ? [ { column: 'artifact_type', operator: 'EQUAL', value: artifactType } ] : []} 
+              onSubmit={(row:any) => { if (onValueIdAdded) onValueIdAdded(row.id, row.name); addValue(row.name); setDataModified(true); setShowExtSearch(false); }} />)}
     </div>
   );
 };

@@ -88,9 +88,12 @@ pre {
     --red10: #ffeeee;
     --error60: #D92020;
 
+    --primary70: #0046E2;
     --primary60: #676EF8;
     --primary10: #E6E1FF;
     --neutral10: #E5E7EB;
+    --neutral20: #D5D8DE;
+    --neutral40: #9BA0AA;
     --neutral50: #717681;
     --neutral05: #F1F3F6;
     --neutral90: #23262D;
@@ -180,7 +183,7 @@ div.centrify {
     width: 100%;
     border-radius: 6px;
     padding: 0px 15px;
-    border: 1px solid #9BA0AA;
+    border: 1px solid var(--neutral40);
     transition: border 0.3s linear;
     line-height: 30px;
     outline: none !important;
@@ -188,4 +191,9 @@ div.centrify {
 
 .DraftEditor-editorContainer {
     padding: 7px 0;
+}
+
+.dlg_flex .modal-body {
+    display: flex;
+    flex-direction: column;
 }

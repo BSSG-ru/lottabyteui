@@ -157,6 +157,7 @@ export function Systems() {
             onRowClick={(row: any) => {
               navigate(`/systems/edit/${encodeURIComponent(row.id)}`);
             }}
+            onEditClicked={(row:any) => { navigate(`/systems/edit/${encodeURIComponent(row.id)}`); }}
             onDeleteClicked={(row: any) => {
               setDelObjectData({ id: row.id, name: row.name });
               setShowDelDlg(true);
@@ -167,6 +168,7 @@ export function Systems() {
             onQueryChange={(query: string) => (
               setState(() => ({ p: undefined, q: query }))
             )}
+            allowTilesView
           />
 
           <DeleteObjectModal show={showDelDlg} objectTitle={delObjectData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />

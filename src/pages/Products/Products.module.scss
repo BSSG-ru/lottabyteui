@@ -122,15 +122,6 @@
     margin-top: 40px;
 }
 
-.btn_add_attrib,
-.btn_remove_attrib {
-    cursor: pointer;
-
-    &.hidden {
-        display: none;
-    }
-}
-
 .hidden .btn_remove_attrib {
     display: none;
 }
@@ -163,7 +154,7 @@
     .row_h {
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        justify-content: flex-end;
     }
 
     .select_entity {
@@ -176,4 +167,45 @@
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+.dlg_add_attr {
+    > div {
+        background: #F1F3F6;
+        width: 1050px;
+        min-height: 720px;
+    }
+
+    .inner {
+        display: flex;
+        align-items: stretch;
+        gap: 8px;
+        flex: 1 1;
+
+        .left {
+            @include white-block;
+            flex: 1 1;
+        }
+
+        .right {
+            @include white-block;
+            flex: 1 1;
+            display: flex;
+            flex-direction: column;
+        }
+    }
+}
+
+.nodata_msg {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    flex: 1 1;
+
+    h5 {
+        margin: 10px 0;
+        font-size: 20px;
+        font-weight: 700;
+    }
 }

@@ -16,6 +16,7 @@ export type ButtonProps = {
   onClick?: (event: React.MouseEvent<HTMLElement>) => void;
   disabled?: boolean;
   reff?: React.MutableRefObject<HTMLButtonElement>;
+  title?: string;
 };
 
 type ButtonBackgroung =
@@ -38,6 +39,7 @@ export function Button({
   onClick = () => {},
   disabled = false,
   reff,
+  title = ''
 }: ButtonProps) {
   const buttonType = isSubmit ? 'submit' : 'button';
 
@@ -56,6 +58,7 @@ export function Button({
       onClick={onClick}
       disabled={disabled}
       ref={reff}
+      title={title}
     >
       {children}
     </button>

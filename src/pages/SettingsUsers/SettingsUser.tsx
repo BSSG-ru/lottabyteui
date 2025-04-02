@@ -12,6 +12,7 @@ import { FieldTextEditor } from '../../components/FieldTextEditor';
 import { EditPage } from '../../components/EditPage';
 import { FieldArrayEditor } from '../../components/FieldArrayEditor/FieldArrayEditor';
 import { getRole } from '../../services/pages/roles';
+import { userInfoRequest } from '../../services/auth';
 
 export function SettingsUser() {
   const [, setLoading] = useState(true);
@@ -47,6 +48,15 @@ export function SettingsUser() {
   useEffect(() => {
     if (!userId && id) setUserId(id);
   }, [id]);
+
+  useEffect(() => {
+    userInfoRequest().then(resp => {
+      resp.json().then(data => {
+        if (data.permissions.filter((x:String) => x == 'settings_r').length > 0)
+          setLoaded(true);
+      });
+    }).catch(handleHttpError);
+  }, []);
 
   useEffect(() => {
     const a = [];
@@ -100,7 +110,7 @@ export function SettingsUser() {
 
   return (
     <>
-      <EditPage noRecentViews noRating data={data} objectId={userId} objectVersionId='' urlSlug='settings/users' setData={setData} isReadOnly={false} setReadOnly={() => {}} artifactType='user' 
+      {isLoaded && (<EditPage noRecentViews noRating data={data} objectId={userId} objectVersionId='' urlSlug='settings/users' setData={setData} isReadOnly={false} setReadOnly={() => {}} artifactType='user' 
         updateObject={async (id, data) => { return await updateUser(id, {...data, user_roles_ids: data.user_roles, is_steward: isSteward}).then(json => ({ entity: {...json, name: json.username}, metadata: { id: json.uid, state: 'PUBLISHED' }})) }}
         getObject={async (id) => { return await getUser(id).then(json => ({ entity: {...json, name: json.username}, metadata: { id: json.uid, state: 'PUBLISHED' }})) }} tabs={[
         {
@@ -167,6 +177,8 @@ export function SettingsUser() {
 
               <FieldArrayEditor
                 key={`usr-doms-${userId}`}
+                artifactType='domain'
+                useExtSearch
                 getOptions={async (s: string) => { return await getDomains({ sort: 'name+', global_query: s, limit: 1000, offset: 0, filters: [], filters_for_join: [], state: 'PUBLISHED'}).then(json => json.items.map((x:any) => ({ value: x.id, label: x.name, name: x.name })))}}
                 isReadOnly={false}
                 label={i18n('Домены')}
@@ -174,7 +186,9 @@ export function SettingsUser() {
                 inputPlaceholder={i18n('Выберите домен')}
                 valueSubmitted={() => { updateUserField('user_domains', data.entity.user_domains); }}
                 onValueIdAdded={(id: string, name: string) => {
-                  setData((prev:any) => ({ ...prev, entity: { ...prev.entity, user_domains: [...prev.entity.user_domains, id] } }));
+                  let d = {...data};
+                  d.entity.user_domains.push(id);
+                  setData(d);
                 }}
                 onValueIdRemoved={(id: string) => {
                   const arr = [...data.entity.user_domains];
@@ -194,6 +208,8 @@ export function SettingsUser() {
                 <>
                   <FieldArrayEditor
                     key={`usr-stw-doms-${userId}`}
+                    artifactType='domain'
+                    useExtSearch
                     getOptions={async (s: string) => { return await getDomains({ sort: 'name+', global_query: s, limit: 1000, offset: 0, filters: [], filters_for_join: [], state: 'PUBLISHED'}).then(json => json.items.map((x:any) => ({ value: x.id, label: x.name, name: x.name })))}}
                     isReadOnly={false}
                     label={i18n('Домены стюарда')}
@@ -201,7 +217,9 @@ export function SettingsUser() {
                     inputPlaceholder={i18n('Выберите домен')}
                     valueSubmitted={() => { updateUserField('steward_domains', data.entity.steward_domains); }}
                     onValueIdAdded={(id: string, name: string) => {
-                      setData((prev:any) => ({ ...prev, entity: { ...prev.entity, steward_domains: [...prev.entity.steward_domains, id] } }));
+                      let d = {...data};
+                      d.entity.steward_domains.push(id);
+                      setData(d);
                     }}
                     onValueIdRemoved={(id: string) => {
                       const arr = [...data.entity.steward_domains];
@@ -215,7 +233,7 @@ export function SettingsUser() {
             </div>
           </div>
         }
-      ]} />
+      ]} />)}
 
       
       

@@ -26,8 +26,10 @@ type TagsProps = {
   isReadOnly?: boolean;
   onTagAdded?: (tagName: string) => void;
   onTagIdAdded?: (id: string, name: string) => void;
+  onTagObjAdded?: (tagObj: any) => void;
   onTagDeleted?: (tagName: string) => void;
   onTagIdDeleted?: (tagId: string) => void;
+  onTagObjRemoved?: (tagObj: any) => void;
   getOptions?: (search: string) => Promise<any[]>;
   disableCreate?: boolean;
 };
@@ -37,13 +39,16 @@ export type TagProp = { value: string, id?: string };
 const eventHandler = (
   query: string,
   selectedId: string,
+  selectedObj: any,
   addMode: boolean,
   setQuery: React.Dispatch<React.SetStateAction<string>>,
   setAddMode: React.Dispatch<React.SetStateAction<boolean>>,
   onTagAdded?: (tagName: string) => void,
+  onTagObjAdded?: (tagObj: any) => void,
   onTagDeleted?: (tagName: string) => void,
   onTagIdDeleted?: (tagId: string) => void,
-  onTagIdAdded?: (id: string, name: string) => void
+  onTagIdAdded?: (id: string, name: string) => void,
+  onTagObjRemoved?: (tagObj: any) => void
 ) => {
   if (!addMode) {
     setAddMode((prev) => (prev = !prev));
@@ -54,6 +59,8 @@ const eventHandler = (
         onTagAdded(result);
       if (onTagIdAdded)
         onTagIdAdded(selectedId, result);
+      if (onTagObjAdded)
+        onTagObjAdded(selectedObj);
       setAddMode(false);
     }
     
@@ -64,7 +71,7 @@ const eventHandler = (
 };
 
 export const Tags: FC<TagsProps> = ({
-  tags, onTagAdded, onTagDeleted, onTagIdDeleted, tagPrefix, inputPlaceholder, addBtnText, isReadOnly, getOptions, disableCreate, onTagIdAdded
+  tags, onTagAdded, onTagDeleted, onTagIdDeleted, tagPrefix, inputPlaceholder, addBtnText, isReadOnly, getOptions, disableCreate, onTagIdAdded, onTagObjAdded, onTagObjRemoved
 }) => {
 
   if (typeof tagPrefix === 'undefined')
@@ -80,6 +87,7 @@ export const Tags: FC<TagsProps> = ({
 
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState('');
+  const [selectedObj, setSelectedObj] = useState<any>();
   const [addMode, setAddMode] = useState(false);
   const [hideMode, setHideMode] = useState(true);
   const [hidden, setHidden] = useState(0);
@@ -107,14 +115,16 @@ export const Tags: FC<TagsProps> = ({
       <div className={styles.tag_adder}>
         {addMode && !disableCreate && (
           <AutocompleteCreatable  getOptions={getTagOptions ?? getTagOptionsDef}
-            onChanged={(data:any) => { setQuery(data.label);  setSelectedId(data.value); }} 
+            onChanged={(data:any) => { setQuery(data.label);  setSelectedId(data.value); setSelectedObj(data); }} 
             onCreateOption={s => { setQuery(s); eventHandler(
               s,
               '',
+              undefined,
               addMode,
               setQuery,
               setAddMode,
               onTagAdded,
+              onTagObjAdded,
               onTagDeleted,
               onTagIdDeleted,
               onTagIdAdded
@@ -124,7 +134,7 @@ export const Tags: FC<TagsProps> = ({
         )}
         {addMode && !isReadOnly && disableCreate && getTagOptions && (
           <Autocomplete2  defaultInputValue={query} getOptions={getTagOptions} defaultOptions
-          onChanged={(data:any) => { setQuery(data.label); setSelectedId(data.value); }} onInputChanged={(v) => { if (v) setQuery(v); } } 
+          onChanged={(data:any) => { setQuery(data.label); setSelectedId(data.value); setSelectedObj(data); }} onInputChanged={(v) => { if (v) setQuery(v); } } onLinkOptionClick={() => setAddMode(false)}
           />
         )}
         {addMode && !isReadOnly && disableCreate && !getTagOptions && (
@@ -137,10 +147,12 @@ export const Tags: FC<TagsProps> = ({
           onClick={() => eventHandler(
             query,
             selectedId,
+            selectedObj,
             addMode,
             setQuery,
             setAddMode,
             onTagAdded,
+            onTagObjAdded,
             onTagDeleted,
             onTagIdDeleted,
             onTagIdAdded
@@ -163,7 +175,7 @@ export const Tags: FC<TagsProps> = ({
             value={ tagPrefix + tag.value }
             valueId={tag.id}
             hideMode={hideMode}
-            onDelete={onTagDeleted}
+            onDelete={(s) => { if (onTagDeleted) onTagDeleted(s); if (onTagObjRemoved) onTagObjRemoved(tag); }}
             onDeleteId={onTagIdDeleted}
             disableDelete={isReadOnly}
           />

@@ -44,7 +44,6 @@ import { searchMetaColumns } from '../../services/pages/metadata';
 import { EditPage } from '../../components/EditPage';
 import classNames from 'classnames';
 import { FieldTextEditor } from '../../components/FieldTextEditor';
-import { RelatedObjectsControl } from '../../components/RelatedObjectsControl';
 
 export function Sample() {
   const navigate = useNavigate();

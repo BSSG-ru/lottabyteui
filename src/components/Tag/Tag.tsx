@@ -23,6 +23,7 @@ export type TagProps = {
   onClick?: () => void;
   onDelete?: (tagName: string) => void;
   onDeleteId?: (tagId: string) => void;
+
 };
 
 export const Tag: FC<TagProps> = ({

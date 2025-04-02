@@ -85,6 +85,11 @@ export const ArtifactInfo: FC<ArtifactInfoProps> = ({ artifactType, tagNames, st
 
     return (
         <div className={styles.artifact_info}>
+            {favControl && (!state || state == 'PUBLISHED') && (
+                <div className={classNames(styles.fav, {[styles.active]: isInFav})} onClick={favClick}>
+                    <Star />
+                </div>
+            )}
             <div className={classNames(styles.artifact_type, { [styles.transparent]: type == 'transparent' })}>
                 {artifactType == 'domain' && (<><Domains /><div className={styles.name}>{i18n('Домен')}</div></>)}
                 {artifactType == 'system' && (<><Systems /><div className={styles.name}>{i18n('Система')}</div></>)}
@@ -94,6 +99,7 @@ export const ArtifactInfo: FC<ArtifactInfoProps> = ({ artifactType, tagNames, st
                 {artifactType == 'entity_sample' && (<><Samples /><div className={styles.name}>{i18n('Сэмпл')}</div></>)}
                 {artifactType == 'data_asset' && (<><Assets /><div className={styles.name}>{i18n('Актив')}</div></>)}
                 {artifactType == 'indicator' && (<><Indicators /><div className={styles.name}>{i18n('Показатель')}</div></>)}
+                {artifactType == 'etl' && (<><Indicators /><div className={styles.name}>{i18n('Трансформация')}</div></>)}
                 {artifactType == 'business_entity' && (<><BusinessEntities /><div className={styles.name}>{i18n('Глоссарий')}</div></>)}
                 {artifactType == 'product' && (<><Products /><div className={styles.name}>{i18n('Продукт')}</div></>)}
                 {artifactType == 'task' && (<><Tasks /><div className={styles.name}>{i18n('Задача')}</div></>)}
@@ -114,12 +120,7 @@ export const ArtifactInfo: FC<ArtifactInfoProps> = ({ artifactType, tagNames, st
                     {domainNames.filter(x => x).map((dn, i) => <div key={`ai-domain-${id}-${i}`} className={styles.domain} dangerouslySetInnerHTML={{__html: dn}}></div>)}
                 </div>
             )}
-            {favControl && (!state || state == 'PUBLISHED') && (
-                <div className={classNames(styles.fav, {[styles.active]: isInFav})} onClick={favClick}>
-                    <label>{i18n('Избранное')}</label>
-                    <Star />
-                </div>
-            )}
+            
         </div>
     );
 };

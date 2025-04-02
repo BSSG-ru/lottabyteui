@@ -75,12 +75,14 @@ export function MetaDataList() {
               onRowClick={(row: any) => {
                 navigate(`/metadata/${encodeURIComponent(row.id)}`);
               }}
+              onEditClicked={(row:any) => { navigate(`/metadata/${encodeURIComponent(row.id)}`); }}
               onPageChange={(page: number) => (
                 setState(() => ({ p: page }))
               )}
               onQueryChange={(query: string) => (
                 setState(() => ({ p: undefined, q: query }))
               )}
+              allowTilesView
             />
         </>
       )}

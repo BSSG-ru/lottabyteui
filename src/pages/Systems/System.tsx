@@ -170,6 +170,8 @@ export function System() {
 
               <FieldArrayEditor
                 key={`ed-dom-${systemId}`}
+                artifactType='domain'
+                useExtSearch
                 getOptions={getDomainOptions}
                 isReadOnly={isReadOnly}
                 label={i18n('Домены')}
@@ -178,7 +180,9 @@ export function System() {
                 addBtnText={i18n('Добавить')}
                 valueSubmitted={() => { updateSystemField('domain_ids', data.entity.domain_ids); }}
                 onValueIdAdded={(id: string) => {
-                  setData((prev:any) => ({ ...prev, entity: { ...prev.entity, domain_ids: [...prev.entity.domain_ids, id] } }));
+                  let d = {...data};
+                  (d.entity.domain_ids as string[]).push(id);
+                  setData(d);
                 }}
                 onValueIdRemoved={(id: string) => {
                   const arr = [...data.entity.domain_ids];

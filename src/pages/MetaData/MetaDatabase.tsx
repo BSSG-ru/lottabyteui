@@ -107,9 +107,7 @@ export function MetaDatabase() {
             (databaseVersionId ? getMetaDatabaseVersion(databaseId, databaseVersionId) : getMetaDatabase(databaseId)).then(json => {
                 setData({ entity: json, metadata: { id: json.id, state: json.state, version_id: json.version_id }});
 
-                setTags(
-                    json.tags ? json.tags.map((x: any) => ({ value: x.entity.name })) : [],
-                  );
+                setTags(json.tags);
 
                 /*getRatingData(databaseId)
                     .then((json) => {

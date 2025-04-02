@@ -135,6 +135,7 @@ export function LogicObjects() {
             onRowClick={(row: any) => {
               navigate(`/logic-objects/edit/${encodeURIComponent(row.id)}`);
             }}
+            onEditClicked={(row:any) => { navigate(`/logic-objects/edit/${encodeURIComponent(row.id)}`); }}
             onDeleteClicked={(row: any) => {
               setDelObjectData({ id: row.id, name: row.name });
               setShowDelDlg(true);
@@ -145,6 +146,7 @@ export function LogicObjects() {
             onQueryChange={(query: string) => (
               setState(() => ({ p: undefined, q: query }))
             )}
+            allowTilesView
           />
           
           <DeleteObjectModal show={showDelDlg} objectTitle={delObjectData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />

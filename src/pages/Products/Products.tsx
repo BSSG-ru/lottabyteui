@@ -144,6 +144,7 @@ export function Products() {
               onRowClick={(row: any) => {
                 navigate(`/products/edit/${encodeURIComponent(row.id)}`);
               }}
+              onEditClicked={(row:any) => { navigate(`/products/edit/${encodeURIComponent(row.id)}`); }}
               
               onDeleteClicked={(row: any) => {
                 setDelProductData({ id: row.id, name: row.name });
@@ -155,6 +156,7 @@ export function Products() {
               onQueryChange={(query: string) => (
                 setState(() => ({ p: undefined, q: query }))
               )}
+              allowTilesView
             />
           
           <DeleteObjectModal show={showDelDlg} objectTitle={delProductData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />

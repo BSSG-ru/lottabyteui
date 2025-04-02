@@ -5,8 +5,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import styles from './Search.module.scss';
-import { searchPost } from '../../services/pages/search';
-import { doNavigate, getArtifactTypeDisplayName, getArtifactUrl, getTablePageSize, handleHttpError, i18n, setCookie, setTablePageSize } from '../../utils';
+import { buildElasticSearchRequest, saveSearchQuery, searchPost } from '../../services/pages/search';
+import { doNavigate, getArtifactTypeDisplayName, getArtifactUrl, getTablePageSize, handleHttpError, i18n, searchArtifactTypes, setCookie, setTablePageSize, uuid } from '../../utils';
 import { Pagination } from '../../components/Pagination';
 
 import classNames from 'classnames';
@@ -15,6 +15,14 @@ import Cookies from 'js-cookie';
 import { Autocomplete2 } from '../../components/Autocomplete2';
 import { ArtifactInfo } from '../../components/ArtifactInfo';
 import { SearchCrumbs } from '../../components/SearchCrumbs';
+import { SearchPill } from '../../components/SearchPill';
+import { Dropdown } from 'react-bootstrap';
+import { Button } from '../../components/Button';
+
+import { ReactComponent as SortAscIco } from '../../assets/icons/sort-asc.svg';
+import { ReactComponent as SortDescIco } from '../../assets/icons/sort-desc.svg';
+import { searchTags } from '../../services/pages/tags';
+import { Tag } from '../../components/Tag';
 
 
 export function Search() {
@@ -22,111 +30,37 @@ export function Search() {
   const [totalHits, setTotalHits] = useState(0);
   const [totalPhrase, setTotalPhrase] = useState<string>('');
   const [searchLoading, setSearchLoading] = useState(false);
+  const [useFlatLayout, setUseFlatLayout] = useState(true);
+  const [includeArchive, setIncludeArchive] = useState(false);
+  const [sortBy, setSortBy] = useState('_score');
+  const [sortOrderDesc, setSortOrderDesc] = useState(true);
   const navigate = useNavigate();
+
+  const sortByOptions:any = { '_score': i18n('Релевантность'), 'name.keyword': i18n('Название'), 'artifact_type_display_name.keyword': i18n('Тип') };
 
   const [searchParams] = useSearchParams();
   const [searchRequest, setSearchRequest] = useState<any>(null);
 
-  const ck_fat = Cookies.get('search-filters');
+  const ck_fat = Cookies.get('search-artifact-types');
 
-  const [filterArtifactTypes, setFilterArtifactTypes] = useState<any>((ck_fat && ck_fat.indexOf('metadata') != -1) ? JSON.parse(ck_fat) : {
-    domain: true,
-    system: true,
-    task: true,
-    entity: true,
-    entity_query: true,
-    entity_sample: true,
-    data_asset: true,
-    indicator: true,
-    business_entity: true,
-    product: true,
-    dq_rule: true,
-    entity_attribute: true,
-    metadata: true
-  });
+  const [selectedArtifactTypes, setSelectedArtifactTypes] = useState<string[]>(ck_fat ? JSON.parse(ck_fat) : []);
+  const [selectedArtifacts, setSelectedArtifacts] = useState<any[]>([]);
+  const [selectedArtifactAttribs, setSelectedArtifactAttribs] = useState<any[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [query, setQuery] = useState('');
+  const [userDomains, setUserDomains] = useState<any>(undefined);
+  const [readyToSearch, setReadyToSearch] = useState(false);
 
   useEffect(() => {
-    Cookies.set('search-filters', JSON.stringify(filterArtifactTypes), { expires: 500 });
-  }, [ filterArtifactTypes ]);
+    Cookies.set('search-artifact-types', JSON.stringify(selectedArtifactTypes), { expires: 500 });
+  }, [ selectedArtifactTypes ]);
 
-  const buildSearchRequest = (q: string, filterArtifactTypes: any, userDomains: any, from: number, size: number) => {
-
-    let parts = q.toLowerCase().split(' ').filter(s => s);
-    let tags_parts = parts.filter(s => s.indexOf('#') === 0);
-
-    let inner_q:any = {
-      'query_string': {
-        'query': `${parts.filter(s => s.indexOf('#') !== 0).map(s => ('*' + s + '*')).join(' ')}`,
-        'default_operator': 'AND'
-      }
-    };
-
-    if (tags_parts.length > 0) {
-      let tags_q = {
-        'query_string': {
-          fields: ['tags'],
-          query: `${tags_parts.map(s => ('*' + s.substring(1, s.length) + '*')).join(' ')}`,
-        }
-      };
+  useEffect(() => {
+    if (readyToSearch && query)
+      setSearchRequest(buildElasticSearchRequest((query + ' ' + selectedTags.map(t => '#' + t).join(' ')).trim(), selectedArtifactTypes, selectedArtifacts, selectedArtifactAttribs, includeArchive, sortBy, sortOrderDesc ? 'desc' : 'asc', userDomains, 0, getTablePageSize()));
       
-      if (parts.length > tags_parts.length) {
-        inner_q = {
-          bool: {
-            should: [
-              inner_q,
-              tags_q
-            ]
-          }
-        };
-      } else {
-        inner_q = tags_q;
-      }
-    }
-
-    var filter_by_at:any[] = [];
-    Object.keys(filterArtifactTypes).filter(x => filterArtifactTypes[x]).forEach(at => {
-      if (at == 'metadata') {
-        filter_by_at.push({ match: { artifact_type: 'meta_database' }});
-        filter_by_at.push({ match: { artifact_type: 'meta_object' }});
-        filter_by_at.push({ match: { artifact_type: 'meta_column' }});
-      } else
-        filter_by_at.push({ match: { artifact_type: at }});
-    });
-    if (filter_by_at.length == 0) {
-      Object.keys(filterArtifactTypes).forEach(at => {
-        
-        filter_by_at.push({ match: { artifact_type: true }});
-      });
-    }
-
-    var must = [
-      inner_q,
-      {
-        bool: {
-          should: filter_by_at,
-        },
-      },
-    ];
-
-    if (userDomains) {
-      must.push({
-        bool: {
-          should: userDomains.map((x:string) => ({ match: { domains: x } }))
-        }
-      });
-    }
-
-    return {
-      size,
-      from,
-      _source: ['artifact_type', 'id', 'artifact_id', 'name', 'short_description', 'domains', 'entity_id', 'tech_name', 'artifact_state', 'meta_database_id', 'meta_object_type'],
-      query: {
-        bool: {
-          must: must,
-        },
-      },
-    }
-  };
+    
+  }, [query, selectedArtifactTypes, selectedArtifacts, selectedArtifactAttribs, selectedTags, includeArchive, sortBy, sortOrderDesc, readyToSearch]);
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -134,12 +68,23 @@ export function Search() {
       userInfoRequest().then(resp => {
         resp.json().then(data => {
           setCookie('userp', data.permissions.join(','), { path: '/' });
-          setSearchRequest(buildSearchRequest(q, filterArtifactTypes, data.user_domains, 0, getTablePageSize()));
+          setQuery(q);
+          setUserDomains(data.user_domains);
+          
         });
       });
-      
     }
-  }, [searchParams, filterArtifactTypes]);
+
+    const at = searchParams.get('at');
+    if (at) {
+      if (at == 'all')
+        setSelectedArtifactTypes([]);
+      else
+        setSelectedArtifactTypes([ at ]);
+    }
+
+    setTimeout(() => setReadyToSearch(true), 300);
+  }, [searchParams]);
 
   useEffect(() => {
     var f = i18n('найдено');
@@ -195,19 +140,77 @@ export function Search() {
   };
 
   return (
-    <div className={styles.search_page}>
+    <div className={classNames(styles.search_page, { [styles.flat_layout]: useFlatLayout })}>
       <div className={styles.left}>
         <div className={styles.total_msg}>По запросу <span className={styles.q}>{searchParams.get('q')}</span> {totalPhrase}.</div>
-        <Autocomplete2 className={styles.select} defaultInputValue={Object.keys(filterArtifactTypes).filter(x => filterArtifactTypes[x]).length != 1 ? 'Все типы объектов' : getArtifactTypeDisplayName(Object.keys(filterArtifactTypes).filter(x => filterArtifactTypes[x])[0])} getOptions={async (s) => { return [{id: '', name: 'Все типы объектов'}, ...Object.keys(filterArtifactTypes).map((k:string) => ({id: k, name: getArtifactTypeDisplayName(k)}))].filter(x => x.name.toLowerCase().indexOf(s.toLowerCase()) !== -1) }} 
-          defaultOptions onChanged={(data: any) => {
-            var obj:any = {};
-            for (var k in filterArtifactTypes)
-              obj[k] = data.id ? false : true;
+        <div className={styles.filter_wrap}>
+          <Autocomplete2 key={uuid()} className={styles.select} defaultInputValue={'Все типы объектов'} getOptions={async (s) => { return [{id: '', name: 'Все типы объектов'}, ...searchArtifactTypes.map((k:string) => ({id: k, name: getArtifactTypeDisplayName(k)}))].filter(x => x.name.toLowerCase().indexOf(s.toLowerCase()) !== -1) }} 
+            defaultOptions onChanged={(data: any) => {
+              setSelectedArtifactTypes((prev) => ([...prev, data.id]));
+            }} />
+          <Autocomplete2 key={uuid()} className={styles.select_tags} defaultInputValue={''} placeholder={'Теги'} getOptions={async (s) => { return await searchTags(s, 1000); }} 
+            defaultOptions onChanged={(data: any) => {
+              setSelectedTags((prev) => ([...prev, data.name]));
+            }} />
+          <div className={styles.filter_pills}>
+            {selectedArtifactTypes.map((at, ind) => 
+              <SearchPill key={'pill-at-' + ind} artifactType={at} 
+                onDeleteClick={() => setSelectedArtifactTypes((prev) => ([...prev.filter((v,i) => i != ind)]))} 
+                onArtifactSelected={(a) => { 
+                  setSelectedArtifactTypes((prev) => ([...prev.filter((v,i) => i != ind)]))
+                  setSelectedArtifacts((prev) => ([...prev, a]));
+                }}
+                onArtifactAttribSelected={(attr, valId, valName) => {
+                  setSelectedArtifactTypes((prev) => ([...prev.filter((v,i) => i != ind)]))
+                  setSelectedArtifactAttribs((prev) => ([...prev, { attr: attr, valId: valId, valName: valName }]));
+                }} 
+              />
+            )}
+            {selectedArtifacts.map((art, ind) => 
+              <SearchPill key={'pill-at2-' + ind} artifactType={art.artifact_type} 
+                onDeleteClick={() => setSelectedArtifacts((prev) => ([...prev.filter((v,i) => i != ind)]))} 
+                onArtifactSelected={(a) => { setSelectedArtifacts((prev) => ([...prev.map((v,i) => i == ind ? a : v)])) }}
+                selectedArtifact={art}
+                onArtifactAttribSelected={(attr, valId, valName) => {
+                  setSelectedArtifacts((prev) => ([...prev.filter((v,i) => i != ind)]));
+                  setSelectedArtifactAttribs((prev) => ([...prev, { attr: attr, valId: valId, valName: valName }]));
+                }}
+              />
+            )}
+            {selectedArtifactAttribs.map((attrib, ind) => 
+              <SearchPill key={'pill-at3-' + ind} artifactType={attrib.attr.artifactType} 
+                onDeleteClick={() => setSelectedArtifactAttribs((prev) => ([...prev.filter((v,i) => i != ind)]))} 
+                onArtifactSelected={(a) => { 
+                  setSelectedArtifactAttribs((prev) => ([...prev.filter((v,i) => i != ind)]))
+                  setSelectedArtifacts((prev) => ([...prev, a]));
+                }}
+                selectedArtifactAttrib={attrib}
+                onArtifactAttribSelected={(attr, valId, valName) => {
+                  setSelectedArtifactAttribs((prev) => ([...prev.map((v,i) => i == ind ? { attr: attr, valId: valId, valName: valName } : v)]));
+                }}
+              />
+            )}
+            {selectedTags.map((tag, ind) => 
+              <Tag key={'tc-' + ind} value={'#' + tag} onDelete={(s) => setSelectedTags((prev) => ([...prev.filter(t => t != s)]))} />
+            )}
 
-            if (data.id)
-              obj[data.id] = true;
-            setFilterArtifactTypes(obj);
-          }} />
+          </div>
+        </div>
+        <div className={styles.filter_additional}>
+          <div className={styles.archive_switch + (includeArchive ? ' ' + styles.checked : '')}>
+            <div id="archive-switch-bg" className={styles.switch_bg} onClick={() => { setIncludeArchive(!includeArchive); }}>
+              <div id="archive-switch-handler" className={styles.switch_handler}></div>
+            </div>
+            <label onClick={() => setIncludeArchive(!includeArchive)}>{i18n('Архивные')}</label>
+          </div>
+          <Dropdown className={styles.dd_sort_by}>
+            <Dropdown.Toggle className={styles.toggle}>{sortByOptions[sortBy]}</Dropdown.Toggle>
+            <Dropdown.Menu>
+              {Object.keys(sortByOptions).map((k, i) => <Dropdown.Item key={'sb-opt-' + i} onClick={() => setSortBy(k)}>{sortByOptions[k]}</Dropdown.Item>)}
+            </Dropdown.Menu>
+          </Dropdown>
+          <Button background='none' className={styles.btn_sort_order} onClick={() => setSortOrderDesc(!sortOrderDesc)}>{sortOrderDesc ? (<SortDescIco />) : (<SortAscIco />)}</Button>
+        </div>
       </div>
       <div className={classNames(styles.right, { [styles.loading]: searchLoading })}>
         {hits.map((hit: any) => {

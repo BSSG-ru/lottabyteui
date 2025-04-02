@@ -1,3 +1,5 @@
+@import '../../assets/css/common.scss';
+
 .search_page {
     display: flex;
     align-items: stretch;
@@ -12,7 +14,7 @@
         padding: 20px;
         width: 312px;
         flex: 0 0 312px;
-        overflow: auto;
+        overflow: visible;
     }
 
     .right {
@@ -31,6 +33,14 @@
         }
     }
 
+    .filter_pills {
+        margin-top: 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+
+        
+    }
 
     .btn_filter_at {
         margin-right: 10px;
@@ -107,5 +117,114 @@
             overflow: hidden;
             white-space: normal;
         }
+    }
+
+    &.flat_layout {
+        flex-direction: column;
+        background: #fff;
+        border-radius: 16px;
+        padding: 20px 8px;
+
+        .left {
+            background: none;
+            padding: 0;
+            width: auto;
+            flex: none;
+            padding: 0 12px;
+        }
+
+        .right {
+            background: none;
+            padding: 0;
+            width: auto;
+        }
+
+        .filter_wrap {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .filter_pills {
+            margin: 0;
+        }
+    }
+}
+
+.filter_additional {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 0;
+}
+
+.archive_switch {
+    display: flex;
+    gap: 8px;
+
+    label {
+        font-size: 14px;
+        font-weight: 400;
+        cursor: pointer;
+    }
+
+    .switch_bg {
+        background: var(--neutral50);
+        position: relative;
+        width: 28px;        
+        height: 16px;
+        border-radius: 8px;
+        cursor: pointer;
+
+        .switch_handler {
+            width: 12px;
+            height: 12px;
+            border-radius: 6px;
+            
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            
+            background-color: #fff;
+
+            transition: all 0.3s ease;
+        }
+    }
+
+    &.checked {
+        .switch_bg {
+            background: var(--primary60);
+        }
+
+        .switch_handler {
+            left: 14px;
+        }
+    }
+}
+
+.dd_sort_by {
+    .toggle {
+        &, &:hover, &:focus-visible {
+            background: none;
+            border: none;
+            font-weight: 800;
+            color: var(--primary60);
+        }
+
+        &::after {
+            background: url(../../assets/icons/dd-down-blue.svg) no-repeat center center;
+        }
+    }
+}
+
+.btn_sort_order {
+    padding: 0;
+}
+
+.select_tags {
+    div:global(.item) {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
     }
 }

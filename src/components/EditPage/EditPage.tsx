@@ -206,7 +206,7 @@ export const EditPage: FC<EditPageProps> = ({
             </div>
           </div>
           <div className={styles.artifact_info_row}>
-            <ArtifactInfo artifactType={artifactType} state={data.metadata.state} favControl={artifactType != 'user'} artifactId={objectId} />
+            <ArtifactInfo artifactType={artifactType} state={data.metadata.state} favControl={artifactType != 'user' && artifactType != 'external_groups'} artifactId={objectId} />
             {(data.metadata.state == 'PUBLISHED' || data.metadata.state == 'ARCHIVED' || data.metadata.state == 'DRAFT_HISTORY') && getObjectVersions && (
               <Versions
                 version_id={objectVersionId || data.metadata.version_id}

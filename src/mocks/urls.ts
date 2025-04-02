@@ -20,7 +20,8 @@ export const urls: Urls = {
     settings: 'Settings',
     draft: 'Drafts',
     drafts: 'Drafts',
-    metadata: 'Metadata'
+    metadata: 'Metadata',
+    etls: 'ETLs'
   },
   2: {
     users: 'Users',

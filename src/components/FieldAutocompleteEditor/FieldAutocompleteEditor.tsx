@@ -5,9 +5,10 @@ import React, { FC, useEffect, useState } from 'react';
 
 import styles from './FieldAutocompleteEditor.module.scss';
 import { ReactComponent as CloseIcon } from '../../assets/icons/close.svg';
-import { getArtifactUrl, uuid } from '../../utils';
+import { getArtifactUrl, i18n, uuid } from '../../utils';
 import { Autocomplete2 } from '../Autocomplete2';
 import classNames from 'classnames';
+import { ExtSearchDlg } from '../ExtSearchDlg';
 
 export type FieldAutocompleteEditorProps = {
   className?: string;
@@ -41,6 +42,9 @@ export const FieldAutocompleteEditor: FC<FieldAutocompleteEditorProps> = ({
   const [value, setValue] = useState('');
   const [displayValue, setDisplayValue] = useState('');
   const [controlKey, setControlKey] = useState(uuid());
+  const [showExtSearch, setShowExtSearch] = useState(false);
+  const [extSearchCookieKey, setExtSearchCookieKey] = useState('ext-s-' + artifactType);
+  const useExtSearch = artifactType && ['domain', 'system', 'task', 'entity_query', 'entity', 'entity_sample', 'data_asset', 'indicator', 'etl', 'dq_rule', 'business_entity', 'product', 'metadata'].indexOf(artifactType) != -1;
 
   useEffect(() => {
     setValue(defaultValue ?? '');
@@ -71,6 +75,8 @@ export const FieldAutocompleteEditor: FC<FieldAutocompleteEditorProps> = ({
       return displayValue;
   };
 
+  const getOptionsFunc = useExtSearch ? async (s:string) => { var a = await getObjects(s); return ([{id: '', name: i18n('Расширенный поиск'), isLink: true, onClick: () => setShowExtSearch(true)}, ...a])} : getObjects;
+
   return (
     <div className={classNames(styles.field_editor, className, { [styles.error]: isRequired && showValidation && !value })}>
       {label && (<div className={styles.label}>{label}{isRequired && (<span className={styles.req}>*</span>)}</div>)}
@@ -79,7 +85,7 @@ export const FieldAutocompleteEditor: FC<FieldAutocompleteEditorProps> = ({
           <>
             <Autocomplete2 key={'ac2-' + controlKey}
               className={styles.autocomplete_comp}
-              getOptions={getObjects}
+              getOptions={getOptionsFunc}
               defaultOptions={defaultOptions}
               defaultInputValue={displayValue}
               onInputChanged={(v) => { if (!value) setDisplayValue(v); }}
@@ -91,6 +97,8 @@ export const FieldAutocompleteEditor: FC<FieldAutocompleteEditorProps> = ({
               }}
             />
             {allowClear && (<a className={styles.btn_clear} onClick={() => { setValue(''); setDisplayValue(''); if (valueSubmitted) valueSubmitted(''); }}><CloseIcon /></a>)}
+            {useExtSearch && (<ExtSearchDlg cookieKey={extSearchCookieKey} show={showExtSearch} onClose={() => setShowExtSearch(false)} filter={[ { column: 'artifact_type', operator: 'EQUAL', value: artifactType } ]} 
+              onSubmit={(row:any) => { setValue(row.id); setDisplayValue(row.name); if (valueSubmitted) valueSubmitted(row.id); setShowExtSearch(false); }} />)}
           </>
         )}
       </div>

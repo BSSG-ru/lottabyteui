@@ -99,12 +99,14 @@ export function Drafts() {
             onRowClick={(row: any) => {
               navigate(getArtifactUrl(row.id, row.artifact_type));
             }}
+            onEditClicked={(row:any) => { navigate(getArtifactUrl(row.id, row.artifact_type)); }}
             onPageChange={(page: number) => (
               setState(() => ({ p: page }))
             )}
             onQueryChange={(query: string) => (
               setState(() => ({ p: undefined, q: query }))
             )}
+            allowTilesView
           />
           
         </>

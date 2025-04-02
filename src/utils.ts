@@ -16,9 +16,12 @@ import { getSystemConnection, getSystemConnections } from './services/pages/syst
 import { getIndicatorType, getIndicatorTypes } from './services/pages/indicators';
 import { getUser, getUsers } from './services/pages/users';
 import { getArtifactActions, getArtifactType, getWorkflowableArtifactTypes } from './services/pages/artifacts';
+import { getETLType, getETLTypes } from './services/pages/etls';
 
 export const regexExp = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/gi;
 export const regexNum = /^[0-9]+$/gi;
+
+export const searchArtifactTypes = [ 'data_asset', 'entity_attribute', 'business_entity', 'domain', 'task', 'entity_query', 'metadata', 'entity', 'indicator', 'dq_rule', 'product', 'system', 'entity_sample', 'etl' ];
 
 export function i18n(phrase: string) {
   const language = 'ru'; // navigator.languages[0]
@@ -109,25 +112,27 @@ export function handleHttpResponse(resp: Response, asText?: boolean) {
 
       if (asText !== undefined) { return resp.text(); }
       return resp.json();
-    case 400: case 404: case 500: case 409:
+    case 400: case 401: case 403: case 404: case 500: case 409:
       try {
-      resp.clone().json().then((json) => {
-        if (json.errors !== undefined && json.errors.length > 0) {
-          json.errors.forEach((element: any) => {
-              var msg = element.message;
-              if (!msg) {
-                msg = element.code;
-                if (msg == 'not_found')
-                  msg = i18n('объект не найден');
-                msg = i18n('Ошибка') + ': ' + msg;
-              }
-              if (!msg)
-                msg = i18n('Ошибка');
-              (window as any).notices.addNotice('error', msg);
-          });
-        } else {
-          throw Error(`Ошибка ${resp.statusText}`);
-        }
+        resp.clone().json().then((json) => {
+          if (json.errors !== undefined && json.errors.length > 0) {
+            if (resp.status != 401) {
+              json.errors.forEach((element: any) => {
+                var msg = element.message;
+                if (!msg) {
+                  msg = element.code;
+                  if (msg == 'not_found')
+                    msg = i18n('объект не найден');
+                  msg = i18n('Ошибка') + ': ' + msg;
+                }
+                if (!msg)
+                  msg = i18n('Ошибка');
+                (window as any).notices.addNotice('error', msg);
+              });
+            }
+          } else {
+            throw Error(`Ошибка ${resp.statusText}`);
+          }
         })
         .catch(handleHttpError);
       } catch (e) {
@@ -164,6 +169,8 @@ export function getArtifactListUrl(artifactType: string) {
       return `/metadata/`;
     case 'system_connection':
       return `/settings/connections/`;
+    case 'etl':
+      return `/etl/`;
     default:
       return `/${artifactType}s/`;
   }
@@ -193,6 +200,8 @@ export function getArtifactUrl(artifactId: string, artifactType: string) {
       return `/metadata/${artifactId}?t=4`;
     case 'system_connection':
       return `/settings/connections/edit/${artifactId}`;
+    case 'etl':
+      return `/etl/edit/${artifactId}`;
     default:
       return `/${artifactType}s/edit/${artifactId}`;
   }
@@ -232,6 +241,8 @@ export const getArtifactTypeDisplayName = (artifact_type: string, plural?: boole
       return i18n('Метаданные: таблица/представление');
     case 'meta_column':
       return i18n('Метаданные: колонка');
+    case 'etl':
+      return plural ? i18n('Трансформации') : i18n('Трансформация');
     default:
       return artifact_type;
   }
@@ -267,6 +278,25 @@ export const getIndicatorTypeDisplayValue = async (i: string) => {
 };
 
 export const getIndicatorTypeAutocompleteObjects = async (search: string) => getIndicatorTypes().then((json) => {
+  const res = [];
+  const map = new Map();
+  for (let i = 0; i < json.length; i += 1) {
+    res.push({ id: json[i].id, name: json[i].name });
+    map.set(json[i].id, json[i].name);
+  }
+  return res.filter((x) => x.name.toLowerCase().indexOf(search.toLowerCase()) !== -1);
+});
+
+export const getETLTypeDisplayValue = async (i: string) => {
+  if (!i) return '';
+
+  return getETLType(i).then((json: any) => {
+    if (json && json.name) return json.name;
+    return '';
+  }).catch(handleHttpError);
+};
+
+export const getETLTypeAutocompleteObjects = async (search: string) => getETLTypes().then((json) => {
   const res = [];
   const map = new Map();
   for (let i = 0; i < json.length; i += 1) {
@@ -378,7 +408,7 @@ export const getUserDisplayValue = async (identity: string) => {
     });
 };
 
-export const getUserAutocompleteObjects = async (search: string) => getUsers({
+/*export const getUserAutocompleteObjects = async (search: string) => getUsers({
   sort: 'username+',
   global_query: search,
   limit: 1000,
@@ -391,7 +421,7 @@ export const getUserAutocompleteObjects = async (search: string) => getUsers({
     res.push({ id: json.items[i].id, name: json.items[i].username, description: json.items[i].display_name });
   }
   return res;
-});
+});*/
 
 export const getDQRuleDisplayValue = async (identity: string) => getDQRuleLocal(identity).then((json) => json.name);
 export const getDQRuleSettings = async (identity: string) => {
@@ -648,7 +678,7 @@ export const tagAddedHandler = (tagName: string, artifactId: string, artifactTyp
     if (!tags.some((item) => item.value === tagName)) {
       setLoading(true);
 
-      if (artifactState === 'PUBLISHED' && artifactType != 'meta_database') {
+      if (artifactState === 'PUBLISHED' && artifactType != 'meta_database' && artifactType != 'entity_sample') {
         createDraft(artifactId, artifactType).then((json) => {
           if (json.metadata.id) {
             addTag(json.metadata.id, artifactType, tagName).then(() => {
@@ -675,7 +705,7 @@ export const tagDeletedHandler = (tagName: string, artifactId: string, artifactT
   if (artifactId) {
     setLoading(true);
 
-    if (artifactState === 'PUBLISHED' && artifactType != 'meta_database') {
+    if (artifactState === 'PUBLISHED' && artifactType != 'meta_database' && artifactType != 'entity_sample') {
       createDraft(artifactId, artifactType).then((json) => {
         if (json.metadata.id) {
           deleteTag(json.metadata.id, artifactType, tagName).then(() => {

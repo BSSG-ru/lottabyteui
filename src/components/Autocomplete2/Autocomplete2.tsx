@@ -18,6 +18,7 @@ export type Autocomplete2Props = {
   onChanged: (value: string) => void;
   onInputChanged?: (value: string) => void;
   placeholder?: string;
+  onLinkOptionClick?: () => void;
 };
 
 export const Autocomplete2: FC<Autocomplete2Props> = ({
@@ -30,6 +31,7 @@ export const Autocomplete2: FC<Autocomplete2Props> = ({
   onChanged,
   onInputChanged,
   placeholder,
+  onLinkOptionClick
 }) => {
   const localClassName = className ?? '';
 
@@ -46,10 +48,10 @@ export const Autocomplete2: FC<Autocomplete2Props> = ({
               var p:any = el.parentNode;
               while (p && (!p.className || p.className.indexOf('scrollable') == -1))
                 p = p.parentNode;
-              if (p)
+              /*if (p)
                 setTop((el.offsetTop - (p as any).scrollTop + 80) ?? 0);
               else
-              setTop((el.offsetTop - (window as any).scrollY + 80) ?? 0);
+                setTop((el.offsetTop - (window as any).scrollY + 80) ?? 0);*/
             }
 
             setDropdownItems(res);
@@ -99,8 +101,8 @@ export const Autocomplete2: FC<Autocomplete2Props> = ({
       <div className={styles.select_wrap}>
         <input type="text" className={styles.input_search} placeholder={placeholder} value={inputValue} onFocus={() => inputFocus()} onBlur={() => { setTimeout( () => { setDropdownShown(false); }, 200);}} onChange={(e) => setInputValue(e.target.value)} onKeyUp={(e) => inputKeyUp(e)} />
         <div className={styles.btn_open} onClick={() => { if (dropdownShown) setDropdownShown(false); else requestItems(''); }}></div>
-        <div className={classNames(styles.dropdown, { [styles.opened]: dropdownShown })} style={{ top: top + 'px'}}>
-            {dropdownItems.map((item, index) => <div key={'dd-i-' + index} className={styles.item} onClick={() => dropdownItemClick(item)}>{item.name}</div>)}
+        <div className={classNames(styles.dropdown, 'dropdown', { [styles.opened]: dropdownShown })}>
+            {dropdownItems.map((item, index) => <div key={'dd-i-' + index} className={classNames(styles.item, 'item', {[styles.link]: item.isLink})} onClick={item.isLink ? (() => { item.onClick(); if (onLinkOptionClick) onLinkOptionClick(); }) : () => dropdownItemClick(item)}>{item.name}</div>)}
         </div>
       </div>
     </div>

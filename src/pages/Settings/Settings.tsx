@@ -11,6 +11,7 @@ import { ModalDlg } from '../../components/ModalDlg';
 import { renderDate, Table } from '../../components/Table';
 import { Tabs } from '../../components/Tabs';
 import { TaskParamsControl } from '../../components/TaskParamsControl/TaskParamsControl';
+import { userInfoRequest } from '../../services/auth';
 import { getSettingsCount } from '../../services/pages/artifacts';
 import { createGroup, deleteGroup } from '../../services/pages/groups';
 import { createRole, deleteRole } from '../../services/pages/roles';
@@ -21,7 +22,7 @@ import { getArtifactActionAutocompleteObjects, getArtifactActionDisplayValue, ge
 import styles from './Settings.module.scss';
 
 export function Settings() {
-  const [loaded, setLoaded] = useState(true);
+  const [loaded, setLoaded] = useState(false);
   const [state, setState] = useUrlState({ sc: 1 }, { navigateMode: 'replace' });
 
   const [showDelDlg, setShowDelDlg] = useState(false);
@@ -57,6 +58,15 @@ export function Settings() {
   const [count, setCount] = useState({ users: 0, system_connections: 0, roles: 0, groups: 0, workflows: 0 });
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    userInfoRequest().then(resp => {
+      resp.json().then(data => {
+        if (data.permissions.filter((x:String) => x == 'settings_r').length > 0)
+          setLoaded(true);
+      });
+    }).catch(handleHttpError);
+  }, []);
 
   const userColumns = [
     { property: 'id', header: 'ID', isHidden: true },
@@ -405,7 +415,7 @@ export function Settings() {
                 <FieldTextEditor label={i18n('Название')} isRequired showValidation={showCreateGroupValidation} defaultValue='' valueSubmitted={(v) => setCreateGroupData((prev) => ({...prev, name: v ?? ''}))} />
             </div>
           </ModalDlg>
-          <ModalDlg show={showCreateWfDlg} title={i18n('Создать стюарда')} cancelBtnText={i18n('Отменить')} submitBtnText={i18n('Создать')} onClose={() => setShowCreateWfDlg(false)} dialogClassName={styles.dlg_create} onSubmit={submitCreateWf}>
+          <ModalDlg show={showCreateWfDlg} title={i18n('Создать процесс')} cancelBtnText={i18n('Отменить')} submitBtnText={i18n('Создать')} onClose={() => setShowCreateWfDlg(false)} dialogClassName={styles.dlg_create} onSubmit={submitCreateWf}>
             <div className={styles.fields}>
               <FieldAutocompleteEditor
                 label={i18n('Тип объекта')}

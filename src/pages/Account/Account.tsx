@@ -5,7 +5,7 @@
 import React, { useEffect, useState } from 'react';
 import useUrlState from '@ahooksjs/use-url-state';
 import styles from './Account.module.scss';
-import { getArtifactUrl, getCookie, handleHttpError, i18n, updateArtifactsCount } from '../../utils';
+import { deleteCookie, getArtifactUrl, getCookie, handleHttpError, i18n, updateArtifactsCount } from '../../utils';
 import { Loader } from '../../components/Loader';
 import { getDomain } from '../../services/pages/domains';
 import { useNavigate } from "react-router-dom";
@@ -18,6 +18,9 @@ import { Tabs } from '../../components/Tabs';
 import { FieldArrayEditor } from '../../components/FieldArrayEditor/FieldArrayEditor';
 import { getRole } from '../../services/pages/roles';
 import { FavsList } from '../../components/FavsList';
+import { changeTokenAction, changeValidateAction } from '../../redux/reducers/auth';
+import { useDispatch } from 'react-redux';
+import { Dispatch } from 'redux';
 
 export function Account() {
   const navigate = useNavigate();
@@ -86,6 +89,15 @@ export function Account() {
     });
   };
 
+  const dispatch = useDispatch();
+  const logoutHandler = (disp: Dispatch) => {
+    deleteCookie('token');
+    deleteCookie('login');
+    disp(changeTokenAction(null));
+    disp(changeValidateAction(null));
+    navigate('/signin');
+  };
+
   return (
     <div className={classNames(styles.page, styles.transparent, styles.loaded)}>
       {loading ? (
@@ -93,7 +105,8 @@ export function Account() {
       ) : (
         <>
           <div className={styles.title_row}>
-            <h1 className={styles.title}>{i18n('Профиль')}</h1>
+            <h1 className={styles.title}>{i18n('Профиль')}&nbsp;&nbsp;&nbsp;<Button background="outlined-blue" onClick={() => logoutHandler(dispatch)}>{i18n('Exit')}</Button></h1>
+            
             <div className={styles.buttons}>
               <Button onClick={updatePassword}>{i18n('Сохранить')}</Button>
             </div>
@@ -121,7 +134,6 @@ export function Account() {
 
                   <FieldArrayEditor
                     key={`usr-roles`}
-                    
                     isReadOnly
                     label={i18n('Роли')}
                     defaultValue={selectedRoleNames}
@@ -132,6 +144,8 @@ export function Account() {
                   />
 
                   <FieldArrayEditor
+                    artifactType='domain'
+                    useExtSearch
                     key={`usr-doms`}
                     isReadOnly
                     label={i18n('Домены')}
@@ -145,6 +159,8 @@ export function Account() {
                   {isSteward && (
                     <>
                       <FieldArrayEditor
+                        artifactType='domain'
+                        useExtSearch
                         key={`usr-stw-doms`}
                         isReadOnly
                         label={i18n('Домены стюарда')}

@@ -1,6 +1,6 @@
 import * as go from 'gojs';
 import { v4 as uuidv4 } from 'uuid';
-import { getArtifactUrl } from './utils';
+import { getArtifactTypeDisplayName, getArtifactUrl } from './utils';
 
 export function initEntitiesDiagram() {
     const gjs = go.GraphObject.make;
@@ -112,18 +112,7 @@ export function initEntitiesDiagram() {
                     gjs(go.TextBlock, // group title near top, next to button
                         { font: "14px Mulish", margin: new go.Margin(0, 10, 6, 10), stroke: '#ffffff', cursor: 'pointer', click: function(e:any, obj:any) { if (obj.part.data) window.open(getArtifactUrl(obj.part.data.id, obj.part.data.artifactType), '_blank'); } },
                         new go.Binding("text", "artifactType", function (at) {
-                            switch (at) {
-                                case 'entity': return 'Модель';
-                                case 'entity_sample': return 'Сэмпл';
-                                case 'domain': return 'Домен';
-                                case 'system': return 'Система';
-                                case 'product': return 'Продукт';
-                                case 'business_entity': return 'Глоссарий';
-                                case 'entity_query': return 'Запрос';
-                                case 'indicator': return 'Показатель';
-                                case 'data_asset': return 'Актив';
-                            }
-                            return at;
+                            return getArtifactTypeDisplayName(at, false);
                         })),
                     gjs(go.TextBlock, // group title near top, next to button
                         { 
@@ -408,19 +397,7 @@ export function initArtifactDiagram() {
                     gjs(go.TextBlock, // group title near top, next to button
                         { font: "14px Mulish", margin: new go.Margin(0, 10, 6, 10), stroke: '#ffffff', cursor: 'pointer', click: function(e:any, obj:any) { if (obj.part.data) window.open(getArtifactUrl(obj.part.data.artifactType == 'meta_object' ? obj.part.data.parentId : obj.part.data.id, obj.part.data.artifactType), '_blank'); } },
                         new go.Binding("text", "artifactType", function (at) {
-                            switch (at) {
-                                case 'entity': return 'Модель';
-                                case 'entity_sample': return 'Сэмпл';
-                                case 'domain': return 'Домен';
-                                case 'system': return 'Система';
-                                case 'product': return 'Продукт';
-                                case 'business_entity': return 'Глоссарий';
-                                case 'entity_query': return 'Запрос';
-                                case 'indicator': return 'Показатель';
-                                case 'data_asset': return 'Актив';
-                                case 'meta_object': return 'Метаданные';
-                            }
-                            return at;
+                            return getArtifactTypeDisplayName(at, false);
                         })),
                     gjs(go.TextBlock,
                         { 

@@ -66,11 +66,6 @@ export function Domains() {
     }
   ];
 
-  const handleDelDlgClose = () => {
-    setShowDelDlg(false);
-    return false;
-  };
-
   const delDlgSubmit = () => {
     setShowDelDlg(false);
     deleteDomain(delDomainData.id)
@@ -136,6 +131,7 @@ export function Domains() {
             onRowClick={(row: any) => {
               navigate(`/domains/edit/${encodeURIComponent(row.id)}`);
             }}
+            onEditClicked={(row:any) => { navigate(`/domains/edit/${encodeURIComponent(row.id)}`); }}
             onDeleteClicked={(row:any) => {
               setDelDomainData({ id: row.id, name: row.name });
               setShowDelDlg(true);
@@ -146,6 +142,7 @@ export function Domains() {
             onQueryChange={(query: string) => (
               setState(() => ({ p: undefined, q: query }))
             )}
+            allowTilesView
           />
           
 

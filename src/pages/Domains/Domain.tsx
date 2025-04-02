@@ -5,7 +5,7 @@ import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
 import classNames from 'classnames';
 import styles from './Domains.module.scss';
-import { doNavigate, handleHttpError, i18n, setDataModified, tagAddedHandler, tagDeletedHandler, uuid } from '../../utils';
+import { doNavigate, getArtifactTypeDisplayName, getArtifactUrl, handleHttpError, i18n, setDataModified, tagAddedHandler, tagDeletedHandler, uuid } from '../../utils';
 import {
   getDomain,
   getDomainVersions,
@@ -24,14 +24,16 @@ import { FieldVisualEditor } from '../../components/FieldVisualEditor';
 import { FieldTextEditor } from '../../components/FieldTextEditor';
 import { FieldTextareaEditor } from '../../components/FieldTextareaEditor';
 import { EditPage } from '../../components/EditPage';
+import { FieldArrayEditor } from '../../components/FieldArrayEditor/FieldArrayEditor';
+import { getArtifact, searchArtifacts } from '../../services/pages/artifacts';
 
 export function Domain() {
   
 
   const navigate = useNavigate();
 
-  const [data, setData] = useState({
-    entity: { name: '', description: '', short_description: '', system_ids: [] },
+  const [data, setData] = useState<any>({
+    entity: { name: '', description: '', short_description: '', system_ids: [], recommended_artifacts: [] },
     metadata: { id: '', artifact_type: 'domain', version_id: '', tags: [], state: 'PUBLISHED', ancestor_draft_id: '', workflow_task_id: '', created_by: '' },
   });
 
@@ -49,6 +51,7 @@ export function Domain() {
   const [showAddSystemDlg, setShowAddSystemDlg] = useState(false);
   const [unlinkedSystemsList, setUnlinkedSystemsList] = useState([]);
   const [addSystemIds, setAddSystemIds] = useState<string[]>([]);
+  const [selectedRecArtifactNames, setSelectedRecArtifactNames] = useState<any[]>([]);
 
   const [showDelSystemDlg, setShowDelSystemDlg] = useState(false);
   const [delSystemData, setDelSystemData] = useState<any>({ id: '', name: '' });
@@ -58,6 +61,21 @@ export function Domain() {
     setDomainVersionId(version_id ?? '');
     setDataModified(true);
   }, [id, version_id]);
+
+  useEffect(() => {
+    setSelectedRecArtifactNames(data.entity.recommended_artifacts.map((x:any) => ''));
+    data.entity.recommended_artifacts.forEach((artifact:any) => {
+      getArtifact(artifact.id).then((json:any) => {
+        let index = -1;
+        for (let i = 0; i < data.entity.recommended_artifacts.length; i++) {
+          if (data.entity.recommended_artifacts[i].id == json.id)
+            index = i;
+        }
+        
+        setSelectedRecArtifactNames((prev) => (prev.map((el, i) => { if (i == index) return `<div><a href="${getArtifactUrl(json.id, json.artifact_type)}">${json.name} (${getArtifactTypeDisplayName(json.artifact_type, false)})</a></div>`; else return el; })));
+      }).catch(handleHttpError);
+    });
+  }, [data.entity.recommended_artifacts]);
 
   const handleAddSystemDlgClose = () => {
     setShowAddSystemDlg(false);
@@ -87,6 +105,9 @@ export function Domain() {
     setData((prev: any) => ({ ...prev, entity: { ...prev.entity, [field]: value } }));
     setDataModified(true);
   };
+
+  const getRecArtifactOptions = async (search: string) => searchArtifacts({ filters: [], filters_for_join: [], global_query: search, limit: 1000, offset: 0, sort: null, state: 'PUBLISHED' })
+    .then((json) => json.items.map((item: any) => ({ value: item.id, label: item.name + ' (' + getArtifactTypeDisplayName(item.artifact_type, false) + ')', name: item.name + ' (' + getArtifactTypeDisplayName(item.artifact_type, false) + ')' })));
 
   return (
     <>
@@ -140,6 +161,32 @@ export function Domain() {
             </div>
             <div className={classNames(styles.col, styles.scrollable)}>
               <h2>Дополнительные параметры</h2>
+
+              <FieldArrayEditor
+                key={`ed-rec-${domainId}`}
+                useExtSearch
+                getOptions={getRecArtifactOptions}
+                isReadOnly={isReadOnly}
+                label={i18n('Рекомендуемое')}
+                className={styles.long_input}
+                defaultValue={selectedRecArtifactNames}
+                inputPlaceholder={i18n('Выберите')}
+                addBtnText={i18n('Добавить')}
+                valueSubmitted={() => { updateDomainField('recommended_artifacts', data.entity.recommended_artifacts); }}
+                onValueIdAdded={(id: string, name: string) => {
+                  getArtifact(id).then((json:any) => {
+                    let d = {...data};
+                    d.entity.recommended_artifacts.push({ id: id, artifact_type: json.artifact_type });
+                    setData(d);
+                  }).catch(handleHttpError);
+                  
+                }}
+                onValueIdRemoved={(id: string) => {
+                  const arr = [...data.entity.recommended_artifacts];
+                  arr.splice(parseInt(id), 1);
+                  setData((prev:any) => ({ ...prev, entity: { ...prev.entity, recommended_artifacts: arr } }));
+                }}
+              />
             </div>
           </div>
         },

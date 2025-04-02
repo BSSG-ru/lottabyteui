@@ -13,16 +13,16 @@ import { setRecentView } from '../../services/pages/recentviews';
 import { WFItemControl } from '../../components/WFItemControl/WFItemControl';
 import { ReactComponent as CloseIcon } from '../../assets/icons/close.svg';
 import { ReactComponent as PlusBlue } from '../../assets/icons/plus-blue.svg';
+import { ReactComponent as CrossBlue } from '../../assets/icons/cross-blue.svg';
+import { ReactComponent as NoDataIcon } from '../../assets/icons/no-data.svg';
 import {
   searchProducts, getProduct, getProductSupplyVariant, getProductType, getProductVersion, getProductVersions, searchProductSupplyVariants, searchProductTypes, updateProduct, deleteProduct, restoreProductVersion, archiveProduct, restoreProduct,
 } from '../../services/pages/products';
 import { getIndicator, searchIndicators } from '../../services/pages/indicators';
 import { ProductData, TDQRule, TData } from '../../types/data';
-import { ReactComponent as PlusIcon } from '../../assets/icons/plus.svg';
 import { ReactComponent as CrossIcon } from '../../assets/icons/cross.svg';
-import { Table } from '../../components/Table';
-import { getEntity, getEntityAttribute, getEntityAttributes, searchEntities } from '../../services/pages/dataEntities';
-import { Autocomplete2 } from '../../components/Autocomplete2';
+import { renderDate, Table } from '../../components/Table';
+import { getEntity, getEntityAttribute, getEntityAttributes } from '../../services/pages/dataEntities';
 import { FieldAutocompleteEditor } from '../../components/FieldAutocompleteEditor';
 import { getAsset, searchAssets } from '../../services/pages/dataAssets';
 import { FieldCheckboxEditor } from '../../components/FieldCheckboxEditor/FieldCheckboxEditor';
@@ -40,6 +40,7 @@ import useUrlState from '@ahooksjs/use-url-state';
 import { StaticNoticesArea } from '../../components/StaticNoticesArea';
 import { RatingBlock } from '../../components/RatingBlock';
 import { ArtifactAuthor } from '../../components/ArtifactAuthor';
+import { ModalDlg } from '../../components/ModalDlg';
 
 export type AttribData = {
   id: string;
@@ -72,9 +73,12 @@ export function Product() {
   const [selectedProductTypeNames, setSelectedProductTypeNames] = useState<any[]>([]);
   const [selectedProductSupplyVariantNames, setSelectedProductSupplyVariantNames] = useState<any[]>([]);
   const [linkedAttribs, setLinkedAttribs] = useState<any[]>([]);
+  const [tempLinkedAttribs, setTempLinkedAttribs] = useState<any[]>([]);
   const [isAttribsEditMode, setAttribsEditMode] = useState<boolean>(false);
   const [attribsEntity, setAttribsEntity] = useState<any>(null);
   const [entitiesCache, setEntityCache] = useState<any>({});
+
+  const [showAddAttrDlg, setShowAddAttrDlg] = useState(false);
 
   const [isReadOnly, setReadOnly] = useState(true);
   const [, setLoading] = useState(true);
@@ -155,9 +159,14 @@ export function Product() {
       getAsset(id).then((json) => {
         setSelectedDataAssetNames((prev) => ([...prev.slice(0, index), `<div><a href="${getArtifactUrl(json.metadata.id, 'data_asset')}">${json.entity.name}</a></div>`, ...prev.slice(index + 1)]));
         setAllowedEntityIds((prev) => ([...prev, json.entity.entity_id]));
+        getEntity(json.entity.entity_id).then((jsone) => {
+          setEntityCache((prev: any) => ({ ...prev, [json.entity.entity_id]: jsone }));
+        });
       }).catch(handleHttpError);
     });
   }, [data.entity.data_asset_ids]);
+
+  useEffect(() => { console.log('d', data); }, [data]);
 
   useEffect(() => {
     const a = [];
@@ -199,17 +208,17 @@ export function Product() {
     setLinkedAttribs([]);
     (data.entity.entity_attribute_ids ?? []).forEach((aid) => {
       getEntityAttribute(aid).then((json) => {
-        setLinkedAttribs((prev) => ([...prev, { ...json.entity, id: json.metadata.id }]));
+        setLinkedAttribs((prev) => ([...prev, { ...json.entity, id: json.metadata.id, created_at: json.metadata.created_at }]));
       });
     });
   }, [data.entity.entity_attribute_ids]);
 
   const removeLinkedAttrib = (id: string) => {
-    //setLinkedAttribs((prev: any) => ([ ...prev.filter((x: any) => x.id != id) ]));
+    setTempLinkedAttribs((prev: any) => ([ ...prev.filter((x: any) => x.id != id) ]));
 
-    updateProductField('entity_attribute_ids', [...data.entity.entity_attribute_ids.filter((x:any) => x != id)]);
+    //updateProductField('entity_attribute_ids', [...data.entity.entity_attribute_ids.filter((x:any) => x != id)]);
 
-    setDataModified(true);
+    
   };
 
   useEffect(() => {
@@ -232,32 +241,16 @@ export function Product() {
   }, [linkedAttribs]);
 
   const addLinkedAttrib = async (id: string) => {
-    if (linkedAttribs.filter((attr: AttribData) => attr.id == id).length > 0) {
+    
+    if (tempLinkedAttribs.filter((attr: AttribData) => attr.id == id).length > 0) {
       (window as any).notices.addNotice('error', 'Этот атрибут уже привязан');
       return;
     }
 
-    /*getEntityAttribute(id).then((json) => {
-      if (entitiesCache[json.entity.entity_id]) {
-        const newItems = linkedAttribs.items;
-        newItems.push({ ...json.entity, id: json.metadata.id, entity_name: entitiesCache[json.entity.entity_id].entity.name });
-        setLinkedAttribs((prev: any) => ({ ...prev, items: newItems }));
-        setDataModified(true);
-      } else {
-        getEntity(json.entity.entity_id).then((jsone) => {
-          setEntityCache((prev: any) => ({ ...prev, [json.entity.entity_id]: jsone }));
-
-          const newItems = linkedAttribs.items;
-          newItems.push({ ...json.entity, id: json.metadata.id, entity_name: jsone.entity.name });
-
-          setLinkedAttribs((prev: any) => ({ ...prev, items: newItems }));
-          setDataModified(true);
-        }).catch(handleHttpError);
-      }
-    }).catch(handleHttpError);*/
-
-    
-    updateProductField('entity_attribute_ids', [...data.entity.entity_attribute_ids, id]);
+    getEntityAttribute(id).then((json) => {
+      setTempLinkedAttribs((prev) => ([...prev, { ...json.entity, id: json.metadata.id, created_at: json.metadata.created_at }]));
+    });
+    //updateProductField('entity_attribute_ids', [...data.entity.entity_attribute_ids, id]);
   };
 
   const addAllLinkedAttribs = async (entity_id: string) => {
@@ -360,8 +353,6 @@ export function Product() {
   const getProductTypeOptions = async (search: string) => searchProductTypes({ filters: [], filters_for_join: [], global_query: search, limit: 99999, offset: 0, sort: 'name+', state: 'PUBLISHED' }).then((json) => json.items.map((item: any) => ({ value: item.id, label: item.name, name: item.name })));
 
   const getProductSupplyVariantOptions = async (search: string) => searchProductSupplyVariants({ filters: [], filters_for_join: [], global_query: search, limit: 99999, offset: 0, sort: 'name+', state: 'PUBLISHED' }).then((json) => json.items.map((item: any) => ({ value: item.id, label: item.name, name: item.name })));
-
-  const getEntityOptions = async (search: string) => searchEntities({ filters: [], filters_for_join: [], global_query: search, limit: 99999, offset: 0, sort: 'name+', state: 'PUBLISHED' }).then((json) => json.items.map((item: any) => ({ value: item.id, id: item.id, label: item.name, name: item.name })).filter((data: any) => allowedEntityIds.indexOf(data.id) != -1));
 
   const postSaveRequest = async () => {
     if (productId) {
@@ -468,24 +459,6 @@ export function Product() {
     }
   };
 
-  const addTermLink = () => {
-    setData((prev: any) => ({ ...prev, entity: { ...prev.entity, term_link_ids: [...prev.entity.term_link_ids, ''] } }));
-  };
-
-  const delTermLink = (k: number) => {
-    const arr: string[] = [...data.entity.term_link_ids];
-    arr.splice(k, 1);
-
-    updateProductField('term_link_ids', arr.filter((x) => x));
-  };
-
-  const updateTermLink = (k: number, id: string) => {
-    const arr: string[] = [...data.entity.term_link_ids];
-    if (arr.length > k) { arr[k] = id; } else { arr.push(id); }
-
-    updateProductField('term_link_ids', arr.filter((x) => x));
-  };
-
   const getTermLinkObjects = async (search: string) => getBusinessEntities({
     sort: 'name+',
     global_query: search,
@@ -528,6 +501,11 @@ export function Product() {
     }
     setDataModified(false);
   }).catch(handleHttpError); };
+
+  const addAttrDlgSubmit = () => {
+    updateProductField('entity_attribute_ids', [...tempLinkedAttribs.map(a => a.id)]);
+    setShowAddAttrDlg(false);
+  }
 
   return (
     <div className={classNames(styles.page, styles.transparent, { [styles.loaded]: isLoaded })}>
@@ -718,16 +696,19 @@ export function Product() {
 
               <FieldArrayEditor
                 key={`ed-prod-${productId}`}
+                artifactType='product'
+                useExtSearch
                 getOptions={getProductOptions}
                 isReadOnly={isReadOnly}
                 label={i18n('Продукты')}
-                className={styles.long_input}
                 defaultValue={selectedProductNames}
                 inputPlaceholder={i18n('Выберите продукт')}
                 addBtnText={i18n('Добавить')}
                 valueSubmitted={() => { updateProductField('product_ids', data.entity.product_ids); }}
                 onValueIdAdded={(id: string, name: string) => {
-                  setData((prev) => ({ ...prev, entity: { ...prev.entity, product_ids: [...prev.entity.product_ids, id] } }));
+                  let d = {...data};
+                  d.entity.product_ids.push(id);
+                  setData(d);
                 }}
                 onValueIdRemoved={(id: string) => {
                   const arr = [...data.entity.product_ids];
@@ -738,16 +719,19 @@ export function Product() {
 
               <FieldArrayEditor
                 key={`ed-ind-${productId}`}
+                artifactType='indicator'
+                useExtSearch
                 getOptions={getIndicatorOptions}
                 isReadOnly={isReadOnly}
                 label={i18n('Содержит показатели')}
-                className={styles.long_input}
                 defaultValue={selectedIndicatorNames}
                 inputPlaceholder={i18n('Выберите показатель')}
                 addBtnText={i18n('Добавить')}
                 valueSubmitted={() => { updateProductField('indicator_ids', data.entity.indicator_ids); }}
                 onValueIdAdded={(id: string, name: string) => {
-                  setData((prev) => ({ ...prev, entity: { ...prev.entity, indicator_ids: [...prev.entity.indicator_ids, id] } }));
+                  let d = {...data};
+                  d.entity.indicator_ids.push(id);
+                  setData(d);
                 }}
                 onValueIdRemoved={(id: string) => {
                   const arr = [...data.entity.indicator_ids];
@@ -761,13 +745,14 @@ export function Product() {
                 getOptions={getProductTypeOptions}
                 isReadOnly={isReadOnly}
                 label={i18n('Тип')}
-                className=''
                 defaultValue={selectedProductTypeNames}
                 inputPlaceholder={i18n('Выберите тип продукта')}
                 addBtnText={i18n('Добавить')}
                 valueSubmitted={() => { updateProductField('product_type_ids', data.entity.product_type_ids); }}
                 onValueIdAdded={(id: string, name: string) => {
-                  setData((prev) => ({ ...prev, entity: { ...prev.entity, product_type_ids: [...prev.entity.product_type_ids, id] } }));
+                  let d = {...data};
+                  d.entity.product_type_ids.push(id);
+                  setData(d);
                 }}
                 onValueIdRemoved={(id: string) => {
                   const arr = [...data.entity.product_type_ids];
@@ -787,7 +772,9 @@ export function Product() {
                 addBtnText={i18n('Добавить')}
                 valueSubmitted={() => { updateProductField('product_supply_variant_ids', data.entity.product_supply_variant_ids); }}
                 onValueIdAdded={(id: string, name: string) => {
-                  setData((prev) => ({ ...prev, entity: { ...prev.entity, product_supply_variant_ids: [...prev.entity.product_supply_variant_ids, id] } }));
+                  let d = {...data};
+                  d.entity.product_supply_variant_ids.push(id);
+                  setData(d);
                 }}
                 onValueIdRemoved={(id: string) => {
                   const arr = [...data.entity.product_supply_variant_ids];
@@ -798,6 +785,8 @@ export function Product() {
 
               <FieldArrayEditor
                 key={`ed-dass-${productId}`}
+                artifactType='data_asset'
+                useExtSearch
                 getOptions={getDataAssetOptions}
                 isReadOnly={isReadOnly}
                 label={i18n('Источники данных (активы)')}
@@ -807,7 +796,9 @@ export function Product() {
                 addBtnText={i18n('Добавить')}
                 valueSubmitted={() => { updateProductField('data_asset_ids', data.entity.data_asset_ids); }}
                 onValueIdAdded={(id: string) => {
-                  setData((prev) => ({ ...prev, entity: { ...prev.entity, data_asset_ids: [...prev.entity.data_asset_ids, id] } }));
+                  let d = {...data};
+                  d.entity.data_asset_ids.push(id);
+                  setData(d);
                 }}
                 onValueIdRemoved={(id: string) => {
                   const arr = [...data.entity.data_asset_ids];
@@ -855,6 +846,8 @@ export function Product() {
 
                 <FieldArrayEditor
                   key={`ed-syn-${productId}`}
+                  artifactType='business_entity'
+                  useExtSearch
                   getOptions={getTermLinkObjects}
                   isReadOnly={isReadOnly}
                   label={i18n('Ссылки на другие Термины')}
@@ -863,7 +856,9 @@ export function Product() {
                   addBtnText={i18n('Добавить')}
                   valueSubmitted={() => { updateProductField('term_link_ids', data.entity.term_link_ids); }}
                   onValueIdAdded={(id: string) => {
-                    setData((prev) => ({ ...prev, entity: { ...prev.entity, term_link_ids: [...prev.entity.term_link_ids, id] } }));
+                    let d = {...data};
+                    d.entity.term_link_ids.push(id);
+                    setData(d);
                   }}
                   onValueIdRemoved={(id: string) => {
                     const arr = [...data.entity.term_link_ids];
@@ -872,82 +867,7 @@ export function Product() {
                   }}
                 />
 
-              <div className={styles.attributes}>
-                <div className={styles.field_editor}>
-                  <div className={styles.row_h} data-uitest="product_lo_attr">
-                    <div className={styles.value}>{i18n('Атрибуты в связанных дата-активах')}</div>
-                    {!isReadOnly && (
-                      <Autocomplete2
-                        getOptions={getEntityOptions}
-                        defaultOptions
-                        className={styles.select_entity}
-                        placeholder={i18n('Выберите модель...')}
-                        onChanged={(data: any) => { setAttribsEntity(data); }}
-                        defaultInputValue={attribsEntity ? attribsEntity.name : ''}
-                      />
-                    )}
-                    
-
-                  </div>
-                  <div className={classNames(styles.row_linked_attribs, { [styles.hidden]: isReadOnly })}>
-
-                    <div className={styles.tbl}>
-                      <Table
-                        cookieKey='prod-attrs-linked'
-                        key={`tbl-la-${productId}-${linkedAttribs.length}`}
-                        columns={[
-                          { property: 'name', header: i18n('Название') },
-                          { property: 'attribute_type', header: i18n('Тип') },
-                          { property: 'entity_name', header: i18n('Модель') },
-                          { property: 'id', header: '', sortDisabled: true, filterDisabled: true, render: (item: any) => { return <div><a onClick={() => removeLinkedAttrib(item.id)} className={classNames(styles.btn_remove_attrib)}><CrossIcon /></a></div>; return <div />; } },
-                        ]}
-                        paginate
-                        dataUrl=""
-                        initialData={linkedAttribs ?? []}
-                        initialFetchRequest={{ offset: 0, limit: 5, filters: [] }}
-                        fullWidthLayout
-                        columnSearch
-                        subtitle={isAttribsEditMode ? (i18n('Привязанные атрибуты') + (linkedAttribs.length == 0 ? ` (${i18n('нет')})` : '')) : ''}
-                        tableButtons={isAttribsEditMode ? [
-                          {
-                            text: 'Отвязать все атрибуты',
-                            onClick: () => {
-                              setLinkedAttribs([]);
-                              setDataModified(true);
-                            }
-                          }
-                        ] : []}
-                      />
-                    </div>
-                  </div>
-                  {!isReadOnly && attribsEntity && (
-                    <div className={styles.row_entity_attribs}>
-                      <div className={styles.btns}>
-                        <Button background='outlined-blue' onClick={() => { addAllLinkedAttribs(attribsEntity.value); }}>{i18n('Привязать все')}</Button>
-                        <Button background='outlined-blue' onClick={() => { removeAllLinkedAttribs(attribsEntity.value); }}>{i18n('Отвязать все')}</Button>
-                      </div>
-                      <Table
-                        cookieKey='prods-attrs-unlinked'
-                        key={uuid()}
-                        columns={[
-                          { property: 'name', header: i18n('Название') },
-                          { property: 'attribute_type', header: i18n('Тип'), sortDisabled: true, filterDisabled: true },
-                          { property: 'entity_id', header: i18n('Модель'), sortDisabled: true, filterDisabled: true, render: (item: any) => <div>{attribsEntity ? attribsEntity.name : ''}</div> },
-                          { property: 'id', header: '', sortDisabled: true, filterDisabled: true, render: (item: any) => <div><a key={`a${linkedAttribs.length}${item.id}`} onClick={() => { addLinkedAttrib(item.id); }} className={styles.btn_add_attrib}><PlusIcon /></a></div> },
-                        ]}
-                        paginate
-                        dataUrl={attribsEntity ? `/v1/entities/search_attributes_by_entity_id/${encodeURIComponent(attribsEntity.value)}` : ''}
-                        initialFetchRequest={{ sort: 'name+', global_query: '', limit: 5, offset: 5 * (table2page - 1), filters: linkedAttribs.map((la: any) => ({ column: 'id', operator: 'NOT_EQUAL', value: la.id })), filters_preset: [], filters_for_join: [] }}
-                        showCreateBtn={false}
-                        fullWidthLayout
-                        columnSearch
-                        onPageChange={(page) => { setTable2Page(page); }}
-                        subtitle={i18n('Не привязанные атрибуты')}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
+              
              
             </div>
           </div>
@@ -957,6 +877,108 @@ export function Product() {
           title: i18n('Связи'),
           content: <div className={styles.tab_white}>
             <RelatedObjectsControl artifactId={productId} artifactType='product'></RelatedObjectsControl>
+          </div>
+        },
+        {
+          key: 'tab-attr',
+          title: i18n('Атрибуты'),
+          content: <div className={styles.tab_white}>
+            <div className={styles.attributes}>
+                <div className={styles.field_editor}>
+                  <div className={styles.row_h} data-uitest="product_lo_attr">
+                    {!isReadOnly && (
+                      <Button background='none-blue' onClick={() => { setTempLinkedAttribs([...linkedAttribs]); setShowAddAttrDlg(true);}}><PlusBlue /> Добавить атрибут</Button>
+                    )}
+                  </div>
+                  <div className={classNames(styles.row_linked_attribs, { [styles.hidden]: isReadOnly })}>
+
+                    <div className={styles.tbl}>
+                      <Table
+                        cookieKey='prod-attrs-linked'
+                        key={`tbl-la-${productId}-${linkedAttribs.length}`}
+                        columns={[
+                          { property: 'name', header: i18n('Название') },//
+                          { property: 'entity_name', header: i18n('Модель') },
+                          { property: 'attribute_type', header: i18n('Тип') },
+                          { property: 'is_pk', header: i18n('ПК') },
+                          { property: 'created_at', header: i18n('Дата создания'), render: (row: any) => renderDate(row, 'created_at') },
+                          {
+                            property: 'tags',
+                            header: i18n('Теги'),
+                            filterDisabled: false,
+                            sortDisabled: true,
+                            render: (row: any) => row.tags.join(', '),
+                          },
+                          { property: 'id', header: '', sortDisabled: true, filterDisabled: true, render: (item: any) => { return <div><a onClick={() => removeLinkedAttrib(item.id)} className={classNames(styles.btn_remove_attrib)}><CrossIcon /></a></div>; return <div />; } },
+                        ]}
+                        paginate
+                        dataUrl=""
+                        initialData={linkedAttribs ?? []}
+                        initialFetchRequest={{ offset: 0, limit: 5, filters: [] }}
+                        fullWidthLayout
+                        columnSearch
+                      />
+                    </div>
+                  </div>
+                  <ModalDlg show={showAddAttrDlg} title={i18n('Добавление атрибутов')} submitBtnText={i18n('Применить')} dialogClassName={classNames(styles.dlg_add_attr, 'dlg_flex')} cancelBtnText={i18n('Отменить')} 
+                    onClose={() => setShowAddAttrDlg(false)} onSubmit={addAttrDlgSubmit}>
+                      <div className={styles.inner}>
+                        <div className={styles.left}>
+                          <h4>{i18n('Доступно')}</h4>
+                          <Table
+                            cookieKey='prods-attrs-unlinked'
+                            key={uuid()}
+                            columns={[
+                              { property: 'name', header: i18n('Название') },
+                              { property: 'attribute_type', header: i18n('Тип'), sortDisabled: true, filterDisabled: true },
+                              { property: 'entity_id', header: i18n('Модель'), sortDisabled: true, filterDisabled: true, render: (item: any) => <div>{entitiesCache[item.entity_id].entity.name}</div> },
+                              
+                            ]}
+                            paginate
+                            dataUrl={productId ? `/v1/entities/search_attributes_for_product/${encodeURIComponent(productId)}` : ''}
+                            initialFetchRequest={{ sort: 'name+', global_query: '', limit: 5, offset: 5 * (table2page - 1), filters: tempLinkedAttribs.map((la: any) => ({ column: 'id', operator: 'NOT_EQUAL', value: la.id })), filters_preset: [], filters_for_join: [] }}
+                            showCreateBtn={false}
+                            fullWidthLayout
+                            columnSearch
+                            onPageChange={(page) => { setTable2Page(page); }}
+                            rowButtons={[
+                              { node: <PlusBlue />, onClick: (row:any) => { addLinkedAttrib(row.id); }, title: i18n('Добавить связь')}
+                            ]}
+                          />
+                        </div>
+                        <div className={styles.right}>
+                          <h4>{i18n('Добавлено')}</h4>
+                          {tempLinkedAttribs && tempLinkedAttribs.length > 0 ? (
+                            <Table
+                              cookieKey='prod-attrs-linked2'
+                              key={`tbl-la2-${productId}-${tempLinkedAttribs.length}`}
+                              columns={[
+                                { property: 'name', header: i18n('Название') },
+                                { property: 'attribute_type', header: i18n('Тип') },
+                                { property: 'entity_name', header: i18n('Модель') },
+                              ]}
+                              paginate
+                              dataUrl=""
+                              initialData={tempLinkedAttribs ?? []}
+                              initialFetchRequest={{ offset: 0, limit: 5, filters: [] }}
+                              fullWidthLayout
+                              columnSearch
+                              rowButtons={[
+                                { node: <CrossBlue />, onClick: (row:any) => { removeLinkedAttrib(row.id); }, title: i18n('Удалить связь')}
+                              ]}
+                            />
+                          ) : (
+                            <div className={styles.nodata_msg}>
+                              <NoDataIcon />
+                              <h5>{i18n('Атрибуты не добавлены')}</h5>
+                              <p>{i18n('Добавьте атрибуты из списка доступных')}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                  </ModalDlg>
+                </div>
+              </div>
           </div>
         },
         {

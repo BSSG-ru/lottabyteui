@@ -135,6 +135,7 @@ export function Indicators() {
             onRowClick={(row: any) => {
               navigate(`/indicators/edit/${encodeURIComponent(row.id)}`);
             }}
+            onEditClicked={(row:any) => { navigate(`/indicators/edit/${encodeURIComponent(row.id)}`); }}
             onDeleteClicked={(row: any) => {
               setDelObjectData({ id: row.id, name: row.name });
               setShowDelDlg(true);
@@ -145,6 +146,7 @@ export function Indicators() {
             onQueryChange={(query: string) => (
               setState(() => ({ p: undefined, q: query }))
             )}
+            allowTilesView
           />
          
 

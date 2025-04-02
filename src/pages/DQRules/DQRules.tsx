@@ -130,12 +130,14 @@ export function DQRules() {
               setDelObjectData({ id: row.id, name: row.name });
               setShowDelDlg(true);
             }}
+            onEditClicked={(row:any) => { navigate(`/dq_rule/edit/${encodeURIComponent(row.id)}`); }}
             onPageChange={(page: number) => (
               setState(() => ({ p: page }))
             )}
             onQueryChange={(query: string) => (
               setState(() => ({ p: undefined, q: query }))
             )}
+            allowTilesView
           />
           
           <DeleteObjectModal show={showDelDlg} objectTitle={delObjectData.name} onClose={() => { setShowDelDlg(false); return false; }} onSubmit={delDlgSubmit} />

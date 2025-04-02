@@ -277,6 +277,7 @@ export function BusinessEntity() {
               />
 
               <FieldArrayEditor
+                key='be-sel-alt-n'
                 isReadOnly={isReadOnly}
                 label={`${i18n('Альтернативные наименования')}`}
                 defaultValue={data.entity.alt_names}
@@ -286,11 +287,12 @@ export function BusinessEntity() {
                 showValidation={showValidation}
                 inputPlaceholder={i18n('Введите наименование')}
                 addBtnText={i18n('Добавить наименование')}
-                displayValueSeparator='; '
               />
 
               <FieldArrayEditor
                 key={`ed-syn-${businessEntityId}`}
+                artifactType='business_entity'
+                useExtSearch
                 getOptions={getBEObjects}
                 isReadOnly={isReadOnly}
                 label={i18n('Синонимы')}
@@ -299,7 +301,9 @@ export function BusinessEntity() {
                 addBtnText={i18n('Добавить')}
                 valueSubmitted={() => { updateBEField('synonym_ids', data.entity.synonym_ids); }}
                 onValueIdAdded={(id: string) => {
-                  setData((prev:any) => ({ ...prev, entity: { ...prev.entity, synonym_ids: [...prev.entity.synonym_ids, id] } }));
+                  let d = {...data};
+                  (d.entity.synonym_ids as string[]).push(id);
+                  setData(d);
                 }}
                 onValueIdRemoved={(id: string) => {
                   const arr = [...data.entity.synonym_ids];
@@ -311,6 +315,8 @@ export function BusinessEntity() {
               <FieldArrayEditor
                 key={`ed-belnk-${businessEntityId}`}
                 getOptions={getBELinkObjects}
+                artifactType='business_entity'
+                useExtSearch
                 isReadOnly={isReadOnly}
                 label={i18n('Ссылки на другие Термины')}
                 defaultValue={selectedBELinkNames}
@@ -318,7 +324,9 @@ export function BusinessEntity() {
                 addBtnText={i18n('Добавить')}
                 valueSubmitted={() => { updateBEField('be_link_ids', data.entity.be_link_ids); }}
                 onValueIdAdded={(id: string) => {
-                  setData((prev:any) => ({ ...prev, entity: { ...prev.entity, be_link_ids: [...prev.entity.be_link_ids, id] } }));
+                  let d = {...data};
+                  (d.entity.be_link_ids as string[]).push(id);
+                  setData(d);
                 }}
                 onValueIdRemoved={(id: string) => {
                   const arr = [...data.entity.be_link_ids];
